@@ -229,5 +229,48 @@ func (w *World) huntStrike(e *Entity, prey *Entity) []Event {
 	return []Event{hunt, ev}
 }
 
-// Stub implemented in Task 6.
-func (w *World) shelterStep(e *Entity) bool { return false }
+func (w *World) shelterStep(e *Entity) bool {
+	s := w.cfg.Species[e.Species]
+	if len(s.Shelters) == 0 {
+		return false
+	}
+	if e.Home == nil {
+		want := map[string]bool{}
+		for _, r := range s.Shelters {
+			want[r] = true
+		}
+		var best *Entity
+		bestD := 1 << 30
+		for _, id := range w.SortedIDs() {
+			c := w.Entities[id]
+			if c.ID == e.ID || c.Dead {
+				continue
+			}
+			ok := false
+			for _, p := range c.Produces {
+				if want[p.Resource] {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				continue
+			}
+			if d := Dist(e.Pos, c.Pos); d < bestD {
+				best, bestD = c, d
+			}
+		}
+		if best == nil {
+			return false
+		}
+		h := best.Pos
+		e.Home = &h
+		w.markDirty(e.ID)
+	}
+	if Dist(e.Pos, *e.Home) > s.HomeRange {
+		e.Action = "going home"
+		w.moveToward(e, *e.Home)
+		return true
+	}
+	return false
+}

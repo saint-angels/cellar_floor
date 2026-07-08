@@ -18,8 +18,15 @@ func testCfg(t *testing.T) *data.Config {
 }
 
 func flatWorld(t *testing.T, w, h int, seed uint64) *World {
-	world := NewWorld(w, h, seed, testCfg(t))
-	return world // all grass terrain by default
+	cfg := testCfg(t)
+	for _, s := range cfg.Species {
+		s.PopFloor = 0
+	}
+	return NewWorld(w, h, seed, cfg) // all grass terrain by default
+}
+
+func flatWorldFloors(t *testing.T, w, h int, seed uint64) *World {
+	return NewWorld(w, h, seed, testCfg(t))
 }
 
 func TestSpawnCopiesSpeciesData(t *testing.T) {
