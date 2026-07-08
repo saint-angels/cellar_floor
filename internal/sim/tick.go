@@ -118,6 +118,5 @@ func (w *World) kill(e *Entity, evType, msg string) Event {
 	return Event{Tick: w.Tick, Type: evType, Actor: e.ID, ActorSpecies: e.Species, Msg: msg}
 }
 
-// Stubs replaced in Task 4 (ai.go) and Task 6.
-func (w *World) aiStep(e *Entity) []Event   { return nil }
+// Stub replaced in Task 6.
 func (w *World) reproduceAndGuard() []Event { return nil }
