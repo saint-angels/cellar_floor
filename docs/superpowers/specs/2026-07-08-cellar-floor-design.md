@@ -22,6 +22,16 @@ v1 deliberately builds none of the player layer. v1 is the terrarium: a procedur
 - Permadeath, login/identity, offline recap ("while you were away").
 - Fancy biomes, rivers, weather, seasons.
 
+## Data-driven principle
+
+Everything that defines behavior or balance lives in data files, not Go code. The engine knows about the four relationship sets, the Maslow loop, and terrain; it knows nothing about rabbits. Concretely, a `data/` directory of TOML files (comments matter for tuning) defines:
+
+- **Species**: for each entity type, its produces / eats / shelters / desires sets, AI parameters (hunger threshold, fear radius, speed, stomach size, lifespan, reproduction rule), population floor and cap, and client presentation (color or sprite id, display name).
+- **Simulation config**: tick rate, autosave interval.
+- **Generation config**: map size, terrain noise thresholds, per-species scatter weights by terrain.
+
+Adding a new species means adding a data entry and zero engine code. The server sends the loaded species table to the client in the snapshot, so the client hardcodes no species either; it renders whatever presentation data it is given. Data files are validated at load with clear errors (unknown resource names, missing fields). Hot reload of data files is a nice-to-have for tuning, not a v1 requirement; restart-to-reload is acceptable.
+
 ## World model
 
 - Single fixed tile grid, 64x64 to start.
@@ -45,6 +55,8 @@ Predation is emergent: a wolf's "eats meat" plus a rabbit's "produces meat" equa
 
 ### v1 species table
 
+This table is the human-readable summary of what ships in the v1 `data/` files:
+
 | Entity | Produces | Eats | Shelters in | Notes |
 | --- | --- | --- | --- | --- |
 | Grass patch | grass (regrows) | - | - | ground cover food |
@@ -62,7 +74,7 @@ One shared decision loop, Maslow-ordered, identical for all fauna:
 3. Else if it has unmet desires: pursue them.
 4. Else wander or idle.
 
-Per-entity parameters (hunger threshold, fear radius, speed) are data, not code, so a future player character is just a fauna entry with personalized parameters.
+Per-entity parameters (hunger threshold, fear radius, speed) come from the species data files, so a future player character is just a fauna entry with personalized parameters.
 
 Pathfinding: greedy step toward target with simple obstacle avoidance is acceptable for v1; upgrade to A* only if behavior looks dumb in practice.
 
@@ -86,10 +98,11 @@ TypeScript canvas app, no framework requirements beyond what is convenient.
 
 ## Architecture
 
-Go server, three packages with clean seams:
+Go server, four packages with clean seams:
 
-- `sim`: pure simulation. World state, entity components (the four relationship sets), AI step, tick function. No networking, no I/O. `Tick(world) -> events`.
-- `gen`: procedural generation. `Generate(seed) -> World`.
+- `data`: loads and validates the TOML data files into typed config structs (species table, sim config, gen config). Everything downstream consumes these structs.
+- `sim`: pure simulation. World state, entity components (the four relationship sets), AI step, tick function. No networking, no I/O, no species knowledge beyond the loaded species table. `Tick(world) -> events`.
+- `gen`: procedural generation. `Generate(seed, genConfig, speciesTable) -> World`.
 - `server`: serves static client files over HTTP plus a WebSocket endpoint. Owns the tick loop (one goroutine, ticker scaled by time control), applies sim ticks, broadcasts to clients.
 
 The purity of `sim` is what makes it testable and later portable.
@@ -98,7 +111,7 @@ The purity of `sim` is what makes it testable and later portable.
 
 JSON over WebSocket. Readability over efficiency at this scale.
 
-- On connect: full world snapshot.
+- On connect: full world snapshot, including the species table with presentation data.
 - Per tick: diff (entities moved / changed / died / born) plus that tick's events.
 - Client to server in v1: time-scale commands only. Inspection reads local state.
 - Reconnect: client re-requests a snapshot.
