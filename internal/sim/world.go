@@ -48,6 +48,7 @@ type World struct {
 	NextID   int             `json:"nextId"`
 	Tick     int64           `json:"tick"`
 	Rng      uint64          `json:"rng"`
+	Removed  []int           `json:"-"`
 
 	cfg   *data.Config
 	dirty map[int]bool
