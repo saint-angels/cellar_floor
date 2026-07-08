@@ -96,7 +96,8 @@ func (w *World) At(p Point) Terrain { return w.Terrain[p.Y*w.Width+p.X] }
 func (w *World) FaunaAt(p Point) *Entity {
 	for _, id := range w.SortedIDs() {
 		e := w.Entities[id]
-		if e.Pos == p && w.cfg.Species[e.Species].Kind == "fauna" && !e.Dead {
+		s, ok := w.cfg.Species[e.Species]
+		if ok && s.Kind == "fauna" && !e.Dead && e.Pos == p {
 			return e
 		}
 	}
@@ -114,8 +115,8 @@ func (w *World) SortedIDs() []int {
 
 func (w *World) CountAlive(speciesID string) int {
 	n := 0
-	for _, e := range w.Entities {
-		if e.Species == speciesID && !e.Dead {
+	for _, id := range w.SortedIDs() {
+		if e := w.Entities[id]; e.Species == speciesID && !e.Dead {
 			n++
 		}
 	}
