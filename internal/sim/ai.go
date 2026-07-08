@@ -1,6 +1,26 @@
 package sim
 
-import "fmt"
+import (
+	"fmt"
+
+	"cellarfloor/internal/data"
+)
+
+func speciesEatsProduceOf(eater, victim *data.Species) bool {
+	if eater.ID == victim.ID || eater.Kind != "fauna" {
+		return false
+	}
+	prod := map[string]bool{}
+	for _, p := range victim.Produces {
+		prod[p.Resource] = true
+	}
+	for _, r := range eater.Eats {
+		if prod[r] {
+			return true
+		}
+	}
+	return false
+}
 
 var neighbors = []Point{
 	{-1, -1}, {0, -1}, {1, -1},
@@ -156,7 +176,58 @@ func (w *World) wander(e *Entity) {
 	}
 }
 
-// Stubs implemented in Tasks 5 and 6.
-func (w *World) fleeStep(e *Entity) ([]Event, bool)         { return nil, false }
-func (w *World) huntStrike(e *Entity, prey *Entity) []Event { return nil }
-func (w *World) shelterStep(e *Entity) bool                 { return false }
+func (w *World) fleeStep(e *Entity) ([]Event, bool) {
+	me := w.cfg.Species[e.Species]
+	if me.FearRadius <= 0 {
+		return nil, false
+	}
+	var threat *Entity
+	bestD := me.FearRadius + 1
+	for _, id := range w.SortedIDs() {
+		c := w.Entities[id]
+		if c.Dead || c.ID == e.ID {
+			continue
+		}
+		cs := w.cfg.Species[c.Species]
+		if !speciesEatsProduceOf(cs, me) {
+			continue
+		}
+		if d := Dist(e.Pos, c.Pos); d < bestD {
+			threat, bestD = c, d
+		}
+	}
+	if threat == nil {
+		return nil, false
+	}
+	var evs []Event
+	if e.Action != "fleeing" {
+		evs = append(evs, Event{
+			Tick: w.Tick, Type: "fled",
+			Actor: e.ID, ActorSpecies: e.Species,
+			Target: threat.ID, TargetSpecies: threat.Species,
+			Msg: fmt.Sprintf("%s fled from %s", me.Name, w.cfg.Species[threat.Species].Name),
+		})
+	}
+	e.Action = "fleeing"
+	w.moveAway(e, threat.Pos)
+	return evs, true
+}
+
+func (w *World) huntStrike(e *Entity, prey *Entity) []Event {
+	s := w.cfg.Species[e.Species]
+	ev := w.kill(prey, "killed", fmt.Sprintf("%s was killed by %s", w.cfg.Species[prey.Species].Name, s.Name))
+	ev.Target = e.ID
+	ev.TargetSpecies = e.Species
+	e.Action = "hunting"
+	w.markDirty(e.ID)
+	hunt := Event{
+		Tick: w.Tick, Type: "hunted",
+		Actor: e.ID, ActorSpecies: e.Species,
+		Target: prey.ID, TargetSpecies: prey.Species,
+		Msg: fmt.Sprintf("%s hunted down %s", s.Name, w.cfg.Species[prey.Species].Name),
+	}
+	return []Event{hunt, ev}
+}
+
+// Stub implemented in Task 6.
+func (w *World) shelterStep(e *Entity) bool { return false }
