@@ -2,8 +2,7 @@ package sim
 
 import "fmt"
 
-// Removed lists entity IDs deleted during the most recent Step.
-// aiStep is implemented in ai.go (Task 4); declare a stub there first.
+// Step advances the simulation by one tick and returns the events it produced.
 
 func (w *World) markDirty(id int) { w.dirty[id] = true }
 
@@ -29,6 +28,7 @@ func sortInts(a []int) {
 func (w *World) Step() []Event {
 	w.Tick++
 	w.Removed = w.Removed[:0]
+	w.diedThisTick = map[int]bool{}
 	var events []Event
 
 	ids := w.SortedIDs()
@@ -63,7 +63,6 @@ func (w *World) Step() []Event {
 	}
 
 	// 3. metabolism, starvation, aging
-	diedThisTick := map[int]bool{}
 	for _, id := range ids {
 		e, ok := w.Entities[id]
 		if !ok || e.Dead {
@@ -86,10 +85,8 @@ func (w *World) Step() []Event {
 		w.markDirty(id)
 		if e.StarvingFor > s.StarveTicks {
 			events = append(events, w.kill(e, "starved", fmt.Sprintf("%s starved", s.Name)))
-			diedThisTick[id] = true
 		} else if e.Age > s.Lifespan {
 			events = append(events, w.kill(e, "died", fmt.Sprintf("%s died of old age", s.Name)))
-			diedThisTick[id] = true
 		}
 	}
 
@@ -99,7 +96,7 @@ func (w *World) Step() []Event {
 	// 5. corpse decay (entities that died this tick start decaying next tick)
 	for _, id := range ids {
 		e, ok := w.Entities[id]
-		if !ok || !e.Dead || diedThisTick[id] {
+		if !ok || !e.Dead || w.diedThisTick[id] {
 			continue
 		}
 		e.DecayLeft--
@@ -114,6 +111,7 @@ func (w *World) Step() []Event {
 func (w *World) kill(e *Entity, evType, msg string) Event {
 	s := w.cfg.Species[e.Species]
 	e.Dead = true
+	w.diedThisTick[e.ID] = true
 	e.Action = "dead"
 	e.DecayLeft = s.DecayTicks
 	w.markDirty(e.ID)

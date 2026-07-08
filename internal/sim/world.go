@@ -50,8 +50,9 @@ type World struct {
 	Rng      uint64          `json:"rng"`
 	Removed  []int           `json:"-"`
 
-	cfg   *data.Config
-	dirty map[int]bool
+	cfg          *data.Config
+	dirty        map[int]bool
+	diedThisTick map[int]bool
 }
 
 func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
