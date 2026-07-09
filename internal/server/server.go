@@ -66,7 +66,7 @@ func (s *Server) safeTick() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var events []sim.Event
-	var removed []int
+	removed := []int{}
 	for i := 0; i < scale; i++ {
 		events = append(events, s.world.Step()...)
 		removed = append(removed, s.world.Removed...)
