@@ -20,6 +20,8 @@ function renderTerrain() {
 
 export function startRender(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d")!;
+  const map = document.getElementById("map")!;
+  const popup = document.getElementById("popup")!;
   world.onChange(() => {
     if (!terrainCanvas || terrainCanvas.width !== world.width * TILE) renderTerrain();
     canvas.width = world.width * TILE;
@@ -51,9 +53,34 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.strokeRect(x - 1, y - 1, TILE + 2, TILE + 2);
         }
       }
+      positionPopup(now, lerpMs);
     }
     requestAnimationFrame(frame);
   }
+
+  function positionPopup(now: number, lerpMs: number) {
+    const sel = world.selectedId != null ? world.entities.get(world.selectedId) : null;
+    if (!sel) {
+      popup.style.display = "none";
+      return;
+    }
+    const t = Math.min(1, (now - sel.movedAt) / lerpMs);
+    const ex = (sel.px + (sel.x - sel.px) * t) * TILE;
+    const ey = (sel.py + (sel.y - sel.py) * t) * TILE;
+    const r = canvas.getBoundingClientRect();
+    const m = map.getBoundingClientRect();
+    const sx = r.width / canvas.width, sy = r.height / canvas.height;
+    popup.style.display = "block";
+    let left = r.left - m.left + (ex + TILE + 4) * sx;
+    if (left + popup.offsetWidth > m.width) {
+      left = r.left - m.left + (ex - 4) * sx - popup.offsetWidth;
+    }
+    let top = r.top - m.top + ey * sy;
+    top = Math.max(0, Math.min(top, m.height - popup.offsetHeight));
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+  }
+
   requestAnimationFrame(frame);
 }
 
