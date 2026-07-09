@@ -5,7 +5,7 @@ import (
 	"cellarfloor/internal/sim"
 )
 
-// valueNoise returns a deterministic pseudo-random float in [0,1) for a lattice point.
+// lattice returns a deterministic pseudo-random float in [0,1) for a lattice point.
 func lattice(seed int64, x, y int) float64 {
 	h := uint64(seed)*0x9E3779B97F4A7C15 + uint64(x)*0xBF58476D1CE4E5B9 + uint64(y)*0x94D049BB133111EB
 	h ^= h >> 30

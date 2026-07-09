@@ -15,11 +15,9 @@ export class WorldState {
   selectedId: number | null = null;
 
   private eventCbs: ((evs: SimEvent[]) => void)[] = [];
-  private popCbs: ((pops: Record<string, number>) => void)[] = [];
   private changeCbs: Cb[] = [];
 
   onEvents(cb: (evs: SimEvent[]) => void) { this.eventCbs.push(cb); }
-  onPops(cb: (pops: Record<string, number>) => void) { this.popCbs.push(cb); }
   onChange(cb: Cb) { this.changeCbs.push(cb); }
   private fireChange() { for (const cb of this.changeCbs) cb(); }
 
@@ -31,21 +29,21 @@ export class WorldState {
     this.tick = m.tick;
     this.timeScale = m.timeScale;
     this.entities.clear();
-    for (const e of m.entities) this.upsert(e);
+    for (const e of (m.entities ?? [])) this.upsert(e);
     this.fireChange();
   }
 
   applyTick(m: TickMsg) {
     this.tick = m.tick;
     this.timeScale = m.timeScale;
-    for (const e of m.changed) this.upsert(e);
-    for (const id of m.removed) this.entities.delete(id);
-    for (const [sid, n] of Object.entries(m.pops)) {
+    for (const e of (m.changed ?? [])) this.upsert(e);
+    for (const id of (m.removed ?? [])) this.entities.delete(id);
+    for (const [sid, n] of Object.entries(m.pops ?? {})) {
       (this.popHistory[sid] ??= []).push(n);
       if (this.popHistory[sid].length > 120) this.popHistory[sid].shift();
     }
-    if (m.events.length) for (const cb of this.eventCbs) cb(m.events);
-    for (const cb of this.popCbs) cb(m.pops);
+    const evs = m.events ?? [];
+    if (evs.length) for (const cb of this.eventCbs) cb(evs);
     this.fireChange();
   }
 

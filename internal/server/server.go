@@ -119,14 +119,17 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := &Client{conn: conn, send: make(chan []byte, 64)}
-	s.hub.Register(c)
 
 	s.mu.Lock()
 	snap, err := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load())))
 	s.mu.Unlock()
-	if err == nil {
+	if err != nil {
+		log.Printf("marshal snapshot: %v", err)
+	} else {
 		c.send <- snap
 	}
+
+	s.hub.Register(c)
 
 	go func() { // writer
 		for b := range c.send {
