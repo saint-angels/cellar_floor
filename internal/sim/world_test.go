@@ -75,3 +75,51 @@ func TestHelpers(t *testing.T) {
 		t.Error("Dist should be Chebyshev")
 	}
 }
+
+// TestCountAliveAgreesWithBruteForce guards the O(1) live-count index
+// (World.counts) against desync with reality. It spawns entities, steps a
+// deterministic world (which causes deaths and births), and at each
+// checkpoint cross-checks CountAlive against a brute-force scan.
+func TestCountAliveAgreesWithBruteForce(t *testing.T) {
+	cfg := testCfg(t)
+	w := NewWorld(20, 20, 777, cfg)
+
+	bruteForce := func(speciesID string) int {
+		n := 0
+		for _, id := range w.SortedIDs() {
+			if e := w.Entities[id]; e.Species == speciesID && !e.Dead {
+				n++
+			}
+		}
+		return n
+	}
+
+	checkAll := func(tick int) {
+		for sid := range cfg.Species {
+			if got, want := w.CountAlive(sid), bruteForce(sid); got != want {
+				t.Fatalf("tick %d: CountAlive(%s) = %d, want %d (brute force)", tick, sid, got, want)
+			}
+		}
+	}
+
+	// Spawn a handful of fauna directly and verify counts before any ticks.
+	spawned := 0
+	for y := 0; y < 5 && spawned < 5; y++ {
+		for x := 0; x < 5 && spawned < 5; x++ {
+			if w.Spawn("rabbit", Point{x, y}) != nil {
+				spawned++
+			}
+		}
+	}
+	if n := w.CountAlive("rabbit"); n != spawned {
+		t.Fatalf("after spawns: CountAlive(rabbit) = %d, want %d", n, spawned)
+	}
+	checkAll(0)
+
+	for i := 1; i <= 2000; i++ {
+		w.Step()
+		if i%250 == 0 {
+			checkAll(i)
+		}
+	}
+}

@@ -158,7 +158,9 @@ func (w *World) move(e *Entity, ref Point, away bool) {
 		if best == e.Pos {
 			return
 		}
+		delete(w.occ, e.Pos)
 		e.Pos = best
+		w.occ[best] = e.ID
 		w.markDirty(e.ID)
 	}
 }
@@ -170,7 +172,9 @@ func (w *World) wander(e *Entity) {
 		n := neighbors[w.RandN(len(neighbors))]
 		p := Point{e.Pos.X + n.X, e.Pos.Y + n.Y}
 		if w.InBounds(p) && Passable(w.At(p)) && w.FaunaAt(p) == nil {
+			delete(w.occ, e.Pos)
 			e.Pos = p
+			w.occ[p] = e.ID
 			w.markDirty(e.ID)
 		}
 	}

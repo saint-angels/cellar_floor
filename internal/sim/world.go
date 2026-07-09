@@ -53,6 +53,10 @@ type World struct {
 	cfg          *data.Config
 	dirty        map[int]bool
 	diedThisTick map[int]bool
+	occ          map[Point]int
+	counts       map[string]int
+	sortedCache  []int
+	sortedDirty  bool
 }
 
 func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
@@ -67,6 +71,8 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 		Rng:      seed,
 		cfg:      cfg,
 		dirty:    map[int]bool{},
+		occ:      map[Point]int{},
+		counts:   map[string]int{},
 	}
 }
 
@@ -75,7 +81,32 @@ func (w *World) SetConfig(cfg *data.Config) {
 	if w.dirty == nil {
 		w.dirty = map[int]bool{}
 	}
+	w.rebuildOcc()
+	w.rebuildCounts()
 }
+
+func (w *World) rebuildCounts() {
+	w.counts = map[string]int{}
+	for _, e := range w.Entities {
+		if !e.Dead {
+			w.counts[e.Species]++
+		}
+	}
+}
+
+func (w *World) rebuildOcc() {
+	w.occ = map[Point]int{}
+	for _, id := range w.SortedIDs() {
+		e := w.Entities[id]
+		if e.Dead {
+			continue
+		}
+		if s, ok := w.cfg.Species[e.Species]; ok && s.Kind == "fauna" {
+			w.occ[e.Pos] = id
+		}
+	}
+}
+
 func (w *World) Cfg() *data.Config { return w.cfg }
 
 func (w *World) rand() uint64 {
@@ -96,33 +127,32 @@ func (w *World) InBounds(p Point) bool {
 func (w *World) At(p Point) Terrain { return w.Terrain[p.Y*w.Width+p.X] }
 
 func (w *World) FaunaAt(p Point) *Entity {
-	for _, id := range w.SortedIDs() {
-		e := w.Entities[id]
-		s, ok := w.cfg.Species[e.Species]
-		if ok && s.Kind == "fauna" && !e.Dead && e.Pos == p {
-			return e
-		}
+	id, ok := w.occ[p]
+	if !ok {
+		return nil
 	}
-	return nil
+	e := w.Entities[id]
+	if e == nil || e.Dead {
+		return nil
+	}
+	return e
 }
 
 func (w *World) SortedIDs() []int {
-	ids := make([]int, 0, len(w.Entities))
-	for id := range w.Entities {
-		ids = append(ids, id)
+	if w.sortedDirty || w.sortedCache == nil {
+		ids := make([]int, 0, len(w.Entities))
+		for id := range w.Entities {
+			ids = append(ids, id)
+		}
+		sort.Ints(ids)
+		w.sortedCache = ids
+		w.sortedDirty = false
 	}
-	sort.Ints(ids)
-	return ids
+	return w.sortedCache
 }
 
 func (w *World) CountAlive(speciesID string) int {
-	n := 0
-	for _, id := range w.SortedIDs() {
-		if e := w.Entities[id]; e.Species == speciesID && !e.Dead {
-			n++
-		}
-	}
-	return n
+	return w.counts[speciesID]
 }
 
 func (w *World) Spawn(speciesID string, p Point) *Entity {
@@ -141,6 +171,11 @@ func (w *World) Spawn(speciesID string, p Point) *Entity {
 	}
 	w.NextID++
 	w.Entities[e.ID] = e
+	w.sortedDirty = true
+	w.counts[speciesID]++
+	if s.Kind == "fauna" {
+		w.occ[p] = e.ID
+	}
 	w.dirty[e.ID] = true
 	return e
 }

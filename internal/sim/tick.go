@@ -105,6 +105,7 @@ func (w *World) Step() []Event {
 		e.DecayLeft--
 		if e.DecayLeft <= 0 {
 			delete(w.Entities, id)
+			w.sortedDirty = true
 			w.Removed = append(w.Removed, id)
 		}
 	}
@@ -115,6 +116,8 @@ func (w *World) kill(e *Entity, evType, msg string) Event {
 	s := w.cfg.Species[e.Species]
 	e.Dead = true
 	w.diedThisTick[e.ID] = true
+	w.counts[e.Species]--
+	delete(w.occ, e.Pos)
 	e.Action = "dead"
 	e.DecayLeft = s.DecayTicks
 	w.markDirty(e.ID)
