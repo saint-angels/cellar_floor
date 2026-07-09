@@ -7,13 +7,13 @@
   <style>
     :root { color-scheme: dark; }
     body { margin: 0; background: #14110f; color: #cfc9bf; font: 13px/1.4 ui-monospace, monospace; display: flex; height: 100vh; }
-    #map { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; }
+    #map { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; }
     canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
     #side { width: 320px; border-left: 1px solid #333; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
     h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8d857a; margin: 0 0 4px; }
     #timescale button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
     #timescale button.active { background: #4a7c3f; color: #fff; }
-    #inspector { min-height: 120px; white-space: pre-wrap; }
+    #popup { position: absolute; display: none; background: rgba(20, 17, 15, 0.92); border: 1px solid #4a443c; padding: 6px 8px; white-space: pre; pointer-events: none; }
     #events { flex: 1; overflow-y: auto; min-height: 100px; }
     #events div { padding: 1px 0; border-bottom: 1px dotted #2a2a2a; }
     .pop-row { display: flex; align-items: center; gap: 8px; }
@@ -21,11 +21,10 @@
   </style>
 </head>
 <body>
-  <div id="map"><canvas id="canvas"></canvas></div>
+  <div id="map"><canvas id="canvas"></canvas><div id="popup"></div></div>
   <div id="side">
     <div id="timescale"><h2>Speed</h2></div>
     <div><h2>Populations</h2><div id="pops"></div></div>
-    <div><h2>Inspector</h2><div id="inspector">click a creature</div></div>
     <div style="flex:1;display:flex;flex-direction:column;min-height:0">
       <h2>Events</h2><div id="events"></div>
     </div>

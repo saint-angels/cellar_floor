@@ -100,10 +100,10 @@ function initInspector(
 }
 
 function renderInspector() {
-  const box = document.getElementById("inspector")!;
-  const e = world.selectedId ? world.entities.get(world.selectedId) : null;
+  const box = document.getElementById("popup")!;
+  const e = world.selectedId != null ? world.entities.get(world.selectedId) : null;
   if (!e) {
-    box.textContent = "click a creature";
+    box.style.display = "none";
     return;
   }
   const sp = world.species[e.s];
