@@ -1,5 +1,6 @@
 # Project
 world.json
+players.json
 client/node_modules/
 client/dist/
 

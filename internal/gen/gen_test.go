@@ -71,10 +71,8 @@ func TestGenerateContents(t *testing.T) {
 	if counts["mushroom"] == 0 {
 		t.Error("no mushrooms generated")
 	}
-	// dwarves may miss the scatter roll; the pop floor covers them on tick 1
-	w.Step()
-	if w.CountAlive("dwarf") < c.Species["dwarf"].PopFloor {
-		t.Errorf("dwarves = %d, want >= floor %d", w.CountAlive("dwarf"), c.Species["dwarf"].PopFloor)
+	if counts["dwarf"] != 0 {
+		t.Error("dwarves must not generate; players spawn them")
 	}
 }
 

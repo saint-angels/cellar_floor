@@ -28,11 +28,19 @@ type Server struct {
 	hub   *Hub
 	scale atomic.Int64
 	mu    sync.Mutex // guards world during snapshot vs tick
+
+	players map[string]*Player // guarded by mu
 }
 
 func Run(cfg *data.Config, w *sim.World, addr, staticDir string) error {
 	s := &Server{cfg: cfg, world: w, hub: NewHub()}
 	s.scale.Store(1)
+	players, err := LoadPlayers(playersPath(cfg.Sim.SavePath))
+	if err != nil {
+		log.Printf("load players: %v (starting empty)", err)
+		players = map[string]*Player{}
+	}
+	s.players = players
 
 	go s.tickLoop()
 	go s.autosaveLoop()
@@ -102,6 +110,9 @@ func (s *Server) save() {
 		log.Printf("save: %v", err)
 	} else {
 		log.Printf("world saved at tick %d", s.world.Tick)
+	}
+	if err := SavePlayers(s.players, playersPath(s.cfg.Sim.SavePath)); err != nil {
+		log.Printf("save players: %v", err)
 	}
 }
 

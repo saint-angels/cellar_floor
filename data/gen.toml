@@ -5,5 +5,4 @@ gold_chance = 0.005
 
 scatter = [
   { species = "mushroom", terrain = "dirt", chance = 0.15 },
-  { species = "dwarf",    terrain = "dirt", chance = 0.03 },
 ]
