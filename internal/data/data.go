@@ -45,6 +45,8 @@ type Species struct {
 	PopFloor        int       `toml:"pop_floor" json:"popFloor"`
 	PopCap          int       `toml:"pop_cap" json:"popCap"`
 	DecayTicks      int       `toml:"decay_ticks" json:"decayTicks"`
+	MineTicks       int       `toml:"mine_ticks" json:"mineTicks"`
+	GoldSense       int       `toml:"gold_sense" json:"goldSense"`
 }
 
 type SimConfig struct {
@@ -60,14 +62,16 @@ type ScatterRule struct {
 }
 
 type GenConfig struct {
-	Width        int           `toml:"width"`
-	Height       int           `toml:"height"`
-	NoiseScale   float64       `toml:"noise_scale"`
-	NoiseOctaves int           `toml:"noise_octaves"`
-	WaterBelow   float64       `toml:"water_below"`
-	DirtAbove    float64       `toml:"dirt_above"`
-	RockAbove    float64       `toml:"rock_above"`
-	Scatter      []ScatterRule `toml:"scatter"`
+	Width          int           `toml:"width"`
+	Height         int           `toml:"height"`
+	NoiseScale     float64       `toml:"noise_scale"`
+	NoiseOctaves   int           `toml:"noise_octaves"`
+	WaterBelow     float64       `toml:"water_below"`
+	DirtAbove      float64       `toml:"dirt_above"`
+	RockAbove      float64       `toml:"rock_above"`
+	ClearingRadius int           `toml:"clearing_radius"`
+	GoldChance     float64       `toml:"gold_chance"`
+	Scatter        []ScatterRule `toml:"scatter"`
 }
 
 type Config struct {
@@ -134,6 +138,9 @@ func Validate(cfg *Config) error {
 			}
 			if len(s.Eats) == 0 {
 				return fmt.Errorf("species %s: fauna must eat something", id)
+			}
+			if s.MineTicks < 0 || s.GoldSense < 0 {
+				return fmt.Errorf("species %s: mine_ticks and gold_sense must be non-negative", id)
 			}
 		}
 	}
