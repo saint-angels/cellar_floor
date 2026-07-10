@@ -28,8 +28,9 @@ export function connect() {
 }
 
 export function sendTimescale(scale: number) {
-  ws?.readyState === WebSocket.OPEN &&
-    ws.send(JSON.stringify({ type: "timescale", scale }));
+  if (ws?.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: "timescale", scale }));
+  world.setTimescaleOptimistic(scale);
 }
 
 export function sendReset() {

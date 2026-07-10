@@ -79,6 +79,13 @@ export class WorldState {
     this.fireChange();
   }
 
+  // a paused server stops broadcasting ticks, so the client applies the
+  // scale it requested immediately; the next tick confirms it
+  setTimescaleOptimistic(scale: number) {
+    this.timeScale = scale;
+    this.fireChange();
+  }
+
   applyPlayer(m: PlayerMsg) {
     this.playerState = m.state;
     this.playerDwarfId = m.dwarfId ?? null;

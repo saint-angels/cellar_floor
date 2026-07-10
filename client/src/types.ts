@@ -22,6 +22,7 @@ export interface EntityView {
   home?: { x: number; y: number };
   res?: Record<string, number>;
   owner?: string;
+  mt?: { x: number; y: number };
 }
 
 export interface PlayerMsg {
