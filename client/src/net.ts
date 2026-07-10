@@ -32,6 +32,11 @@ export function sendTimescale(scale: number) {
     ws.send(JSON.stringify({ type: "timescale", scale }));
 }
 
+export function sendReset() {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "reset" }));
+}
+
 export function sendSpawn(name: string) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "spawn", player: playerToken(), name }));

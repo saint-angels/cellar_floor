@@ -41,7 +41,20 @@ export class WorldState {
     this.timeScale = m.timeScale;
     this.entities.clear();
     for (const e of (m.entities ?? [])) this.upsert(e);
+    this.checkOwnDwarf();
     this.fireChange();
+  }
+
+  // a reset snapshot or a tick can both take the player's dwarf away; ids
+  // restart on reset, so the id may now belong to an unrelated entity
+  private checkOwnDwarf() {
+    if (this.playerState === "alive" && this.playerDwarfId != null) {
+      const mine = this.entities.get(this.playerDwarfId);
+      if (!mine || mine.dead || mine.s !== "dwarf") {
+        this.playerState = "dead";
+        this.playerDwarfId = null;
+      }
+    }
   }
 
   applyTick(m: TickMsg) {
@@ -56,13 +69,7 @@ export class WorldState {
       for (const d of diffs) this.terrain[d.i] = d.t;
       this.terrainVersion++;
     }
-    if (this.playerState === "alive" && this.playerDwarfId != null) {
-      const mine = this.entities.get(this.playerDwarfId);
-      if (!mine || mine.dead) {
-        this.playerState = "dead";
-        this.playerDwarfId = null;
-      }
-    }
+    this.checkOwnDwarf();
     for (const [sid, n] of Object.entries(m.pops ?? {})) {
       (this.popHistory[sid] ??= []).push(n);
       if (this.popHistory[sid].length > 120) this.popHistory[sid].shift();

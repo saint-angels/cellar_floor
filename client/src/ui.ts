@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendSpawn, sendTimescale } from "./net";
+import { sendReset, sendSpawn, sendTimescale } from "./net";
 import type { SimEvent } from "./types";
 
 export function initUI(
@@ -83,6 +83,27 @@ function initTimescale() {
     b.onclick = () => sendTimescale(s);
     box.appendChild(b);
   }
+  const reset = document.createElement("button");
+  reset.textContent = "reset";
+  reset.className = "reset";
+  let armedAt = 0;
+  reset.onclick = () => {
+    if (Date.now() - armedAt < 3000) {
+      sendReset();
+      armedAt = 0;
+      reset.textContent = "reset";
+      return;
+    }
+    armedAt = Date.now();
+    reset.textContent = "really?";
+    setTimeout(() => {
+      if (armedAt !== 0 && Date.now() - armedAt >= 3000) {
+        armedAt = 0;
+        reset.textContent = "reset";
+      }
+    }, 3100);
+  };
+  box.appendChild(reset);
   world.onChange(() => {
     for (const b of box.querySelectorAll("button")) {
       b.classList.toggle("active", Number(b.dataset.scale) === world.timeScale);
