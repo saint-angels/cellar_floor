@@ -20,12 +20,12 @@ func TestLoadRealData(t *testing.T) {
 	if cfg.Sim.TickRate != 2.0 {
 		t.Errorf("tick_rate = %v, want 2.0", cfg.Sim.TickRate)
 	}
-	r, ok := cfg.Species["rabbit"]
+	d, ok := cfg.Species["dwarf"]
 	if !ok {
-		t.Fatal("no rabbit species")
+		t.Fatal("no dwarf species")
 	}
-	if r.Kind != "fauna" || r.ID != "rabbit" || len(r.Eats) != 2 {
-		t.Errorf("rabbit mis-parsed: %+v", r)
+	if d.Kind != "fauna" || d.ID != "dwarf" || len(d.Eats) != 1 || d.MineTicks != 172800 {
+		t.Errorf("dwarf mis-parsed: %+v", d)
 	}
 	if cfg.Gen.Width != 64 || len(cfg.Gen.Scatter) == 0 {
 		t.Errorf("gen mis-parsed: %+v", cfg.Gen)
@@ -80,7 +80,7 @@ gold_sense = 8
 
 func TestValidationRejectsUnknownResource(t *testing.T) {
 	cfg, _ := Load(dataDir(t))
-	cfg.Species["rabbit"].Eats = append(cfg.Species["rabbit"].Eats, "plutonium")
+	cfg.Species["dwarf"].Eats = append(cfg.Species["dwarf"].Eats, "plutonium")
 	if err := Validate(cfg); err == nil {
 		t.Fatal("expected error for unknown eaten resource")
 	}
@@ -88,7 +88,7 @@ func TestValidationRejectsUnknownResource(t *testing.T) {
 
 func TestValidationRejectsBadFauna(t *testing.T) {
 	cfg, _ := Load(dataDir(t))
-	cfg.Species["wolf"].StomachSize = 0
+	cfg.Species["dwarf"].StomachSize = 0
 	if err := Validate(cfg); err == nil {
 		t.Fatal("expected error for zero stomach_size")
 	}

@@ -14,6 +14,8 @@ import (
 func newTestAPI(t *testing.T) (*http.ServeMux, *sim.World) {
 	cfg := loadCfg(t)
 	w := gen.Generate(7, cfg)
+	w.Spawn("dwarf", sim.Point{X: 30, Y: 32})
+	w.Spawn("dwarf", sim.Point{X: 34, Y: 32})
 	s := &Server{cfg: cfg, world: w, hub: NewHub()}
 	s.scale.Store(1)
 	mux := http.NewServeMux()
@@ -54,10 +56,10 @@ func TestAPIState(t *testing.T) {
 	if st.Entities != len(w.Entities) {
 		t.Errorf("entities %d, want %d", st.Entities, len(w.Entities))
 	}
-	if st.Pops["rabbit"] == 0 {
-		t.Error("pops missing rabbit")
+	if st.Pops["dwarf"] == 0 {
+		t.Error("pops missing dwarf")
 	}
-	if _, ok := st.Pops["grass"]; ok {
+	if _, ok := st.Pops["mushroom"]; ok {
 		t.Error("pops must only contain fauna")
 	}
 
@@ -77,7 +79,7 @@ func TestAPIEntities(t *testing.T) {
 	mux, w := newTestAPI(t)
 	var deadID int
 	for _, id := range w.SortedIDs() {
-		if w.Entities[id].Species == "rabbit" {
+		if w.Entities[id].Species == "dwarf" {
 			w.Entities[id].Dead = true
 			deadID = id
 			break
@@ -92,27 +94,27 @@ func TestAPIEntities(t *testing.T) {
 		t.Errorf("got %d entities, want %d", len(all), len(w.Entities))
 	}
 
-	var rabbits []EntityView
-	json.Unmarshal(apiGet(t, mux, "/api/entities?species=rabbit").Body.Bytes(), &rabbits)
-	if len(rabbits) == 0 || len(rabbits) >= len(all) {
-		t.Errorf("species filter broken: %d of %d", len(rabbits), len(all))
+	var dwarfs []EntityView
+	json.Unmarshal(apiGet(t, mux, "/api/entities?species=dwarf").Body.Bytes(), &dwarfs)
+	if len(dwarfs) == 0 || len(dwarfs) >= len(all) {
+		t.Errorf("species filter broken: %d of %d", len(dwarfs), len(all))
 	}
-	for _, e := range rabbits {
-		if e.S != "rabbit" {
+	for _, e := range dwarfs {
+		if e.S != "dwarf" {
 			t.Errorf("filter leaked species %q", e.S)
 		}
 	}
 
-	var deadRabbits []EntityView
-	json.Unmarshal(apiGet(t, mux, "/api/entities?species=rabbit&alive=false").Body.Bytes(), &deadRabbits)
-	if len(deadRabbits) != 1 || deadRabbits[0].ID != deadID {
-		t.Errorf("alive=false filter broken: %+v", deadRabbits)
+	var deadDwarfs []EntityView
+	json.Unmarshal(apiGet(t, mux, "/api/entities?species=dwarf&alive=false").Body.Bytes(), &deadDwarfs)
+	if len(deadDwarfs) != 1 || deadDwarfs[0].ID != deadID {
+		t.Errorf("alive=false filter broken: %+v", deadDwarfs)
 	}
 
-	var aliveRabbits []EntityView
-	json.Unmarshal(apiGet(t, mux, "/api/entities?species=rabbit&alive=true").Body.Bytes(), &aliveRabbits)
-	if len(aliveRabbits) != len(rabbits)-1 {
-		t.Errorf("alive=true filter broken: %d, want %d", len(aliveRabbits), len(rabbits)-1)
+	var aliveDwarfs []EntityView
+	json.Unmarshal(apiGet(t, mux, "/api/entities?species=dwarf&alive=true").Body.Bytes(), &aliveDwarfs)
+	if len(aliveDwarfs) != len(dwarfs)-1 {
+		t.Errorf("alive=true filter broken: %d, want %d", len(aliveDwarfs), len(dwarfs)-1)
 	}
 }
 

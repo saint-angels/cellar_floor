@@ -43,20 +43,53 @@ func TestGenerateDeterministic(t *testing.T) {
 }
 
 func TestGenerateContents(t *testing.T) {
-	w := Generate(123, cfg(t))
+	c := cfg(t)
+	w := Generate(123, c)
 	if w.Width != 64 || w.Height != 64 {
 		t.Fatalf("size %dx%d", w.Width, w.Height)
+	}
+	terrain := map[sim.Terrain]int{}
+	for _, tr := range w.Terrain {
+		terrain[tr]++
+	}
+	if terrain[sim.TerrainRock] < 64*64*7/10 {
+		t.Errorf("map not mostly rock: %v", terrain)
+	}
+	if terrain[sim.TerrainGold] == 0 {
+		t.Error("no gold veins")
+	}
+	if w.At(sim.Point{X: 32, Y: 32}) != sim.TerrainDirt {
+		t.Error("no clearing at center")
 	}
 	counts := map[string]int{}
 	for _, e := range w.Entities {
 		counts[e.Species]++
-		if cfg(t).Species[e.Species].Kind == "fauna" && !sim.Passable(w.At(e.Pos)) {
+		if c.Species[e.Species].Kind == "fauna" && !sim.Passable(w.At(e.Pos)) {
 			t.Errorf("%s spawned on impassable tile %v", e.Species, e.Pos)
 		}
 	}
-	for _, s := range []string{"grass", "bush", "rabbit", "wolf"} {
-		if counts[s] == 0 {
-			t.Errorf("no %s generated", s)
-		}
+	if counts["mushroom"] == 0 {
+		t.Error("no mushrooms generated")
+	}
+	// dwarves may miss the scatter roll; the pop floor covers them on tick 1
+	w.Step()
+	if w.CountAlive("dwarf") < c.Species["dwarf"].PopFloor {
+		t.Errorf("dwarves = %d, want >= floor %d", w.CountAlive("dwarf"), c.Species["dwarf"].PopFloor)
+	}
+}
+
+func TestGenerateLegacyNoise(t *testing.T) {
+	_, f, _, _ := runtime.Caller(0)
+	c, err := data.Load(filepath.Join(filepath.Dir(f), "..", "sim", "testdata", "legacy"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := Generate(123, c)
+	seen := map[sim.Terrain]bool{}
+	for _, tr := range w.Terrain {
+		seen[tr] = true
+	}
+	if !seen[sim.TerrainGrass] || !seen[sim.TerrainWater] {
+		t.Error("noise path lost grass or water")
 	}
 }

@@ -9,6 +9,7 @@ import (
 
 	"cellarfloor/internal/data"
 	"cellarfloor/internal/gen"
+	"cellarfloor/internal/sim"
 )
 
 func loadCfg(t *testing.T) *data.Config {
@@ -45,6 +46,24 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 	if w2.Rng != w.Rng || len(w2.Entities) != len(w.Entities) {
 		t.Error("loaded world diverged from original")
+	}
+}
+
+func TestLoadPrunesUnknownSpecies(t *testing.T) {
+	cfg := loadCfg(t)
+	w := gen.Generate(5, cfg)
+	ghost := w.Spawn("dwarf", sim.Point{X: 32, Y: 32})
+	ghost.Species = "rabbit" // simulate a save from before the pivot
+	path := filepath.Join(t.TempDir(), "w.json")
+	if err := SaveWorld(w, path); err != nil {
+		t.Fatal(err)
+	}
+	w2, err := LoadWorld(path, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := w2.Entities[ghost.ID]; ok {
+		t.Error("unknown-species entity survived load")
 	}
 }
 

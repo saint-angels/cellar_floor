@@ -15,7 +15,7 @@ func TestSnapshotAndTickMessages(t *testing.T) {
 	if snap.Type != "snapshot" || snap.Width != 64 || len(snap.Entities) == 0 {
 		t.Fatalf("bad snapshot: %+v", snap.Type)
 	}
-	if _, ok := snap.Species["rabbit"]; !ok {
+	if _, ok := snap.Species["dwarf"]; !ok {
 		t.Error("snapshot missing species table")
 	}
 	b, err := json.Marshal(snap)
@@ -23,6 +23,7 @@ func TestSnapshotAndTickMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	w.Spawn("dwarf", sim.Point{X: 32, Y: 32}) // clearing center is dirt
 	evs := w.Step()
 	tick := BuildTick(w, evs, 1)
 	if tick.Type != "tick" || tick.Tick != w.Tick {
@@ -31,7 +32,7 @@ func TestSnapshotAndTickMessages(t *testing.T) {
 	if len(tick.Changed) == 0 {
 		t.Error("expected changed entities on first tick")
 	}
-	if tick.Pops["rabbit"] == 0 {
+	if tick.Pops["dwarf"] == 0 {
 		t.Error("pops missing")
 	}
 	// diff semantics: after building, dirty set is drained

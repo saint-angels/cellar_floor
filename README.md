@@ -1,10 +1,13 @@
 # Cellar Floor
 
-A little world living on the floor of a dark cellar. A persistent ecology
-of grass, bushes, trees, rabbits and wolves, simulated on a Go server and
+A little world living on the floor of a dark cellar. Dwarves carve tunnels
+through the rock in search of gold, one cell per real day, eating mushrooms
+from the clearing where they live. Most things happen on a scale of hours
+or days; the world runs at 1x wall-clock on a persistent Go server and is
 watched live from the browser.
 
-Spec: docs/superpowers/specs/2026-07-08-cellar-floor-design.md
+Specs: docs/superpowers/specs/2026-07-10-idle-pivot-design.md (current),
+docs/superpowers/specs/2026-07-08-cellar-floor-design.md (original engine)
 
 ## Run
 
@@ -12,6 +15,10 @@ Spec: docs/superpowers/specs/2026-07-08-cellar-floor-design.md
     go run ./cmd/cellarfloor
 
 Open http://localhost:8080. Flags: -addr, -seed, -fresh, -data, -static.
+
+The pivot to the underground world made old rabbit-era saves obsolete;
+entities of removed species are dropped on load, but for a proper start
+run once with -fresh (or delete world.json).
 
 ## Develop
 
