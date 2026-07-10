@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"cellarfloor/internal/gen"
@@ -64,6 +65,25 @@ func TestTickCarriesMiningState(t *testing.T) {
 	tick2 := BuildTick(w, nil, 1, nil)
 	if len(tick2.Terrain) != 0 {
 		t.Error("terrain dirty set not drained")
+	}
+}
+
+func TestViewCarriesMineTarget(t *testing.T) {
+	cfg := loadCfg(t)
+	w := gen.Generate(7, cfg)
+	d := w.Spawn("dwarf", sim.Point{X: 32, Y: 32})
+	if v := ViewOf(d); v.MT != nil {
+		t.Errorf("mt should be nil without a target, got %v", v.MT)
+	}
+	target := sim.Point{X: 40, Y: 32}
+	d.MineTarget = &target
+	v := ViewOf(d)
+	if v.MT == nil || *v.MT != target {
+		t.Errorf("mt = %v, want %v", v.MT, target)
+	}
+	b, err := json.Marshal(v)
+	if err != nil || !strings.Contains(string(b), `"mt":{"x":40,"y":32}`) {
+		t.Errorf("marshal: %s %v", b, err)
 	}
 }
 

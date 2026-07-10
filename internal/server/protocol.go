@@ -18,6 +18,7 @@ type EntityView struct {
 	Home   *sim.Point         `json:"home,omitempty"`
 	Res    map[string]float64 `json:"res,omitempty"`
 	Owner  string             `json:"owner,omitempty"`
+	MT     *sim.Point         `json:"mt,omitempty"`
 }
 
 func ViewOf(e *sim.Entity) EntityView {
@@ -28,6 +29,7 @@ func ViewOf(e *sim.Entity) EntityView {
 	return EntityView{
 		ID: e.ID, S: e.Species, X: e.Pos.X, Y: e.Pos.Y,
 		Dead: e.Dead, Full: e.Fullness, Action: e.Action, Home: e.Home, Res: res,
+		MT: e.MineTarget,
 	}
 }
 
