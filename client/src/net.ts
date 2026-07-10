@@ -1,15 +1,28 @@
 import { world } from "./world";
-import type { SnapshotMsg, TickMsg } from "./types";
+import type { PlayerMsg, SnapshotMsg, TickMsg } from "./types";
 
 let ws: WebSocket | null = null;
+
+const TOKEN_KEY = "cellar-player-token";
+
+function playerToken(): string {
+  let t = localStorage.getItem(TOKEN_KEY);
+  if (!t) {
+    t = crypto.randomUUID();
+    localStorage.setItem(TOKEN_KEY, t);
+  }
+  return t;
+}
 
 export function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen = () => ws?.send(JSON.stringify({ type: "hello", player: playerToken() }));
   ws.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data) as SnapshotMsg | TickMsg;
+    const msg = JSON.parse(ev.data) as SnapshotMsg | TickMsg | PlayerMsg;
     if (msg.type === "snapshot") world.applySnapshot(msg);
     else if (msg.type === "tick") world.applyTick(msg);
+    else if (msg.type === "player") world.applyPlayer(msg);
   };
   ws.onclose = () => setTimeout(connect, 1000);
 }
@@ -17,4 +30,9 @@ export function connect() {
 export function sendTimescale(scale: number) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "timescale", scale }));
+}
+
+export function sendSpawn(name: string) {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "spawn", player: playerToken(), name }));
 }

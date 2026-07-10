@@ -1,4 +1,4 @@
-import type { EntityView, RenderEntity, SimEvent, SnapshotMsg, TickMsg, Species } from "./types";
+import type { EntityView, PlayerMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, Species } from "./types";
 
 type Cb = () => void;
 
@@ -14,6 +14,10 @@ export class WorldState {
   gold = 0;
   mining: Record<string, number> = {};
   terrainVersion = 0;
+  playerState: "unknown" | "none" | "alive" | "dead" = "unknown";
+  playerDwarfId: number | null = null;
+  playerName = "";
+  playerError = "";
   popHistory: Record<string, number[]> = {};
   selectedId: number | null = null;
 
@@ -52,12 +56,27 @@ export class WorldState {
       for (const d of diffs) this.terrain[d.i] = d.t;
       this.terrainVersion++;
     }
+    if (this.playerState === "alive" && this.playerDwarfId != null) {
+      const mine = this.entities.get(this.playerDwarfId);
+      if (!mine || mine.dead) {
+        this.playerState = "dead";
+        this.playerDwarfId = null;
+      }
+    }
     for (const [sid, n] of Object.entries(m.pops ?? {})) {
       (this.popHistory[sid] ??= []).push(n);
       if (this.popHistory[sid].length > 120) this.popHistory[sid].shift();
     }
     const evs = m.events ?? [];
     if (evs.length) for (const cb of this.eventCbs) cb(evs);
+    this.fireChange();
+  }
+
+  applyPlayer(m: PlayerMsg) {
+    this.playerState = m.state;
+    this.playerDwarfId = m.dwarfId ?? null;
+    if (m.name) this.playerName = m.name;
+    this.playerError = m.error ?? "";
     this.fireChange();
   }
 

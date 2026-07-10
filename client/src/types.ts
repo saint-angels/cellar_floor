@@ -21,6 +21,15 @@ export interface EntityView {
   action?: string;
   home?: { x: number; y: number };
   res?: Record<string, number>;
+  owner?: string;
+}
+
+export interface PlayerMsg {
+  type: "player";
+  state: "none" | "alive" | "dead";
+  dwarfId?: number;
+  name?: string;
+  error?: string;
 }
 
 export interface SimEvent {

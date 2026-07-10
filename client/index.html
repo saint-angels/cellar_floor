@@ -14,6 +14,12 @@
     #timescale button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
     #timescale button.active { background: #4a7c3f; color: #fff; }
     #popup { position: absolute; display: none; background: rgba(20, 17, 15, 0.92); border: 1px solid #4a443c; padding: 6px 8px; white-space: pre; pointer-events: none; }
+    #overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 8, 7, 0.72); }
+    #overlay-card { background: #1c1815; border: 1px solid #4a443c; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; width: 260px; }
+    #overlay-card input { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 6px 8px; font: inherit; }
+    #overlay-card button { background: #4a7c3f; color: #fff; border: none; padding: 8px 10px; cursor: pointer; font: inherit; }
+    #overlay-error { color: #d9724a; min-height: 1em; }
+    #watch-link { color: #8d857a; text-align: center; }
     #events { flex: 1; overflow-y: auto; min-height: 100px; }
     #events div { padding: 1px 0; border-bottom: 1px dotted #2a2a2a; }
     .pop-row { display: flex; align-items: center; gap: 8px; }
@@ -21,11 +27,23 @@
   </style>
 </head>
 <body>
-  <div id="map"><canvas id="canvas"></canvas><div id="popup"></div></div>
+  <div id="map"><canvas id="canvas"></canvas><div id="popup"></div>
+    <div id="overlay">
+      <div id="overlay-card">
+        <h2 id="overlay-title">A dwarf awaits</h2>
+        <p id="overlay-text"></p>
+        <input id="player-name" maxlength="24" placeholder="your name" />
+        <button id="spawn-btn">Spawn a dwarf</button>
+        <div id="overlay-error"></div>
+        <a id="watch-link" href="#">just watch</a>
+      </div>
+    </div>
+  </div>
   <div id="side">
     <div id="timescale"><h2>Speed</h2></div>
     <div><h2>Populations</h2><div id="pops"></div></div>
     <div><h2>Gold</h2><div id="gold">0</div></div>
+    <div><h2>Your Dwarf</h2><div id="mydwarf">none</div></div>
     <div style="flex:1;display:flex;flex-direction:column;min-height:0">
       <h2>Events</h2><div id="events"></div>
     </div>

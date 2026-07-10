@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendTimescale } from "./net";
+import { sendSpawn, sendTimescale } from "./net";
 import type { SimEvent } from "./types";
 
 export function initUI(
@@ -9,9 +9,64 @@ export function initUI(
   initTimescale();
   initEvents();
   initInspector(canvas, tileFromPixel);
+  initOverlay();
   world.onChange(renderPops);
   world.onChange(renderGold);
   world.onChange(renderInspector);
+  world.onChange(renderOverlay);
+  world.onChange(renderMyDwarf);
+}
+
+let spectating = false;
+
+function initOverlay() {
+  const btn = document.getElementById("spawn-btn") as HTMLButtonElement;
+  const input = document.getElementById("player-name") as HTMLInputElement;
+  const watch = document.getElementById("watch-link")!;
+  btn.onclick = () => sendSpawn(input.value);
+  input.onkeydown = (e) => { if (e.key === "Enter") sendSpawn(input.value); };
+  watch.addEventListener("click", (e) => {
+    e.preventDefault();
+    spectating = true;
+    renderOverlay();
+  });
+}
+
+function renderOverlay() {
+  const overlay = document.getElementById("overlay")!;
+  const title = document.getElementById("overlay-title")!;
+  const text = document.getElementById("overlay-text")!;
+  const input = document.getElementById("player-name") as HTMLInputElement;
+  const btn = document.getElementById("spawn-btn")!;
+  const errBox = document.getElementById("overlay-error")!;
+  const st = world.playerState;
+  const show = st === "dead" || (st === "none" && !spectating);
+  overlay.style.display = show ? "flex" : "none";
+  if (!show) return;
+  if (st === "dead") {
+    title.textContent = "Your dwarf has died";
+    text.textContent = "The cellar is unforgiving. Send another?";
+    btn.textContent = "Spawn a new dwarf";
+  } else {
+    title.textContent = "A dwarf awaits";
+    text.textContent = "Name yourself and send a dwarf to dig for gold.";
+    btn.textContent = "Spawn a dwarf";
+  }
+  if (!input.value && world.playerName) input.value = world.playerName;
+  errBox.textContent = world.playerError;
+}
+
+function renderMyDwarf() {
+  const box = document.getElementById("mydwarf")!;
+  if (world.playerState === "alive" && world.playerDwarfId != null) {
+    const e = world.entities.get(world.playerDwarfId);
+    if (e) {
+      const cap = world.species[e.s]?.stomachSize ?? 0;
+      box.textContent = `#${e.id}, ${e.action || "idle"}, fullness ${e.full.toFixed(1)} / ${cap}`;
+      return;
+    }
+  }
+  box.textContent = world.playerState === "dead" ? "dead" : "none";
 }
 
 function renderGold() {
@@ -114,7 +169,7 @@ function renderInspector() {
   }
   const sp = world.species[e.s];
   const lines = [
-    `${sp?.name ?? e.s} #${e.id}${e.dead ? " (dead)" : ""}`,
+    `${sp?.name ?? e.s} #${e.id}${e.owner ? ` (${e.owner})` : ""}${e.dead ? " (dead)" : ""}`,
     `at ${e.x},${e.y}`,
   ];
   if (sp?.kind === "fauna" && !e.dead) {

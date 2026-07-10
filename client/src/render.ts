@@ -57,6 +57,19 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.strokeRect(x - 1, y - 1, TILE + 2, TILE + 2);
         }
       }
+      if (world.playerDwarfId != null) {
+        const me = world.entities.get(world.playerDwarfId);
+        if (me && !me.dead) {
+          const mt = Math.min(1, (now - me.movedAt) / lerpMs);
+          const mx = (me.px + (me.x - me.px) * mt) * TILE + TILE / 2;
+          const my = (me.py + (me.y - me.py) * mt) * TILE + TILE / 2;
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(mx, my, TILE / 2 + 2.5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
       for (const [k, p] of Object.entries(world.mining)) {
         const i = Number(k);
         const bx = (i % world.width) * TILE;
