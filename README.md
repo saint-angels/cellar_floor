@@ -6,6 +6,7 @@ from the clearing where they live. Most things happen on a scale of hours
 or days; the world runs at 1x wall-clock on a persistent Go server and is
 watched live from the browser.
 
+Design constraints: DESIGN.md
 Specs: docs/superpowers/specs/2026-07-10-idle-pivot-design.md (current),
 docs/superpowers/specs/2026-07-08-cellar-floor-design.md (original engine)
 

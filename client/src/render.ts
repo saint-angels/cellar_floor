@@ -1,7 +1,7 @@
 import { world } from "./world";
 
 const TILE = 12;
-const TERRAIN_COLORS = ["#3d5a36", "#6b5537", "#2b4a63", "#5a5a5a", "#26221e", "#c9a227"]; // grass dirt water rock floor gold
+const TERRAIN_COLORS = ["#3d5a36", "#6b5537", "#2b4a63", "#3a3a3a", "#26221e", "#c9a227"]; // grass dirt water rock floor gold
 
 let terrainCanvas: HTMLCanvasElement | null = null;
 
