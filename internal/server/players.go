@@ -30,7 +30,9 @@ func (s *Server) playerMsg(token string) PlayerMsg {
 	if !ok {
 		return PlayerMsg{Type: "player", State: "none"}
 	}
-	if e, exists := s.world.Entities[p.DwarfID]; exists && !e.Dead {
+	// entity ids restart when the world is reset, so the stored id can
+	// collide with an unrelated entity; only a living dwarf counts
+	if e, exists := s.world.Entities[p.DwarfID]; exists && !e.Dead && e.Species == "dwarf" {
 		return PlayerMsg{Type: "player", State: "alive", DwarfID: p.DwarfID, Name: p.Name}
 	}
 	return PlayerMsg{Type: "player", State: "dead", Name: p.Name}
