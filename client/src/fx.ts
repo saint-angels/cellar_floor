@@ -27,7 +27,9 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
   const dt = lastNow ? Math.min(now - lastNow, 100) : 16;
   lastNow = now;
   const running = world.timeScale > 0;
-  if (running) fxClock += dt;
+  // dwarves visibly hustle at higher speeds, capped so swings stay readable:
+  // 1x -> 1.0, 8x -> 2.0, 64x -> 3.0
+  if (running) fxClock += dt * (1 + Math.log2(Math.max(world.timeScale, 1)) / 3);
 
   for (const e of world.entities.values()) {
     if (e.dead || e.action !== "mining" || !e.mt) {
