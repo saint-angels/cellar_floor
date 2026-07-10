@@ -13,12 +13,17 @@ const (
 	TerrainDirt
 	TerrainWater
 	TerrainRock
+	TerrainFloor // mined-out stone
+	TerrainGold  // gold vein, mineable like rock
 )
 
-var terrainNames = [...]string{"grass", "dirt", "water", "rock"}
+var terrainNames = [...]string{"grass", "dirt", "water", "rock", "floor", "gold"}
 
 func TerrainName(t Terrain) string { return terrainNames[t] }
-func Passable(t Terrain) bool      { return t == TerrainGrass || t == TerrainDirt }
+func Passable(t Terrain) bool {
+	return t == TerrainGrass || t == TerrainDirt || t == TerrainFloor
+}
+func Mineable(t Terrain) bool { return t == TerrainRock || t == TerrainGold }
 
 type Point struct {
 	X int `json:"x"`
@@ -52,6 +57,7 @@ type World struct {
 
 	cfg          *data.Config
 	dirty        map[int]bool
+	terrainDirty []int
 	diedThisTick map[int]bool
 	occ          map[Point]int
 	counts       map[string]int
@@ -125,6 +131,23 @@ func (w *World) InBounds(p Point) bool {
 	return p.X >= 0 && p.X < w.Width && p.Y >= 0 && p.Y < w.Height
 }
 func (w *World) At(p Point) Terrain { return w.Terrain[p.Y*w.Width+p.X] }
+
+// SetTerrain mutates a cell and records it for the next tick's terrain diff.
+func (w *World) SetTerrain(p Point, t Terrain) {
+	i := p.Y*w.Width + p.X
+	if w.Terrain[i] == t {
+		return
+	}
+	w.Terrain[i] = t
+	w.terrainDirty = append(w.terrainDirty, i)
+}
+
+// TerrainDirtyAndReset returns cell indexes changed since the last call.
+func (w *World) TerrainDirtyAndReset() []int {
+	d := w.terrainDirty
+	w.terrainDirty = nil
+	return d
+}
 
 func (w *World) FaunaAt(p Point) *Entity {
 	id, ok := w.occ[p]

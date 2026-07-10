@@ -76,7 +76,7 @@ type Config struct {
 	Species map[string]*Species
 }
 
-var validTerrains = map[string]bool{"grass": true, "dirt": true, "water": true, "rock": true}
+var validTerrains = map[string]bool{"grass": true, "dirt": true, "water": true, "rock": true, "floor": true, "gold": true}
 
 func Load(dir string) (*Config, error) {
 	cfg := &Config{}
