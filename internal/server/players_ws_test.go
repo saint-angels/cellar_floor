@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -93,6 +94,43 @@ func TestWSHelloSpawnFlow(t *testing.T) {
 	send(t, c2, map[string]any{"type": "hello", "player": "tok1"})
 	if pm2 := readPlayerMsg(t, c2); pm2.State != "alive" || pm2.DwarfID != pm.DwarfID {
 		t.Fatalf("second hello: %+v", pm2)
+	}
+}
+
+func TestWSReset(t *testing.T) {
+	s, ts := newWSServer(t)
+	s.cfg.Sim.SavePath = filepath.Join(t.TempDir(), "world.json")
+	c := dialWS(t, ts)
+
+	send(t, c, map[string]any{"type": "spawn", "player": "tok1", "name": "Misha"})
+	pm := readPlayerMsg(t, c)
+	if pm.State != "alive" {
+		t.Fatalf("spawn: %+v", pm)
+	}
+
+	send(t, c, map[string]any{"type": "reset"})
+	// a fresh snapshot must arrive on the same connection
+	c.SetReadDeadline(time.Now().Add(3 * time.Second))
+	for {
+		_, b, err := c.ReadMessage()
+		if err != nil {
+			t.Fatalf("no snapshot after reset: %v", err)
+		}
+		var probe struct {
+			Type string `json:"type"`
+			Tick int64  `json:"tick"`
+		}
+		if json.Unmarshal(b, &probe) == nil && probe.Type == "snapshot" {
+			if probe.Tick != 0 {
+				t.Errorf("snapshot tick %d, want 0", probe.Tick)
+			}
+			break
+		}
+	}
+
+	send(t, c, map[string]any{"type": "hello", "player": "tok1"})
+	if pm := readPlayerMsg(t, c); pm.State != "dead" || pm.Name != "Misha" {
+		t.Fatalf("hello after reset: %+v, want dead", pm)
 	}
 }
 

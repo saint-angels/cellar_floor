@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -94,6 +95,38 @@ func TestSpawnCrowded(t *testing.T) {
 	pm := s.spawnDwarf("late", "P")
 	if pm.Error != "the cellar is crowded" || pm.State != "none" {
 		t.Fatalf("crowded reply %+v", pm)
+	}
+}
+
+func TestResetWorld(t *testing.T) {
+	s := newPlayerServer(t)
+	s.cfg.Sim.SavePath = filepath.Join(t.TempDir(), "world.json")
+	pm := s.spawnDwarf("tok1", "Misha")
+	if pm.State != "alive" {
+		t.Fatalf("spawn: %+v", pm)
+	}
+	s.world.Gold = 5
+	s.world.MineProgress[42] = 0.5
+
+	snap := s.resetWorld()
+	if snap == nil {
+		t.Fatal("resetWorld returned nil snapshot")
+	}
+	if s.world.Tick != 0 {
+		t.Errorf("world not fresh: tick %d", s.world.Tick)
+	}
+	if s.world.CountAlive("dwarf") != 0 {
+		t.Error("dwarves survived the reset")
+	}
+	if s.world.Gold != 0 || len(s.world.MineProgress) != 0 {
+		t.Error("gold or mining progress survived the reset")
+	}
+	if got := s.playerMsg("tok1"); got.State != "dead" || got.Name != "Misha" {
+		t.Errorf("player after reset: %+v, want dead with name", got)
+	}
+	var parsed SnapshotMsg
+	if err := json.Unmarshal(snap, &parsed); err != nil || parsed.Type != "snapshot" {
+		t.Fatalf("bad snapshot payload: %v", err)
 	}
 }
 

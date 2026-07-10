@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"cellarfloor/internal/data"
+	"cellarfloor/internal/gen"
 	"cellarfloor/internal/sim"
 )
 
@@ -116,6 +117,23 @@ func (s *Server) save() {
 	}
 }
 
+// resetWorld swaps in a freshly generated world. Player records survive;
+// their dwarves do not, so everyone resolves to the dead state and can
+// rejoin from the death screen.
+func (s *Server) resetWorld() []byte {
+	s.mu.Lock()
+	s.world = gen.Generate(time.Now().UnixNano(), s.cfg)
+	log.Printf("world reset: %d entities", len(s.world.Entities))
+	snap, err := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load()), s.owners()))
+	s.mu.Unlock()
+	s.save()
+	if err != nil {
+		log.Printf("marshal reset snapshot: %v", err)
+		return nil
+	}
+	return snap
+}
+
 func (s *Server) saveOnInterrupt() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
@@ -167,6 +185,10 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 			switch {
 			case m.Type == "timescale" && validScales[m.Scale]:
 				s.scale.Store(int64(m.Scale))
+			case m.Type == "reset":
+				if b := s.resetWorld(); b != nil {
+					s.hub.Broadcast(b)
+				}
 			case (m.Type == "hello" || m.Type == "spawn") && m.Player != "":
 				s.mu.Lock()
 				var pm PlayerMsg
