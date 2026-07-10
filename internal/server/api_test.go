@@ -60,6 +60,17 @@ func TestAPIState(t *testing.T) {
 	if _, ok := st.Pops["grass"]; ok {
 		t.Error("pops must only contain fauna")
 	}
+
+	w.Gold = 9
+	var st2 struct {
+		Gold int `json:"gold"`
+	}
+	if err := json.Unmarshal(apiGet(t, mux, "/api/state").Body.Bytes(), &st2); err != nil {
+		t.Fatal(err)
+	}
+	if st2.Gold != 9 {
+		t.Errorf("gold = %d, want 9", st2.Gold)
+	}
 }
 
 func TestAPIEntities(t *testing.T) {

@@ -25,6 +25,7 @@ type stateResp struct {
 	Height    int            `json:"height"`
 	Pops      map[string]int `json:"pops"`
 	Entities  int            `json:"entities"`
+	Gold      int            `json:"gold"`
 }
 
 func (s *Server) handleState(rw http.ResponseWriter, r *http.Request) {
@@ -33,6 +34,7 @@ func (s *Server) handleState(rw http.ResponseWriter, r *http.Request) {
 		Tick: s.world.Tick, TimeScale: int(s.scale.Load()),
 		Width: s.world.Width, Height: s.world.Height,
 		Pops: map[string]int{}, Entities: len(s.world.Entities),
+		Gold: s.world.Gold,
 	}
 	for sid, sp := range s.world.Cfg().Species {
 		if sp.Kind == "fauna" {

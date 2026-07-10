@@ -37,16 +37,27 @@ type SnapshotMsg struct {
 	Species   map[string]*data.Species `json:"species"`
 	Entities  []EntityView             `json:"entities"`
 	TimeScale int                      `json:"timeScale"`
+	Gold      int                      `json:"gold"`
+	Mining    map[int]float64          `json:"mining,omitempty"`
+}
+
+// TerrainDiff is one mutated cell in a tick message.
+type TerrainDiff struct {
+	I int   `json:"i"`
+	T uint8 `json:"t"`
 }
 
 type TickMsg struct {
-	Type      string         `json:"type"`
-	Tick      int64          `json:"tick"`
-	TimeScale int            `json:"timeScale"`
-	Changed   []EntityView   `json:"changed"`
-	Removed   []int          `json:"removed"`
-	Events    []sim.Event    `json:"events"`
-	Pops      map[string]int `json:"pops"`
+	Type      string          `json:"type"`
+	Tick      int64           `json:"tick"`
+	TimeScale int             `json:"timeScale"`
+	Changed   []EntityView    `json:"changed"`
+	Removed   []int           `json:"removed"`
+	Events    []sim.Event     `json:"events"`
+	Pops      map[string]int  `json:"pops"`
+	Gold      int             `json:"gold"`
+	Mining    map[int]float64 `json:"mining,omitempty"`
+	Terrain   []TerrainDiff   `json:"terrain,omitempty"`
 }
 
 type ClientMsg struct {
@@ -68,6 +79,7 @@ func BuildSnapshot(w *sim.World, scale int) SnapshotMsg {
 		Width: w.Width, Height: w.Height,
 		Terrain: terrain, Species: w.Cfg().Species,
 		Entities: ents, TimeScale: scale,
+		Gold: w.Gold, Mining: w.MineProgress,
 	}
 }
 
@@ -88,8 +100,13 @@ func BuildTick(w *sim.World, events []sim.Event, scale int) TickMsg {
 		events = []sim.Event{}
 	}
 	removed := append([]int{}, w.Removed...)
+	var tdiffs []TerrainDiff
+	for _, i := range w.TerrainDirtyAndReset() {
+		tdiffs = append(tdiffs, TerrainDiff{I: i, T: uint8(w.Terrain[i])})
+	}
 	return TickMsg{
 		Type: "tick", Tick: w.Tick, TimeScale: scale,
 		Changed: changed, Removed: removed, Events: events, Pops: pops,
+		Gold: w.Gold, Mining: w.MineProgress, Terrain: tdiffs,
 	}
 }
