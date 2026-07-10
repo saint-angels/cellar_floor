@@ -61,8 +61,10 @@ type TickMsg struct {
 }
 
 type ClientMsg struct {
-	Type  string `json:"type"`
-	Scale int    `json:"scale"`
+	Type   string `json:"type"`
+	Scale  int    `json:"scale"`
+	Player string `json:"player"`
+	Name   string `json:"name"`
 }
 
 func BuildSnapshot(w *sim.World, scale int) SnapshotMsg {

@@ -164,8 +164,24 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 				log.Printf("bad client message ignored: %s", b)
 				continue
 			}
-			if m.Type == "timescale" && validScales[m.Scale] {
+			switch {
+			case m.Type == "timescale" && validScales[m.Scale]:
 				s.scale.Store(int64(m.Scale))
+			case (m.Type == "hello" || m.Type == "spawn") && m.Player != "":
+				s.mu.Lock()
+				var pm PlayerMsg
+				if m.Type == "hello" {
+					pm = s.playerMsg(m.Player)
+				} else {
+					pm = s.spawnDwarf(m.Player, m.Name)
+				}
+				s.mu.Unlock()
+				if b, err := json.Marshal(pm); err == nil {
+					select {
+					case c.send <- b:
+					default:
+					}
+				}
 			}
 		}
 	}()
