@@ -41,6 +41,7 @@ func Run(cfg *data.Config, w *sim.World, addr, staticDir string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.Dir(staticDir)))
 	mux.HandleFunc("/ws", s.handleWS)
+	s.registerAPI(mux)
 	log.Printf("cellar floor listening on %s", addr)
 	return http.ListenAndServe(addr, mux)
 }
