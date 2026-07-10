@@ -177,7 +177,7 @@ func (w *World) reproduceAndGuard() []Event {
 			continue
 		}
 		for w.CountAlive(sid) < s.PopFloor {
-			p, ok := w.randomEdgeTile()
+			p, ok := w.randomFreeTile()
 			if !ok {
 				break
 			}
@@ -192,19 +192,9 @@ func (w *World) reproduceAndGuard() []Event {
 	return events
 }
 
-func (w *World) randomEdgeTile() (Point, bool) {
+func (w *World) randomFreeTile() (Point, bool) {
 	for i := 0; i < 50; i++ {
-		var p Point
-		switch w.RandN(4) {
-		case 0:
-			p = Point{w.RandN(w.Width), 0}
-		case 1:
-			p = Point{w.RandN(w.Width), w.Height - 1}
-		case 2:
-			p = Point{0, w.RandN(w.Height)}
-		default:
-			p = Point{w.Width - 1, w.RandN(w.Height)}
-		}
+		p := Point{w.RandN(w.Width), w.RandN(w.Height)}
 		if Passable(w.At(p)) && w.FaunaAt(p) == nil {
 			return p, true
 		}

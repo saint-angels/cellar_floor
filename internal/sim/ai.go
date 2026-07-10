@@ -54,12 +54,17 @@ func (w *World) aiStep(e *Entity) []Event {
 		return nil
 	}
 
-	// 3. shelter (implemented in Task 6)
+	// 3. mining
+	if evs, mined := w.mineStep(e); mined {
+		return evs
+	}
+
+	// 4. shelter
 	if w.shelterStep(e) {
 		return nil
 	}
 
-	// 4. wander
+	// 5. wander
 	e.Action = "idle"
 	if w.RandFloat() < 0.15 {
 		w.wander(e)

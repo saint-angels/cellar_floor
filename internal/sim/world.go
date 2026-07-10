@@ -43,6 +43,7 @@ type Entity struct {
 	DecayLeft   int            `json:"decayLeft"`
 	Action      string         `json:"action"`
 	MoveAcc     float64        `json:"moveAcc"`
+	MineTarget  *Point         `json:"mineTarget,omitempty"`
 }
 
 type World struct {
@@ -54,6 +55,9 @@ type World struct {
 	Tick     int64           `json:"tick"`
 	Rng      uint64          `json:"rng"`
 	Removed  []int           `json:"-"`
+
+	Gold         int             `json:"gold"`
+	MineProgress map[int]float64 `json:"mineProgress,omitempty"`
 
 	cfg          *data.Config
 	dirty        map[int]bool
@@ -72,9 +76,10 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 	return &World{
 		Width: w, Height: h,
 		Terrain:  make([]Terrain, w*h),
-		Entities: map[int]*Entity{},
-		NextID:   1,
-		Rng:      seed,
+		Entities:     map[int]*Entity{},
+		NextID:       1,
+		Rng:          seed,
+		MineProgress: map[int]float64{},
 		cfg:      cfg,
 		dirty:    map[int]bool{},
 		occ:      map[Point]int{},
@@ -86,6 +91,9 @@ func (w *World) SetConfig(cfg *data.Config) {
 	w.cfg = cfg
 	if w.dirty == nil {
 		w.dirty = map[int]bool{}
+	}
+	if w.MineProgress == nil {
+		w.MineProgress = map[int]float64{}
 	}
 	w.rebuildOcc()
 	w.rebuildCounts()
