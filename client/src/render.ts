@@ -1,7 +1,7 @@
 import { world } from "./world";
 
 const TILE = 12;
-const TERRAIN_COLORS = ["#3d5a36", "#6b5537", "#2b4a63", "#5a5a5a"]; // grass dirt water rock
+const TERRAIN_COLORS = ["#3d5a36", "#6b5537", "#2b4a63", "#5a5a5a", "#26221e", "#c9a227"]; // grass dirt water rock floor gold
 
 let terrainCanvas: HTMLCanvasElement | null = null;
 
@@ -22,8 +22,12 @@ export function startRender(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d")!;
   const map = document.getElementById("map")!;
   const popup = document.getElementById("popup")!;
+  let paintedVersion = -1;
   world.onChange(() => {
-    if (!terrainCanvas || terrainCanvas.width !== world.width * TILE) renderTerrain();
+    if (!terrainCanvas || terrainCanvas.width !== world.width * TILE || paintedVersion !== world.terrainVersion) {
+      renderTerrain();
+      paintedVersion = world.terrainVersion;
+    }
     canvas.width = world.width * TILE;
     canvas.height = world.height * TILE;
   });
@@ -52,6 +56,15 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.lineWidth = 2;
           ctx.strokeRect(x - 1, y - 1, TILE + 2, TILE + 2);
         }
+      }
+      for (const [k, p] of Object.entries(world.mining)) {
+        const i = Number(k);
+        const bx = (i % world.width) * TILE;
+        const by = Math.floor(i / world.width) * TILE;
+        ctx.fillStyle = "#1a1815";
+        ctx.fillRect(bx + 1, by + 2, TILE - 2, 3);
+        ctx.fillStyle = "#ffb347";
+        ctx.fillRect(bx + 1, by + 2, (TILE - 2) * Math.min(p, 1), 3);
       }
       positionPopup(now, lerpMs);
     }

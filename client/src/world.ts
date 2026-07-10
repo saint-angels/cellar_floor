@@ -11,6 +11,9 @@ export class WorldState {
   tick = 0;
   timeScale = 1;
   tickIntervalMs = 500;
+  gold = 0;
+  mining: Record<string, number> = {};
+  terrainVersion = 0;
   popHistory: Record<string, number[]> = {};
   selectedId: number | null = null;
 
@@ -24,7 +27,11 @@ export class WorldState {
   applySnapshot(m: SnapshotMsg) {
     this.width = m.width;
     this.height = m.height;
-    this.terrain = m.terrain;
+    // Go sends []uint8 terrain as a base64 string
+    this.terrain = Array.from(Uint8Array.from(atob(m.terrain), (c) => c.charCodeAt(0)));
+    this.terrainVersion++;
+    this.gold = m.gold ?? 0;
+    this.mining = m.mining ?? {};
     this.species = m.species;
     this.tick = m.tick;
     this.timeScale = m.timeScale;
@@ -38,6 +45,13 @@ export class WorldState {
     this.timeScale = m.timeScale;
     for (const e of (m.changed ?? [])) this.upsert(e);
     for (const id of (m.removed ?? [])) this.entities.delete(id);
+    this.gold = m.gold ?? this.gold;
+    this.mining = m.mining ?? {};
+    const diffs = m.terrain ?? [];
+    if (diffs.length) {
+      for (const d of diffs) this.terrain[d.i] = d.t;
+      this.terrainVersion++;
+    }
     for (const [sid, n] of Object.entries(m.pops ?? {})) {
       (this.popHistory[sid] ??= []).push(n);
       if (this.popHistory[sid].length > 120) this.popHistory[sid].shift();

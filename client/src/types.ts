@@ -33,15 +33,22 @@ export interface SimEvent {
   msg: string;
 }
 
+export interface TerrainDiff {
+  i: number;
+  t: number;
+}
+
 export interface SnapshotMsg {
   type: "snapshot";
   tick: number;
   width: number;
   height: number;
-  terrain: number[];
+  terrain: string; // base64-encoded byte per cell (Go marshals []uint8 as base64)
   species: Record<string, Species>;
   entities: EntityView[];
   timeScale: number;
+  gold: number;
+  mining?: Record<string, number> | null;
 }
 
 export interface TickMsg {
@@ -52,6 +59,9 @@ export interface TickMsg {
   removed: number[];
   events: SimEvent[];
   pops: Record<string, number>;
+  gold: number;
+  mining?: Record<string, number> | null;
+  terrain?: TerrainDiff[] | null;
 }
 
 export interface RenderEntity extends EntityView {

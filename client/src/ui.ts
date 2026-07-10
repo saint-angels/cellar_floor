@@ -10,7 +10,13 @@ export function initUI(
   initEvents();
   initInspector(canvas, tileFromPixel);
   world.onChange(renderPops);
+  world.onChange(renderGold);
   world.onChange(renderInspector);
+}
+
+function renderGold() {
+  const el = document.getElementById("gold")!;
+  el.textContent = String(world.gold);
 }
 
 function initTimescale() {
