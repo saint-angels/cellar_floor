@@ -10,7 +10,7 @@ import (
 
 func testCfg(t *testing.T) *data.Config {
 	_, f, _, _ := runtime.Caller(0)
-	cfg, err := data.Load(filepath.Join(filepath.Dir(f), "..", "..", "data"))
+	cfg, err := data.Load(filepath.Join(filepath.Dir(f), "testdata", "legacy"))
 	if err != nil {
 		t.Fatalf("load data: %v", err)
 	}

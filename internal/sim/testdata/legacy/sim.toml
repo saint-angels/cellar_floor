@@ -1,0 +1,3 @@
+tick_rate = 2.0
+autosave_minutes = 5
+save_path = "world.json"

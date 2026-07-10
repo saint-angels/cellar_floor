@@ -1,0 +1,71 @@
+[species.grass]
+name = "Grass"
+kind = "flora"
+color = "#69a85c"
+produces = [{ resource = "grass", amount = 5, max = 5, regrow = 0.09 }]
+
+[species.bush]
+name = "Berry Bush"
+kind = "flora"
+color = "#2d6a4f"
+produces = [{ resource = "berries", amount = 8, max = 8, regrow = 0.01 }]
+
+[species.tree]
+name = "Tree"
+kind = "flora"
+color = "#40531b"
+produces = [{ resource = "wood", amount = 20, max = 20, regrow = 0 }]
+
+[species.rabbit]
+name = "Rabbit"
+kind = "fauna"
+color = "#e8e4dc"
+produces = [
+  { resource = "meat", amount = 4, max = 4, regrow = 0 },
+  { resource = "fur",  amount = 1, max = 1, regrow = 0 },
+]
+eats = ["grass", "berries"]
+shelters = ["berries"]
+bite_size = 1.0
+stomach_size = 10.0
+hunger_threshold = 9.0
+metabolism = 0.02
+starve_ticks = 600
+fear_radius = 5
+speed = 0.5
+home_range = 8
+lifespan = 8000
+mature_age = 800
+repro_threshold = 8.0
+repro_chance = 0.01
+repro_cost = 2.0
+pop_floor = 4
+pop_cap = 60
+decay_ticks = 400
+
+[species.wolf]
+name = "Wolf"
+kind = "fauna"
+color = "#8a8d91"
+produces = [
+  { resource = "meat", amount = 4, max = 4, regrow = 0 },
+  { resource = "fur",  amount = 2, max = 2, regrow = 0 },
+]
+eats = ["meat"]
+shelters = ["wood"]
+bite_size = 2.0
+stomach_size = 16.0
+hunger_threshold = 14.0
+metabolism = 0.012
+starve_ticks = 1400
+fear_radius = 0
+speed = 0.6
+home_range = 12
+lifespan = 10000
+mature_age = 1000
+repro_threshold = 11.0
+repro_chance = 0.004
+repro_cost = 6.0
+pop_floor = 2
+pop_cap = 15
+decay_ticks = 400
