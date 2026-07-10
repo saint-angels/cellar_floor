@@ -10,6 +10,7 @@ func (s *Server) registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/state", s.handleState)
 	mux.HandleFunc("GET /api/entities", s.handleEntities)
 	mux.HandleFunc("GET /api/entities/{id}", s.handleEntity)
+	mux.HandleFunc("POST /api/advance", s.handleAdvance)
 }
 
 func writeJSON(rw http.ResponseWriter, status int, v any) {
@@ -43,6 +44,33 @@ func (s *Server) handleState(rw http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Unlock()
 	writeJSON(rw, http.StatusOK, resp)
+}
+
+// handleAdvance is a dev tool: it fast-forwards the world so slow
+// hours-scale behavior can be tested without waiting.
+func (s *Server) handleAdvance(rw http.ResponseWriter, r *http.Request) {
+	n, err := strconv.Atoi(r.URL.Query().Get("ticks"))
+	if err != nil || n < 1 {
+		writeJSON(rw, http.StatusBadRequest, map[string]string{"error": "ticks must be a positive integer"})
+		return
+	}
+	if n > 1000000 {
+		n = 1000000
+	}
+	s.mu.Lock()
+	for i := 0; i < n; i++ {
+		s.world.Step()
+	}
+	// the snapshot below carries the full state; drop pending diffs
+	s.world.DirtyAndReset()
+	s.world.TerrainDirtyAndReset()
+	snap, merr := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load()), s.owners()))
+	tick := s.world.Tick
+	s.mu.Unlock()
+	if merr == nil {
+		s.hub.Broadcast(snap)
+	}
+	writeJSON(rw, http.StatusOK, map[string]any{"advanced": n, "tick": tick})
 }
 
 func (s *Server) handleEntities(rw http.ResponseWriter, r *http.Request) {

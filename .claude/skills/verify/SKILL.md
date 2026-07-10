@@ -22,6 +22,7 @@ Read-only JSON endpoints on the running server:
 curl -s localhost:8080/api/state                          # tick, timeScale, pops, entity count
 curl -s 'localhost:8080/api/entities?species=rabbit&alive=true'   # EntityView list, filters combinable
 curl -s localhost:8080/api/entities/1481                  # one entity; 404 unknown id, 400 non-numeric
+curl -s -X POST 'localhost:8080/api/advance?ticks=200000' # fast-forward ~a day; broadcasts a snapshot
 ```
 
 Entity JSON matches the ws EntityView shape (`id`, `s`, `x`, `y`, `dead`, `full`, `action`, `home`, `res`). Use these to find a creature's tile before clicking it (tile * 12 canvas px), to confirm liveness (tick advances), or to watch populations. Pixel-scanning is only needed to verify what is actually drawn.
@@ -41,7 +42,7 @@ Useful DOM handles: `#popup` (entity inspector popup inside `#map`), `#pops` (po
 
 ## Gotchas
 
-- The world is deliberately slow (one rock cell takes ~1 real day, dwarves step once per ~2 minutes at 1x). Verify behavior via `/api/entities` actions ("mining", "heading to mine") and `mineProgress` accumulating, not by waiting for completions; even at 64x a cell takes ~20 minutes.
+- The world is deliberately slow (one rock cell takes ~1 real day, dwarves step once per ~2 minutes at 1x). Use `POST /api/advance?ticks=N` to fast-forward instead of waiting at 64x; connected clients receive a fresh snapshot afterwards.
 - `data/species.toml` colors are authoritative; update the color list above if species change.
 - Entity tick data arrives over `/ws`; confirm liveness by counting websocket frames or watching `#events` tick numbers, not by expecting positions to change.
 - `/favicon.ico` 404s in the console; pre-existing, ignore.

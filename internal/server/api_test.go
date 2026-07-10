@@ -16,7 +16,7 @@ func newTestAPI(t *testing.T) (*http.ServeMux, *sim.World) {
 	w := gen.Generate(7, cfg)
 	w.Spawn("dwarf", sim.Point{X: 30, Y: 32})
 	w.Spawn("dwarf", sim.Point{X: 34, Y: 32})
-	s := &Server{cfg: cfg, world: w, hub: NewHub()}
+	s := &Server{cfg: cfg, world: w, hub: NewHub(), players: map[string]*Player{}}
 	s.scale.Store(1)
 	mux := http.NewServeMux()
 	s.registerAPI(mux)
@@ -139,6 +139,36 @@ func TestAPIEntityByID(t *testing.T) {
 	}
 	if rec := apiGet(t, mux, "/api/entities/abc"); rec.Code != http.StatusBadRequest {
 		t.Errorf("bad id: status %d, want 400", rec.Code)
+	}
+}
+
+func TestAPIAdvance(t *testing.T) {
+	mux, w := newTestAPI(t)
+	before := w.Tick
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("POST", "/api/advance?ticks=100", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var resp struct {
+		Advanced int   `json:"advanced"`
+		Tick     int64 `json:"tick"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp.Advanced != 100 || resp.Tick != before+100 || w.Tick != before+100 {
+		t.Errorf("advance: %+v, world tick %d", resp, w.Tick)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("POST", "/api/advance?ticks=0", nil))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("ticks=0: status %d, want 400", rec.Code)
+	}
+	if rec := apiGet(t, mux, "/api/advance?ticks=5"); rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("GET advance: status %d, want 405", rec.Code)
 	}
 }
 
