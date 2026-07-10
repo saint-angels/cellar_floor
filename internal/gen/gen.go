@@ -42,21 +42,41 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 	g := cfg.Gen
 	w := sim.NewWorld(g.Width, g.Height, uint64(seed), cfg)
 
-	for y := 0; y < g.Height; y++ {
-		for x := 0; x < g.Width; x++ {
-			v := fractal(seed, x, y, g.NoiseScale, g.NoiseOctaves)
-			var t sim.Terrain
-			switch {
-			case v < g.WaterBelow:
-				t = sim.TerrainWater
-			case v > g.RockAbove:
-				t = sim.TerrainRock
-			case v > g.DirtAbove:
-				t = sim.TerrainDirt
-			default:
-				t = sim.TerrainGrass
+	if g.ClearingRadius > 0 {
+		cx, cy := g.Width/2, g.Height/2
+		r2 := g.ClearingRadius * g.ClearingRadius
+		for y := 0; y < g.Height; y++ {
+			for x := 0; x < g.Width; x++ {
+				dx, dy := x-cx, y-cy
+				var t sim.Terrain
+				switch {
+				case dx*dx+dy*dy <= r2:
+					t = sim.TerrainDirt
+				case w.RandFloat() < g.GoldChance:
+					t = sim.TerrainGold
+				default:
+					t = sim.TerrainRock
+				}
+				w.Terrain[y*g.Width+x] = t
 			}
-			w.Terrain[y*g.Width+x] = t
+		}
+	} else {
+		for y := 0; y < g.Height; y++ {
+			for x := 0; x < g.Width; x++ {
+				v := fractal(seed, x, y, g.NoiseScale, g.NoiseOctaves)
+				var t sim.Terrain
+				switch {
+				case v < g.WaterBelow:
+					t = sim.TerrainWater
+				case v > g.RockAbove:
+					t = sim.TerrainRock
+				case v > g.DirtAbove:
+					t = sim.TerrainDirt
+				default:
+					t = sim.TerrainGrass
+				}
+				w.Terrain[y*g.Width+x] = t
+			}
 		}
 	}
 
