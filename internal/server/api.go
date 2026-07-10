@@ -3,10 +3,13 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 func (s *Server) registerAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/state", s.handleState)
+	mux.HandleFunc("GET /api/entities", s.handleEntities)
+	mux.HandleFunc("GET /api/entities/{id}", s.handleEntity)
 }
 
 func writeJSON(rw http.ResponseWriter, status int, v any) {
@@ -38,4 +41,44 @@ func (s *Server) handleState(rw http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Unlock()
 	writeJSON(rw, http.StatusOK, resp)
+}
+
+func (s *Server) handleEntities(rw http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	species := q.Get("species")
+	alive := q.Get("alive")
+	s.mu.Lock()
+	views := []EntityView{}
+	for _, id := range s.world.SortedIDs() {
+		e := s.world.Entities[id]
+		if species != "" && e.Species != species {
+			continue
+		}
+		if alive == "true" && e.Dead || alive == "false" && !e.Dead {
+			continue
+		}
+		views = append(views, ViewOf(e))
+	}
+	s.mu.Unlock()
+	writeJSON(rw, http.StatusOK, views)
+}
+
+func (s *Server) handleEntity(rw http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		writeJSON(rw, http.StatusBadRequest, map[string]string{"error": "bad id"})
+		return
+	}
+	s.mu.Lock()
+	e, ok := s.world.Entities[id]
+	var view EntityView
+	if ok {
+		view = ViewOf(e)
+	}
+	s.mu.Unlock()
+	if !ok {
+		writeJSON(rw, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	writeJSON(rw, http.StatusOK, view)
 }

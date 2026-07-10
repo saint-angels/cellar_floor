@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"cellarfloor/internal/gen"
@@ -58,5 +59,72 @@ func TestAPIState(t *testing.T) {
 	}
 	if _, ok := st.Pops["grass"]; ok {
 		t.Error("pops must only contain fauna")
+	}
+}
+
+func TestAPIEntities(t *testing.T) {
+	mux, w := newTestAPI(t)
+	var deadID int
+	for _, id := range w.SortedIDs() {
+		if w.Entities[id].Species == "rabbit" {
+			w.Entities[id].Dead = true
+			deadID = id
+			break
+		}
+	}
+
+	var all []EntityView
+	if err := json.Unmarshal(apiGet(t, mux, "/api/entities").Body.Bytes(), &all); err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != len(w.Entities) {
+		t.Errorf("got %d entities, want %d", len(all), len(w.Entities))
+	}
+
+	var rabbits []EntityView
+	json.Unmarshal(apiGet(t, mux, "/api/entities?species=rabbit").Body.Bytes(), &rabbits)
+	if len(rabbits) == 0 || len(rabbits) >= len(all) {
+		t.Errorf("species filter broken: %d of %d", len(rabbits), len(all))
+	}
+	for _, e := range rabbits {
+		if e.S != "rabbit" {
+			t.Errorf("filter leaked species %q", e.S)
+		}
+	}
+
+	var deadRabbits []EntityView
+	json.Unmarshal(apiGet(t, mux, "/api/entities?species=rabbit&alive=false").Body.Bytes(), &deadRabbits)
+	if len(deadRabbits) != 1 || deadRabbits[0].ID != deadID {
+		t.Errorf("alive=false filter broken: %+v", deadRabbits)
+	}
+
+	var aliveRabbits []EntityView
+	json.Unmarshal(apiGet(t, mux, "/api/entities?species=rabbit&alive=true").Body.Bytes(), &aliveRabbits)
+	if len(aliveRabbits) != len(rabbits)-1 {
+		t.Errorf("alive=true filter broken: %d, want %d", len(aliveRabbits), len(rabbits)-1)
+	}
+}
+
+func TestAPIEntityByID(t *testing.T) {
+	mux, w := newTestAPI(t)
+	id := w.SortedIDs()[0]
+
+	rec := apiGet(t, mux, "/api/entities/"+strconv.Itoa(id))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var e EntityView
+	if err := json.Unmarshal(rec.Body.Bytes(), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.ID != id {
+		t.Errorf("got id %d, want %d", e.ID, id)
+	}
+
+	if rec := apiGet(t, mux, "/api/entities/999999"); rec.Code != http.StatusNotFound {
+		t.Errorf("missing id: status %d, want 404", rec.Code)
+	}
+	if rec := apiGet(t, mux, "/api/entities/abc"); rec.Code != http.StatusBadRequest {
+		t.Errorf("bad id: status %d, want 400", rec.Code)
 	}
 }
