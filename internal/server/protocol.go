@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strings"
+
 	"cellarfloor/internal/data"
 	"cellarfloor/internal/sim"
 )
@@ -15,6 +17,7 @@ type EntityView struct {
 	Action string             `json:"action,omitempty"`
 	Home   *sim.Point         `json:"home,omitempty"`
 	Res    map[string]float64 `json:"res,omitempty"`
+	Owner  string             `json:"owner,omitempty"`
 }
 
 func ViewOf(e *sim.Entity) EntityView {
@@ -67,14 +70,16 @@ type ClientMsg struct {
 	Name   string `json:"name"`
 }
 
-func BuildSnapshot(w *sim.World, scale int) SnapshotMsg {
+func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 	terrain := make([]uint8, len(w.Terrain))
 	for i, t := range w.Terrain {
 		terrain[i] = uint8(t)
 	}
 	ents := make([]EntityView, 0, len(w.Entities))
 	for _, id := range w.SortedIDs() {
-		ents = append(ents, ViewOf(w.Entities[id]))
+		v := ViewOf(w.Entities[id])
+		v.Owner = owners[id]
+		ents = append(ents, v)
 	}
 	return SnapshotMsg{
 		Type: "snapshot", Tick: w.Tick,
@@ -85,11 +90,13 @@ func BuildSnapshot(w *sim.World, scale int) SnapshotMsg {
 	}
 }
 
-func BuildTick(w *sim.World, events []sim.Event, scale int) TickMsg {
+func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]string) TickMsg {
 	changed := []EntityView{}
 	for _, id := range w.DirtyAndReset() {
 		if e, ok := w.Entities[id]; ok {
-			changed = append(changed, ViewOf(e))
+			v := ViewOf(e)
+			v.Owner = owners[id]
+			changed = append(changed, v)
 		}
 	}
 	pops := map[string]int{}
@@ -101,6 +108,20 @@ func BuildTick(w *sim.World, events []sim.Event, scale int) TickMsg {
 	if events == nil {
 		events = []sim.Event{}
 	}
+	// name owned actors in event messages: "Dwarf struck gold" becomes
+	// "Misha's dwarf struck gold"
+	decorated := make([]sim.Event, len(events))
+	copy(decorated, events)
+	for i := range decorated {
+		name := owners[decorated[i].Actor]
+		if name == "" {
+			continue
+		}
+		if sp := w.Cfg().Species[decorated[i].ActorSpecies]; sp != nil {
+			decorated[i].Msg = strings.Replace(decorated[i].Msg, sp.Name, name+"'s dwarf", 1)
+		}
+	}
+	events = decorated
 	removed := append([]int{}, w.Removed...)
 	var tdiffs []TerrainDiff
 	for _, i := range w.TerrainDirtyAndReset() {

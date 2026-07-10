@@ -141,3 +141,21 @@ func TestAPIEntityByID(t *testing.T) {
 		t.Errorf("bad id: status %d, want 400", rec.Code)
 	}
 }
+
+func TestAPIEntityOwner(t *testing.T) {
+	cfg := loadCfg(t)
+	w := gen.Generate(7, cfg)
+	s := &Server{cfg: cfg, world: w, hub: NewHub(), players: map[string]*Player{}}
+	s.scale.Store(1)
+	pm := s.spawnDwarf("tok1", "Misha")
+	mux := http.NewServeMux()
+	s.registerAPI(mux)
+
+	var e EntityView
+	if err := json.Unmarshal(apiGet(t, mux, "/api/entities/"+strconv.Itoa(pm.DwarfID)).Body.Bytes(), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.Owner != "Misha" {
+		t.Errorf("owner = %q, want Misha", e.Owner)
+	}
+}

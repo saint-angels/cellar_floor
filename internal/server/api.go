@@ -50,6 +50,7 @@ func (s *Server) handleEntities(rw http.ResponseWriter, r *http.Request) {
 	species := q.Get("species")
 	alive := q.Get("alive")
 	s.mu.Lock()
+	owners := s.owners()
 	views := []EntityView{}
 	for _, id := range s.world.SortedIDs() {
 		e := s.world.Entities[id]
@@ -59,7 +60,9 @@ func (s *Server) handleEntities(rw http.ResponseWriter, r *http.Request) {
 		if alive == "true" && e.Dead || alive == "false" && !e.Dead {
 			continue
 		}
-		views = append(views, ViewOf(e))
+		v := ViewOf(e)
+		v.Owner = owners[e.ID]
+		views = append(views, v)
 	}
 	s.mu.Unlock()
 	writeJSON(rw, http.StatusOK, views)
@@ -76,6 +79,7 @@ func (s *Server) handleEntity(rw http.ResponseWriter, r *http.Request) {
 	var view EntityView
 	if ok {
 		view = ViewOf(e)
+		view.Owner = s.owners()[e.ID]
 	}
 	s.mu.Unlock()
 	if !ok {

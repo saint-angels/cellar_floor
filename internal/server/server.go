@@ -80,7 +80,7 @@ func (s *Server) safeTick() {
 		events = append(events, s.world.Step()...)
 		removed = append(removed, s.world.Removed...)
 	}
-	msg := BuildTick(s.world, events, scale)
+	msg := BuildTick(s.world, events, scale, s.owners())
 	msg.Removed = removed
 	if len(msg.Events) > 200 {
 		msg.Events = msg.Events[len(msg.Events)-200:]
@@ -133,7 +133,7 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 	c := &Client{conn: conn, send: make(chan []byte, 64)}
 
 	s.mu.Lock()
-	snap, err := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load())))
+	snap, err := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load()), s.owners()))
 	s.mu.Unlock()
 	if err != nil {
 		log.Printf("marshal snapshot: %v", err)
