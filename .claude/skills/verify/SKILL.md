@@ -14,6 +14,18 @@ go run ./cmd/cellarfloor              # serves client/dist and /ws on :8080, run
 
 The server loads the persisted world from `world.json` (log line: "loaded world at tick N"). Use `-fresh` for a new world, `-seed` to control generation. Check readiness with `curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/`.
 
+## Inspecting sim state (prefer this over pixel-scanning)
+
+Read-only JSON endpoints on the running server:
+
+```bash
+curl -s localhost:8080/api/state                          # tick, timeScale, pops, entity count
+curl -s 'localhost:8080/api/entities?species=rabbit&alive=true'   # EntityView list, filters combinable
+curl -s localhost:8080/api/entities/1481                  # one entity; 404 unknown id, 400 non-numeric
+```
+
+Entity JSON matches the ws EntityView shape (`id`, `s`, `x`, `y`, `dead`, `full`, `action`, `home`, `res`). Use these to find a creature's tile before clicking it (tile * 12 canvas px), to confirm liveness (tick advances), or to watch populations. Pixel-scanning is only needed to verify what is actually drawn.
+
 ## Driving the UI
 
 The Claude Chrome extension may not be connected; headless Playwright against installed Chrome works:
