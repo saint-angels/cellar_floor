@@ -11,6 +11,12 @@ const DEBRIS_PER_HIT = 6;
 const MAX_PARTICLES = 300;
 const DEBRIS_COLOR = "#8a8a8a";
 
+const FLOAT_RISE_MS = 400;
+const FLOAT_FADE_MS = 600;
+const FLOAT_RISE_PX = 8;
+const MAX_FLOATS = 40;
+const FLOAT_COLOR = "#e8e2d8";
+
 interface Particle {
   x: number; y: number;
   vx: number; vy: number;
@@ -18,10 +24,27 @@ interface Particle {
   color: string;
 }
 
+interface FloatText {
+  x: number; y: number;
+  text: string;
+  age: number;
+}
+
 let particles: Particle[] = [];
+let floats: FloatText[] = [];
+// per cell index: damage already shown, plus the terrain hit points captured
+// at set time (terrain flips to floor on completion, losing the hp otherwise)
+const shownDamage = new Map<number, { shown: number; hp: number }>();
 let fxClock = 0;
 let lastNow = 0;
 const wasInside = new Map<number, boolean>();
+
+const easeInQuad = (t: number) => t * t;
+
+function spawnFloat(cellX: number, cellY: number, text: string) {
+  if (floats.length >= MAX_FLOATS) floats.shift();
+  floats.push({ x: cellX * TILE + TILE / 2, y: cellY * TILE - 2, text, age: 0 });
+}
 
 export function initFx() {
   world.onEvents((evs) => {
@@ -79,8 +102,29 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
       ty >= e.mt.y * TILE && ty < (e.mt.y + 1) * TILE;
     if (inside && !wasInside.get(e.id) && running) {
       spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
+      const cell = e.mt.y * world.width + e.mt.x;
+      const dealt = world.mining[cell] ?? 0;
+      const rec = shownDamage.get(cell);
+      if (rec == null) {
+        // baseline silently on first sight (fresh page load mid-mine)
+        const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
+        shownDamage.set(cell, { shown: dealt, hp });
+      } else if (dealt > rec.shown) {
+        spawnFloat(e.mt.x, e.mt.y, String(dealt - rec.shown));
+        rec.shown = dealt;
+      }
     }
     wasInside.set(e.id, inside);
+  }
+
+  // completion sweep, once per frame: a tracked cell that left the mining map
+  // finished mining; pop the remainder using the hp captured before the flip
+  for (const [cell, rec] of shownDamage) {
+    if (world.mining[cell] != null) continue;
+    if (rec.hp > rec.shown) {
+      spawnFloat(cell % world.width, Math.floor(cell / world.width), String(rec.hp - rec.shown));
+    }
+    shownDamage.delete(cell);
   }
 
   if (running) {
@@ -96,7 +140,29 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     ctx.fillStyle = p.color;
     ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
   }
+
+  // floats age only while running, matching the particle pause behavior
+  if (running) for (const f of floats) f.age += dt;
+  floats = floats.filter((f) => f.age < FLOAT_RISE_MS + FLOAT_FADE_MS);
+  ctx.font = "9px ui-monospace, monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = FLOAT_COLOR;
+  for (const f of floats) {
+    let alpha: number;
+    let y = f.y;
+    if (f.age < FLOAT_RISE_MS) {
+      const t = easeInQuad(f.age / FLOAT_RISE_MS);
+      alpha = t;
+      y = f.y - FLOAT_RISE_PX * t;
+    } else {
+      alpha = 1 - (f.age - FLOAT_RISE_MS) / FLOAT_FADE_MS;
+      y = f.y - FLOAT_RISE_PX;
+    }
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.fillText(f.text, f.x, y);
+  }
   ctx.globalAlpha = 1;
+  ctx.textAlign = "start";
 }
 
 // debris flies back away from the struck face, toward open ground
