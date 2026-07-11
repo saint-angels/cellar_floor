@@ -31,6 +31,7 @@ type Server struct {
 	mu    sync.Mutex // guards world during snapshot vs tick
 
 	players map[string]*Player // guarded by mu
+	pending []sim.Event        // guarded by mu; drained into the next tick
 }
 
 func Run(cfg *data.Config, w *sim.World, addr, staticDir string) error {
@@ -80,6 +81,10 @@ func (s *Server) safeTick() {
 	for i := 0; i < scale; i++ {
 		events = append(events, s.world.Step()...)
 		removed = append(removed, s.world.Removed...)
+	}
+	if len(s.pending) > 0 {
+		events = append(s.pending, events...)
+		s.pending = nil
 	}
 	msg := BuildTick(s.world, events, scale, s.owners())
 	msg.Removed = removed
@@ -197,6 +202,16 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 				} else {
 					pm = s.spawnDwarf(m.Player, m.Name)
 				}
+				s.mu.Unlock()
+				if b, err := json.Marshal(pm); err == nil {
+					select {
+					case c.send <- b:
+					default:
+					}
+				}
+			case m.Type == "torch" && m.Player != "":
+				s.mu.Lock()
+				pm := s.placeTorch(m.Player, m.X, m.Y)
 				s.mu.Unlock()
 				if b, err := json.Marshal(pm); err == nil {
 					select {

@@ -49,6 +49,32 @@ func TestTorchBurnsOutAndDecays(t *testing.T) {
 	}
 }
 
+func TestBurnoutKeepsFaunaOccupancy(t *testing.T) {
+	cfg := &data.Config{
+		Sim: data.SimConfig{TickRate: 2},
+		Types: map[string]*data.EntityType{
+			"torch": {ID: "torch", Name: "Torch", Kind: "structure", Color: "#ffb347",
+				LightRadius: 3, Lifespan: 3, DecayTicks: 5},
+			"critter": {ID: "critter", Name: "Critter", Kind: "fauna", Color: "#888888",
+				Lifespan: 100000, StomachSize: 10, HungerThreshold: 0, Speed: 0},
+		},
+	}
+	w := NewWorld(20, 20, 1, cfg)
+	cell := Point{5, 5}
+	fauna := w.Spawn("critter", cell)
+	w.Spawn("torch", cell)
+	// age the torch past its lifespan so it burns out under the standing fauna
+	for i := 0; i < 6; i++ {
+		w.Step()
+	}
+	if w.Entities[fauna.ID].Dead {
+		t.Fatal("critter should still be alive")
+	}
+	if got := w.FaunaAt(cell); got == nil || got.ID != fauna.ID {
+		t.Fatalf("fauna occupancy lost after torch burnout: got %v", got)
+	}
+}
+
 func TestCampfireNeverBurnsOut(t *testing.T) {
 	w := newStructWorld(t)
 	fire := w.Spawn("campfire", Point{2, 2})

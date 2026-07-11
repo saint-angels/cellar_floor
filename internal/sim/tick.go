@@ -124,7 +124,9 @@ func (w *World) kill(e *Entity, evType, msg string) Event {
 	e.Dead = true
 	w.diedThisTick[e.ID] = true
 	w.counts[e.Type]--
-	delete(w.occ, e.Pos)
+	if w.occ[e.Pos] == e.ID {
+		delete(w.occ, e.Pos)
+	}
 	e.Action = "dead"
 	e.DecayLeft = s.DecayTicks
 	w.markDirty(e.ID)

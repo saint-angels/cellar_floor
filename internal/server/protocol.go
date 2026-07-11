@@ -70,6 +70,8 @@ type ClientMsg struct {
 	Scale  int    `json:"scale"`
 	Player string `json:"player"`
 	Name   string `json:"name"`
+	X      int    `json:"x"`
+	Y      int    `json:"y"`
 }
 
 func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
