@@ -43,6 +43,18 @@ func TestSnapshotAndTickMessages(t *testing.T) {
 	}
 }
 
+func TestSnapshotCarriesTerrainTypes(t *testing.T) {
+	cfg := loadCfg(t)
+	w := gen.Generate(7, cfg)
+	snap := BuildSnapshot(w, 1, nil)
+	if len(snap.TerrainTypes) < 5 {
+		t.Fatalf("terrainTypes = %d entries, want the full table", len(snap.TerrainTypes))
+	}
+	if snap.TerrainTypes[3].ID != "rock" || snap.TerrainTypes[3].Color == "" {
+		t.Fatalf("terrainTypes[3] = %+v, want rock with a color", snap.TerrainTypes[3])
+	}
+}
+
 func TestTickCarriesMiningState(t *testing.T) {
 	cfg := loadCfg(t)
 	w := gen.Generate(7, cfg)

@@ -40,16 +40,17 @@ func ViewOf(w *sim.World, e *sim.Entity) EntityView {
 }
 
 type SnapshotMsg struct {
-	Type      string                      `json:"type"`
-	Tick      int64                       `json:"tick"`
-	Width     int                         `json:"width"`
-	Height    int                         `json:"height"`
-	Terrain   []uint8                     `json:"terrain"`
-	Types     map[string]*data.EntityType `json:"types"`
-	Entities  []EntityView                `json:"entities"`
-	TimeScale int                         `json:"timeScale"`
-	Gold      int                         `json:"gold"`
-	Mining    map[int]float64             `json:"mining,omitempty"`
+	Type         string                      `json:"type"`
+	Tick         int64                       `json:"tick"`
+	Width        int                         `json:"width"`
+	Height       int                         `json:"height"`
+	Terrain      []uint8                     `json:"terrain"`
+	TerrainTypes []data.TerrainType          `json:"terrainTypes"`
+	Types        map[string]*data.EntityType `json:"types"`
+	Entities     []EntityView                `json:"entities"`
+	TimeScale    int                         `json:"timeScale"`
+	Gold         int                         `json:"gold"`
+	Mining       map[int]float64             `json:"mining,omitempty"`
 }
 
 // TerrainDiff is one mutated cell in a tick message.
@@ -94,7 +95,7 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 	return SnapshotMsg{
 		Type: "snapshot", Tick: w.Tick,
 		Width: w.Width, Height: w.Height,
-		Terrain: terrain, Types: w.Cfg().Types,
+		Terrain: terrain, TerrainTypes: w.Cfg().Terrain, Types: w.Cfg().Types,
 		Entities: ents, TimeScale: scale,
 		Gold: w.Gold, Mining: w.MineProgress,
 	}

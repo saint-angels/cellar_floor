@@ -1,4 +1,4 @@
-import type { EntityView, PlayerMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, EntityType } from "./types";
+import type { EntityView, PlayerMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, EntityType, TerrainType } from "./types";
 
 type Cb = () => void;
 
@@ -6,6 +6,7 @@ export class WorldState {
   width = 0;
   height = 0;
   terrain: number[] = [];
+  terrainTypes: TerrainType[] = [];
   types: Record<string, EntityType> = {};
   entities = new Map<number, RenderEntity>();
   tick = 0;
@@ -33,6 +34,7 @@ export class WorldState {
   applySnapshot(m: SnapshotMsg) {
     this.width = m.width;
     this.height = m.height;
+    this.terrainTypes = m.terrainTypes ?? [];
     // Go sends []uint8 terrain as a base64 string
     this.terrain = Array.from(Uint8Array.from(atob(m.terrain), (c) => c.charCodeAt(0)));
     this.terrainVersion++;

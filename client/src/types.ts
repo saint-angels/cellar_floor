@@ -21,6 +21,14 @@ export interface EntityType {
   thoughts?: Thought[];
 }
 
+export interface TerrainType {
+  id: string;
+  color: string;
+  passable: boolean;
+  mineable: boolean;
+  mineFactor: number;
+}
+
 export interface EntityView {
   id: number;
   s: string;
@@ -68,6 +76,7 @@ export interface SnapshotMsg {
   width: number;
   height: number;
   terrain: string; // base64-encoded byte per cell (Go marshals []uint8 as base64)
+  terrainTypes: TerrainType[];
   types: Record<string, EntityType>;
   entities: EntityView[];
   timeScale: number;

@@ -2,7 +2,6 @@ import { world } from "./world";
 import { drawEffects } from "./fx";
 
 const TILE = 12;
-const TERRAIN_COLORS = ["#3d5a36", "#6b5537", "#2b4a63", "#3a3a3a", "#26221e"]; // grass dirt water rock floor
 
 let terrainCanvas: HTMLCanvasElement | null = null;
 let veilCanvas: HTMLCanvasElement | null = null;
@@ -14,7 +13,7 @@ function renderTerrain() {
   const g = terrainCanvas.getContext("2d")!;
   for (let y = 0; y < world.height; y++) {
     for (let x = 0; x < world.width; x++) {
-      g.fillStyle = TERRAIN_COLORS[world.terrain[y * world.width + x]] ?? "#000";
+      g.fillStyle = world.terrainTypes[world.terrain[y * world.width + x]]?.color ?? "#000";
       g.fillRect(x * TILE, y * TILE, TILE, TILE);
     }
   }
