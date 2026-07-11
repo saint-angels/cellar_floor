@@ -20,7 +20,7 @@ color = "#2b4a63"
 id = "rock"
 color = "#3a3a3a"
 mineable = true
-mine_factor = 1.0
+hit_points = 172800
 
 [[terrain]]
 id = "floor"

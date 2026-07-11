@@ -66,8 +66,7 @@ type EntityType struct {
 	PopCap            int       `toml:"pop_cap" json:"popCap"`
 	DecayTicks        int       `toml:"-" json:"decayTicks"`
 	DecayHours        float64   `toml:"decay_hours" json:"-"`
-	MineTicks         int       `toml:"-" json:"mineTicks"`
-	MineHours         float64   `toml:"mine_hours" json:"-"`
+	MineDamage        int       `toml:"mine_damage" json:"mineDamage"`
 	SocialSize        float64   `toml:"social_size" json:"socialSize"`
 	SocialThreshold   float64   `toml:"social_threshold" json:"socialThreshold"`
 	SocialRadius      int       `toml:"social_radius" json:"-"`
@@ -115,11 +114,11 @@ type GenConfig struct {
 }
 
 type TerrainType struct {
-	ID         string  `toml:"id" json:"id"`
-	Color      string  `toml:"color" json:"color"`
-	Passable   bool    `toml:"passable" json:"passable"`
-	Mineable   bool    `toml:"mineable" json:"mineable"`
-	MineFactor float64 `toml:"mine_factor" json:"mineFactor"`
+	ID        string `toml:"id" json:"id"`
+	Color     string `toml:"color" json:"color"`
+	Passable  bool   `toml:"passable" json:"passable"`
+	Mineable  bool   `toml:"mineable" json:"mineable"`
+	HitPoints int    `toml:"hit_points" json:"hitPoints"`
 }
 
 type Config struct {
@@ -135,7 +134,7 @@ func CanonicalTerrain() []TerrainType {
 		{ID: "grass", Color: "#3d5a36", Passable: true},
 		{ID: "dirt", Color: "#6b5537", Passable: true},
 		{ID: "water", Color: "#2b4a63"},
-		{ID: "rock", Color: "#3a3a3a", Mineable: true, MineFactor: 1},
+		{ID: "rock", Color: "#3a3a3a", Mineable: true, HitPoints: 172800},
 		{ID: "floor", Color: "#26221e", Passable: true},
 	}
 }
@@ -191,7 +190,6 @@ func (c *Config) resolveTimes() {
 	hours := func(h float64) int { return int(math.Round(h * 3600 * tr)) }
 	days := func(d float64) int { return int(math.Round(d * 86400 * tr)) }
 	for _, t := range c.Types {
-		t.MineTicks = hours(t.MineHours)
 		t.StarveTicks = hours(t.StarveHours)
 		t.DecayTicks = hours(t.DecayHours)
 		t.Lifespan = days(t.LifespanDays)
@@ -230,8 +228,8 @@ func Validate(cfg *Config) error {
 		if i < len(canon) && tt.ID != canon[i].ID {
 			return fmt.Errorf("terrain[%d] must be %q (saves store indices; append only), got %q", i, canon[i].ID, tt.ID)
 		}
-		if tt.Mineable && tt.MineFactor <= 0 {
-			return fmt.Errorf("terrain %s: mineable needs positive mine_factor", tt.ID)
+		if tt.Mineable && tt.HitPoints <= 0 {
+			return fmt.Errorf("terrain %s: mineable needs positive hit_points", tt.ID)
 		}
 		if tt.Mineable && tt.Passable {
 			return fmt.Errorf("terrain %s: cannot be both passable and mineable", tt.ID)
@@ -253,7 +251,7 @@ func Validate(cfg *Config) error {
 		if s.LightRadius < 0 {
 			return fmt.Errorf("type %s: light_radius must be non-negative", id)
 		}
-		if s.MineHours < 0 || s.StarveHours < 0 || s.DecayHours < 0 ||
+		if s.StarveHours < 0 || s.DecayHours < 0 ||
 			s.LifespanDays < 0 || s.MatureDays < 0 || s.StomachDrainHours < 0 ||
 			s.CellsPerSecond < 0 {
 			return fmt.Errorf("type %s: time fields must be non-negative", id)
@@ -300,8 +298,8 @@ func Validate(cfg *Config) error {
 			if len(s.Eats) == 0 {
 				return fmt.Errorf("type %s: fauna must eat something", id)
 			}
-			if s.MineTicks < 0 {
-				return fmt.Errorf("type %s: mine_hours must be non-negative", id)
+			if s.MineDamage < 0 {
+				return fmt.Errorf("type %s: mine_damage must be non-negative", id)
 			}
 		}
 	}

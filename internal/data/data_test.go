@@ -24,7 +24,7 @@ func TestLoadRealData(t *testing.T) {
 	if !ok {
 		t.Fatal("no dwarf type")
 	}
-	if d.Kind != "fauna" || d.ID != "dwarf" || len(d.Eats) != 1 || d.MineTicks != 172800 {
+	if d.Kind != "fauna" || d.ID != "dwarf" || len(d.Eats) != 1 || d.MineDamage != 1 {
 		t.Errorf("dwarf mis-parsed: %+v", d)
 	}
 	if cfg.Gen.Width != 64 || len(cfg.Gen.Scatter) == 0 {
@@ -63,15 +63,15 @@ cells_per_second = 1.0
 lifespan_days = 0.5787037037037037
 pop_cap = 10
 decay_hours = 0.013888888888888888
-mine_hours = 0.06944444444444445
+mine_damage = 1
 `)
 	cfg, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	d := cfg.Types["dwarf"]
-	if d.MineTicks != 500 {
-		t.Errorf("mining fields: %d", d.MineTicks)
+	if d.MineDamage != 1 {
+		t.Errorf("mining fields: %d", d.MineDamage)
 	}
 	if cfg.Gen.ClearingRadius != 3 {
 		t.Errorf("gen fields: %d", cfg.Gen.ClearingRadius)
@@ -111,7 +111,7 @@ color = "#2b4a63"
 id = "rock"
 color = "#3a3a3a"
 mineable = true
-mine_factor = 1.0
+hit_points = 172800
 
 [[terrain]]
 id = "floor"
@@ -180,7 +180,7 @@ lifespan_days = 58
 mature_days = 6
 pop_cap = 10
 decay_hours = 24
-mine_hours = 24
+mine_damage = 1
 
 [type.lamp]
 name = "Lamp"
@@ -195,8 +195,11 @@ decay_hours = 0.5
 		t.Fatal(err)
 	}
 	d := cfg.Types["digger"]
-	if d.MineTicks != 172800 || d.StarveTicks != 345600 || d.DecayTicks != 172800 {
-		t.Errorf("hour fields: mine %d starve %d decay %d", d.MineTicks, d.StarveTicks, d.DecayTicks)
+	if d.StarveTicks != 345600 || d.DecayTicks != 172800 {
+		t.Errorf("hour fields: starve %d decay %d", d.StarveTicks, d.DecayTicks)
+	}
+	if d.MineDamage != 1 {
+		t.Errorf("mine_damage = %d, want 1", d.MineDamage)
 	}
 	if d.Lifespan != 10022400 || d.MatureAge != 1036800 {
 		t.Errorf("day fields: lifespan %d mature %d", d.Lifespan, d.MatureAge)
@@ -353,7 +356,7 @@ func TestTerrainTableParses(t *testing.T) {
 		}
 	}
 	soft := cfg.Terrain[5]
-	if !soft.Mineable || soft.Passable || soft.MineFactor != 0.25 || soft.Color != "#575049" {
+	if !soft.Mineable || soft.Passable || soft.HitPoints != 43200 || soft.Color != "#575049" {
 		t.Fatalf("soft_rock wrong: %+v", soft)
 	}
 	if i, ok := cfg.TerrainIndex("soft_rock"); !ok || i != 5 {
@@ -362,6 +365,34 @@ func TestTerrainTableParses(t *testing.T) {
 	if len(cfg.Gen.Veins) != 1 || cfg.Gen.Veins[0].Terrain != "soft_rock" ||
 		cfg.Gen.Veins[0].Seeds != 10 || cfg.Gen.Veins[0].Size != 14 {
 		t.Fatalf("veins wrong: %+v", cfg.Gen.Veins)
+	}
+}
+
+func TestHitPointsAndDamageParse(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hp := cfg.Terrain[3].HitPoints; hp != 172800 {
+		t.Fatalf("rock hp = %d, want 172800", hp)
+	}
+	if hp := cfg.Terrain[5].HitPoints; hp != 43200 {
+		t.Fatalf("soft rock hp = %d, want 43200", hp)
+	}
+	if d := cfg.Types["dwarf"].MineDamage; d != 1 {
+		t.Fatalf("dwarf mine_damage = %d, want 1", d)
+	}
+}
+
+func TestMineableNeedsHitPoints(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Color: "#111", Mineable: true})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("mineable without positive hit_points must fail")
+	}
+	cfg.Terrain[len(cfg.Terrain)-1].HitPoints = 100
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("mineable with hp should validate: %v", err)
 	}
 }
 
@@ -385,17 +416,17 @@ func TestTerrainTableValidation(t *testing.T) {
 		t.Fatal("duplicate id must fail")
 	}
 	cfg = base()
-	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Mineable: true, MineFactor: 0.5})
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Mineable: true, HitPoints: 100})
 	if err := Validate(cfg); err == nil {
 		t.Fatal("missing color must fail")
 	}
 	cfg = base()
 	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Color: "#111", Mineable: true})
 	if err := Validate(cfg); err == nil {
-		t.Fatal("mineable without positive mine_factor must fail")
+		t.Fatal("mineable without positive hit_points must fail")
 	}
 	cfg = base()
-	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Color: "#111", Mineable: true, MineFactor: 1, Passable: true})
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Color: "#111", Mineable: true, HitPoints: 100, Passable: true})
 	if err := Validate(cfg); err == nil {
 		t.Fatal("passable and mineable together must fail")
 	}
