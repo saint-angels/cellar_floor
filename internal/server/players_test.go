@@ -118,6 +118,14 @@ func TestResetWorld(t *testing.T) {
 	if s.world.CountAlive("dwarf") != 0 {
 		t.Error("dwarves survived the reset")
 	}
+	// stale ids from the old world must not linger: entity ids restart on
+	// reset, so a kept DwarfID could collide with a new world's entity and
+	// make owners() flip names between players
+	for tok, p := range s.players {
+		if p.DwarfID != 0 {
+			t.Errorf("player %s kept stale DwarfID %d after reset", tok, p.DwarfID)
+		}
+	}
 	if s.world.Gold != 0 || len(s.world.MineProgress) != 0 {
 		t.Error("gold or mining progress survived the reset")
 	}

@@ -128,6 +128,11 @@ func (s *Server) save() {
 func (s *Server) resetWorld() []byte {
 	s.mu.Lock()
 	s.world = gen.Generate(time.Now().UnixNano(), s.cfg)
+	// entity ids restart with the new world; a kept DwarfID could collide
+	// with an unrelated new entity and make owners() flip names
+	for _, p := range s.players {
+		p.DwarfID = 0
+	}
 	log.Printf("world reset: %d entities", len(s.world.Entities))
 	snap, err := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load()), s.owners()))
 	s.mu.Unlock()
