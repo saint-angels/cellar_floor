@@ -60,6 +60,9 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 				w.Terrain[y*g.Width+x] = t
 			}
 		}
+		if g.Center != "" {
+			w.Spawn(g.Center, sim.Point{X: g.Width / 2, Y: g.Height / 2})
+		}
 	} else {
 		for y := 0; y < g.Height; y++ {
 			for x := 0; x < g.Width; x++ {

@@ -78,6 +78,30 @@ gold_sense = 8
 	}
 }
 
+func minimalConfig() *Config {
+	return &Config{
+		Sim: SimConfig{TickRate: 2},
+		Gen: GenConfig{Width: 8, Height: 8},
+		Types: map[string]*EntityType{
+			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
+				Produces: []Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.001}}},
+		},
+	}
+}
+
+func TestStructureKindValidates(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Types["torch"] = &EntityType{ID: "torch", Name: "Torch", Kind: "structure",
+		Color: "#ffb347", LightRadius: 5, Lifespan: 100, DecayTicks: 10}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("structure should validate: %v", err)
+	}
+	cfg.Types["torch"].LightRadius = -1
+	if err := Validate(cfg); err == nil {
+		t.Fatal("negative light_radius must fail validation")
+	}
+}
+
 func TestValidationRejectsUnknownResource(t *testing.T) {
 	cfg, _ := Load(dataDir(t))
 	cfg.Types["dwarf"].Eats = append(cfg.Types["dwarf"].Eats, "plutonium")

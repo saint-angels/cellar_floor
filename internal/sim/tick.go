@@ -72,6 +72,13 @@ func (w *World) Step() []Event {
 			continue
 		}
 		s := w.cfg.Types[e.Type]
+		if s.Kind == "structure" {
+			e.Age++
+			if s.Lifespan > 0 && e.Age > s.Lifespan {
+				events = append(events, w.kill(e, "burnout", fmt.Sprintf("a %s burned out", s.Name)))
+			}
+			continue
+		}
 		if s.Kind != "fauna" {
 			continue
 		}

@@ -27,3 +27,18 @@ pop_cap = 10
 decay_ticks = 172800
 mine_ticks = 172800
 gold_sense = 8
+
+[type.torch]
+name = "Torch"
+kind = "structure"
+color = "#ffb347"
+light_radius = 5
+lifespan = 172800   # ~1 real day at tick_rate 2.0
+decay_ticks = 3600  # burnt stub lingers ~30 min
+
+[type.campfire]
+name = "Campfire"
+kind = "structure"
+color = "#e25822"
+light_radius = 8
+lifespan = 0        # never burns out

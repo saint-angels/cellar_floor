@@ -18,7 +18,25 @@ func undergroundCfg() *data.Config {
 		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.001}}},
+			"campfire": {ID: "campfire", Name: "Campfire", Kind: "structure", Color: "#e25822",
+				LightRadius: 8, Lifespan: 0},
 		},
+	}
+}
+
+func TestCampfireAtClearingCenter(t *testing.T) {
+	cfg := undergroundCfg()
+	cfg.Gen.Center = "campfire"
+	w := Generate(7, cfg)
+	cx, cy := cfg.Gen.Width/2, cfg.Gen.Height/2
+	found := false
+	for _, e := range w.Entities {
+		if e.Type == "campfire" && e.Pos == (sim.Point{X: cx, Y: cy}) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("expected one campfire at the clearing center")
 	}
 }
 

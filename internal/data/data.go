@@ -47,6 +47,7 @@ type EntityType struct {
 	DecayTicks      int       `toml:"decay_ticks" json:"decayTicks"`
 	MineTicks       int       `toml:"mine_ticks" json:"mineTicks"`
 	GoldSense       int       `toml:"gold_sense" json:"goldSense"`
+	LightRadius     int       `toml:"light_radius" json:"lightRadius"`
 }
 
 type SimConfig struct {
@@ -71,6 +72,7 @@ type GenConfig struct {
 	RockAbove      float64       `toml:"rock_above"`
 	ClearingRadius int           `toml:"clearing_radius"`
 	GoldChance     float64       `toml:"gold_chance"`
+	Center         string        `toml:"center"`
 	Scatter        []ScatterRule `toml:"scatter"`
 }
 
@@ -114,11 +116,17 @@ func Validate(cfg *Config) error {
 		}
 	}
 	for id, s := range cfg.Types {
-		if s.Kind != "flora" && s.Kind != "fauna" {
-			return fmt.Errorf("type %s: kind must be flora or fauna, got %q", id, s.Kind)
+		if s.Kind != "flora" && s.Kind != "fauna" && s.Kind != "structure" {
+			return fmt.Errorf("type %s: kind must be flora, fauna or structure, got %q", id, s.Kind)
 		}
 		if s.Name == "" || s.Color == "" {
 			return fmt.Errorf("type %s: name and color are required", id)
+		}
+		if s.LightRadius < 0 {
+			return fmt.Errorf("type %s: light_radius must be non-negative", id)
+		}
+		if s.Kind == "structure" && s.Lifespan > 0 && s.DecayTicks <= 0 {
+			return fmt.Errorf("type %s: a structure with a lifespan needs positive decay_ticks", id)
 		}
 		for _, r := range s.Eats {
 			if !produced[r] {
@@ -149,6 +157,11 @@ func Validate(cfg *Config) error {
 	}
 	if cfg.Gen.Width <= 0 || cfg.Gen.Height <= 0 {
 		return fmt.Errorf("gen: width and height must be positive")
+	}
+	if cfg.Gen.Center != "" {
+		if _, ok := cfg.Types[cfg.Gen.Center]; !ok {
+			return fmt.Errorf("gen: center references unknown type %q", cfg.Gen.Center)
+		}
 	}
 	for _, r := range cfg.Gen.Scatter {
 		if _, ok := cfg.Types[r.Type]; !ok {
