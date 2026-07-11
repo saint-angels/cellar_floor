@@ -46,6 +46,7 @@ Useful DOM handles: `#popup` (entity inspector popup inside `#map`), `#pops` (po
 - The world is deliberately slow (one rock cell takes ~1 real day, dwarves step once per ~2 minutes at 1x). Use `POST /api/advance?ticks=N` to fast-forward instead of waiting at 64x; connected clients receive a fresh snapshot afterwards.
 - `data/entities.toml` colors are authoritative; update the color list above if types change.
 - Mining a rock cell rolls for gold, tuned by `data/sim.toml`: `gold_chance` (0.9), `gold_min` (1), `gold_max` (3). A finished cell has a `gold_chance` chance to drop `gold_min`..`gold_max` colony gold, so gold count runs ahead of cells mined. Placing a torch spends 1 colony gold.
+- Thought bubbles over dwarves are intermittent by design: visible ~10s out of every 60s per dwarf (phase-offset by entity id). A missing bubble is usually just the cadence window; sample for at least 60s or check the entity's soc/g24/action via the API instead. Thought copy and conditions live in the `thoughts` list in `data/entities.toml`.
 - Entity tick data arrives over `/ws`; confirm liveness by counting websocket frames or watching `#events` tick numbers, not by expecting positions to change.
 - `/favicon.ico` 404s in the console; pre-existing, ignore.
 - "64x" yields only a few ticks/sec observed client-side, not 128/s; don't treat slow ticks as breakage.
