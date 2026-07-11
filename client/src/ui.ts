@@ -87,11 +87,15 @@ function renderMyDwarf() {
     const e = world.entities.get(world.playerDwarfId);
     if (e) {
       const sp = world.types[e.s];
-      let line = `#${e.id}, ${e.action || "idle"}, fullness ${e.full.toFixed(1)} / ${sp?.stomachSize ?? 0}`;
+      const lines = [
+        `#${e.id}`,
+        e.action || "idle",
+        `fullness ${e.full.toFixed(1)} / ${sp?.stomachSize ?? 0}`,
+      ];
       if ((sp?.socialSize ?? 0) > 0) {
-        line += `, social ${(e.soc ?? 0).toFixed(1)} / ${sp!.socialSize}`;
+        lines.push(`social ${(e.soc ?? 0).toFixed(1)} / ${sp!.socialSize}`);
       }
-      box.textContent = line;
+      box.textContent = lines.join("\n");
       return;
     }
   }
