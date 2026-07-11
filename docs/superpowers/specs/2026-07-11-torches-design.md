@@ -100,7 +100,8 @@ No gold terrain exists. Worldgen places no veins, `TerrainGold` is removed
 from the enum, and `Mineable` is rock only. When a rock cell finishes
 mining it rolls: with `gold_chance` the colony pot gains a uniform integer
 in `[gold_min, gold_max]`, and a "struck gold" event fires ("Misha's dwarf
-struck gold"). No drop means no event; the cell just becomes floor.
+struck gold"). On no drop the regular "mined out a rock" event fires
+instead; either way the cell becomes floor.
 
 Knobs in `sim.toml`, all placeholder numbers for later balancing, and a
 natural hook for future tool upgrades (luckier picks):
