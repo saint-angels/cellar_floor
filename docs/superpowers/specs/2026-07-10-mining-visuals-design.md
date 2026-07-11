@@ -50,10 +50,10 @@ This is the only server change.
 
 Effects advance on a clock that only runs while `timeScale > 0`: a paused
 world is a still diorama (no orbit motion, no new debris, particles frozen).
-At higher speeds the clock accelerates sublinearly, capped so swings stay
-readable: 1x swings at normal pace, 8x at 2x, 64x at 3x. The orbit
-visualizes that work is happening and hints at how fast, without trying to
-render one swing per sim tick (at 64x that would be an unreadable blur).
+At higher speeds the clock accelerates sublinearly on a power law anchored
+at both ends: 1x swings at normal pace, 8x at ~3.2x, 64x at 10x. Blur at
+max speed is acceptable; the orbit visualizes that work is happening and
+how fast.
 
 ## Upgrade seam (not built now)
 
