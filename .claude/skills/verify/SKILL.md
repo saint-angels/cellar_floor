@@ -21,6 +21,7 @@ Read-only JSON endpoints on the running server:
 ```bash
 curl -s localhost:8080/api/state                          # tick, timeScale, pops, entity count
 curl -s 'localhost:8080/api/entities?type=rabbit&alive=true'   # EntityView list, filters combinable
+curl -s 'localhost:8080/api/entities?type=torch'              # type= matches any entity type, structures too (campfire, torch, dwarf)
 curl -s localhost:8080/api/entities/1481                  # one entity; 404 unknown id, 400 non-numeric
 curl -s -X POST 'localhost:8080/api/advance?ticks=200000' # fast-forward ~a day; broadcasts a snapshot
 ```
@@ -36,7 +37,7 @@ cd <scratchpad> && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install playwright
 # then: chromium.launch({ channel: 'chrome', headless: true })
 ```
 
-The whole map is one `<canvas>` (no DOM per entity). Prefer finding entities via `/api/entities` and converting tile to canvas px (tile * 12); pixel-scanning via `getImageData` also works with colors from `data/entities.toml` (dwarf `#d9a066`, mushroom `#c4b5d9`; terrain: dirt `#6b5537`, rock `#3a3a3a`, floor `#26221e`, gold vein `#c9a227`; mining bar track `#1a1815`, fill `#ffb347`; dead `#443c38`, selection box `#ffd75e`). Tiles are 12 canvas px; the canvas is CSS-scaled, so convert with `canvas.getBoundingClientRect()` before `page.mouse.click`.
+The whole map is one `<canvas>` (no DOM per entity). Prefer finding entities via `/api/entities` and converting tile to canvas px (tile * 12); pixel-scanning via `getImageData` also works with colors from `data/entities.toml` (dwarf `#d9a066`, mushroom `#c4b5d9`; terrain: dirt `#6b5537`, rock `#3a3a3a`, floor `#26221e`; structures: campfire `#e25822`, torch `#ffb347`; mining bar track `#1a1815`, fill `#ffb347`; dead `#443c38`, selection box `#ffd75e`). Unlit cells are covered by a darkness veil (`rgba(0, 0, 0, 0.75)` drawn over the terrain), so only cells inside a light circle read at full brightness; pixel-scan lit cells (near a campfire or torch) when checking terrain colors. Tiles are 12 canvas px; the canvas is CSS-scaled, so convert with `canvas.getBoundingClientRect()` before `page.mouse.click`.
 
 Useful DOM handles: `#popup` (entity inspector popup inside `#map`), `#pops` (population labels), `#events` (event feed with tick numbers), `#timescale button:text-is("64x")` (speed buttons: pause/1x/8x/64x).
 
@@ -44,6 +45,7 @@ Useful DOM handles: `#popup` (entity inspector popup inside `#map`), `#pops` (po
 
 - The world is deliberately slow (one rock cell takes ~1 real day, dwarves step once per ~2 minutes at 1x). Use `POST /api/advance?ticks=N` to fast-forward instead of waiting at 64x; connected clients receive a fresh snapshot afterwards.
 - `data/entities.toml` colors are authoritative; update the color list above if types change.
+- Mining a rock cell rolls for gold, tuned by `data/sim.toml`: `gold_chance` (0.9), `gold_min` (1), `gold_max` (3). A finished cell has a `gold_chance` chance to drop `gold_min`..`gold_max` colony gold, so gold count runs ahead of cells mined. Placing a torch spends 1 colony gold.
 - Entity tick data arrives over `/ws`; confirm liveness by counting websocket frames or watching `#events` tick numbers, not by expecting positions to change.
 - `/favicon.ico` 404s in the console; pre-existing, ignore.
 - "64x" yields only a few ticks/sec observed client-side, not 128/s; don't treat slow ticks as breakage.

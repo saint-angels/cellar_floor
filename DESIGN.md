@@ -28,7 +28,7 @@ is a deliberate decision, not a side effect.
 - **Creatures are autonomous.** Nobody takes orders; behavior emerges from
   needs and simple priorities (danger, food, work, rest).
 - **The player influences, never commands.** Player tools shape the
-  environment (torches, later) and the creatures respond to it.
+  environment (torches) and the creatures respond to it.
 - **The events feed is the narrator.** Anything notable that happens should
   emit a small human-readable event ("Dwarf struck gold").
 
