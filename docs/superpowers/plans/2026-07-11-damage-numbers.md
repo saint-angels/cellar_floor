@@ -199,7 +199,7 @@ Expected: build FAIL (MineDamage undefined on World; config fields).
 
 (the SetTerrain/gold-roll/eventing below is untouched.)
 
-Fix remaining compile references: mine_test.go's save/load test asserts `MineDamage` instead of `MineProgress` (`w2.MineDamage[idx(w, rock)] != w.MineDamage[idx(w, rock)]`); players_test/api tests in internal/server touch MineProgress (TestResetWorld sets `s.world.MineProgress[42] = 0.5`; change to `s.world.MineDamage[42] = 5`) — server compiles against sim, so these edits happen NOW even though the server protocol swap is Task 3; use `git grep -n MineProgress` to find every reference and convert it (protocol.go's `Mining: w.MineProgress` becomes `Mining: w.MineDamage`, which forces the protocol type change early: change `Mining map[int]float64` to `Mining map[int]int` in both messages in this task and note it; Task 3 then only covers the client and tests of the wire).
+Fix remaining compile references: mine_test.go's save/load test asserts `MineDamage` instead of `MineProgress` (`w2.MineDamage[idx(w, rock)] != w.MineDamage[idx(w, rock)]`); players_test/api tests in internal/server touch MineProgress (TestResetWorld sets `s.world.MineProgress[42] = 0.5`; change to `s.world.MineDamage[42] = 5`); server compiles against sim, so these edits happen NOW even though the server protocol swap is Task 3; use `git grep -n MineProgress` to find every reference and convert it (protocol.go's `Mining: w.MineProgress` becomes `Mining: w.MineDamage`, which forces the protocol type change early: change `Mining map[int]float64` to `Mining map[int]int` in both messages in this task and note it; Task 3 then only covers the client and tests of the wire).
 
 - [ ] **Step 4: Full Go suite**
 
