@@ -12,7 +12,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	if s.MineTicks <= 0 {
 		return nil, false
 	}
-	if e.MineTarget != nil && !Mineable(w.At(*e.MineTarget)) {
+	if e.MineTarget != nil && (!Mineable(w.At(*e.MineTarget)) || !w.Lit(*e.MineTarget)) {
 		e.MineTarget = nil
 		w.markDirty(e.ID)
 	}
@@ -99,6 +99,9 @@ func (w *World) pickMineTarget(e *Entity) (Point, bool) {
 			}
 			t := w.At(q)
 			if Mineable(t) {
+				if !w.Lit(q) {
+					continue
+				}
 				if d, seen := faceDist[q]; !seen || dist[p]+1 < d {
 					faceDist[q] = dist[p] + 1
 				}

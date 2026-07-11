@@ -33,6 +33,11 @@ func adjacent(a, b Point) bool { return Dist(a, b) <= 1 }
 func (w *World) aiStep(e *Entity) []Event {
 	s := w.cfg.Types[e.Type]
 
+	// 0. darkness: a creature caught in the dark panics back toward light
+	if w.darkStep(e) {
+		return nil
+	}
+
 	// 1. danger (implemented in Task 5)
 	if evs, fled := w.fleeStep(e); fled {
 		return evs
@@ -183,6 +188,35 @@ func (w *World) wander(e *Entity) {
 			w.markDirty(e.ID)
 		}
 	}
+}
+
+// darkStep sends a creature standing in an unlit cell toward the nearest
+// living light source. In a world with no light at all it does nothing.
+func (w *World) darkStep(e *Entity) bool {
+	if w.Lit(e.Pos) {
+		return false
+	}
+	var light *Entity
+	bestD := 1 << 30
+	for _, id := range w.SortedIDs() {
+		c := w.Entities[id]
+		if c.Dead {
+			continue
+		}
+		s, ok := w.cfg.Types[c.Type]
+		if !ok || s.LightRadius <= 0 {
+			continue
+		}
+		if d := Dist(e.Pos, c.Pos); d < bestD {
+			light, bestD = c, d
+		}
+	}
+	if light == nil {
+		return false
+	}
+	e.Action = "fleeing the dark"
+	w.moveToward(e, light.Pos)
+	return true
 }
 
 func (w *World) fleeStep(e *Entity) ([]Event, bool) {

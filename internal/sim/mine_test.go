@@ -7,6 +7,9 @@ import (
 	"cellarfloor/internal/data"
 )
 
+// torchLifespan is short so light-death tests run quickly.
+const torchLifespan = 10
+
 // Fast-mining config: speed 1 (a step per tick), 10 ticks per cell.
 func mineCfg() *data.Config {
 	return &data.Config{
@@ -19,12 +22,50 @@ func mineCfg() *data.Config {
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
 				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100,
 				MineTicks: 10, GoldSense: 4},
+			// Slow-mining miner used by the lit-face gate tests: MineTicks is
+			// high so a face never mines out before a torch burns dark.
+			"miner": {ID: "miner", Name: "Miner", Kind: "fauna", Color: "#fff",
+				BiteSize: 2, StomachSize: 10, HungerThreshold: 0,
+				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
+				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100, MineTicks: 100},
+			"torch": {ID: "torch", Name: "Torch", Kind: "structure", Color: "#ffb347",
+				LightRadius: 3, Lifespan: torchLifespan, DecayTicks: 5},
+			// A pinpoint campfire lights only the miner's own cell, keeping it
+			// from fleeing the dark while leaving rock faces unlit.
+			"campfire": {ID: "campfire", Name: "Campfire", Kind: "structure", Color: "#e25822",
+				LightRadius: 1, Lifespan: 0},
+			// A wide light that floods the whole small test world so plain
+			// mining tests find their faces lit.
+			"sunstone": {ID: "sunstone", Name: "Sunstone", Kind: "structure", Color: "#fff8dc",
+				LightRadius: 30, Lifespan: 0},
 		},
 	}
 }
 
 func mineWorld(w, h int) *World {
-	return NewWorld(w, h, 1, mineCfg())
+	world := NewWorld(w, h, 1, mineCfg())
+	world.Spawn("sunstone", Point{0, 0}) // flood the play area with light
+	return world
+}
+
+// newMineWorldDark builds a world whose only rock face is unlit. Water walls
+// box the face in so the sole approach cell is {3,2}, which the pinpoint
+// campfire lights; that keeps the miner lit (never fleeing) while the face
+// itself stays dark unless a torch is added.
+func newMineWorldDark(t *testing.T) *World {
+	t.Helper()
+	w := NewWorld(20, 20, 1, mineCfg())
+	w.Terrain[idx(w, Point{4, 2})] = TerrainRock // the sole face, dark by default
+	// wall every neighbor of the face except the lit approach cell {3,2}
+	for _, n := range neighbors {
+		p := Point{4 + n.X, 2 + n.Y}
+		if p == (Point{3, 2}) {
+			continue
+		}
+		w.Terrain[idx(w, p)] = TerrainWater
+	}
+	w.Spawn("campfire", Point{2, 2}) // lights the approach cell {3,2}, not the face
+	return w
 }
 
 func idx(w *World, p Point) int { return p.Y*w.Width + p.X }
@@ -207,5 +248,32 @@ func TestMineStateSurvivesSaveLoad(t *testing.T) {
 	e2 := w2.Entities[d.ID]
 	if e2.MineTarget == nil || *e2.MineTarget != rock {
 		t.Errorf("mine target lost: %v", e2.MineTarget)
+	}
+}
+
+func TestOnlyLitFacesPicked(t *testing.T) {
+	// world where the only reachable rock face is dark: no target
+	w := newMineWorldDark(t) // rock faces exist, zero light sources
+	e := w.Spawn("miner", Point{2, 2})
+	w.Step()
+	if e.MineTarget != nil {
+		t.Fatal("no face is lit, no target may be picked")
+	}
+}
+
+func TestTargetDroppedWhenLightDies(t *testing.T) {
+	w := newMineWorldDark(t)
+	w.Spawn("torch", Point{3, 2}) // lights the face at {4,2}
+	e := w.Spawn("miner", Point{2, 2})
+	w.Step()
+	if e.MineTarget == nil {
+		t.Fatal("lit face should be picked")
+	}
+	// kill the torch (age it out), face goes dark
+	for i := 0; i < torchLifespan+1; i++ {
+		w.Step()
+	}
+	if e.MineTarget != nil {
+		t.Fatal("target must be dropped when its face goes dark")
 	}
 }
