@@ -23,7 +23,7 @@ func roundTripThroughJSON(t *testing.T, w *World) *World {
 
 func TestLightCircle(t *testing.T) {
 	w := newStructWorld(t)
-	w.Spawn("campfire", Point{10, 10}) // light_radius 8
+	w.Spawn("campfire", Point{10, 10})                  // light_radius 8
 	if !w.Lit(Point{10, 10}) || !w.Lit(Point{15, 15}) { // 5*5+5*5=50 <= 64
 		t.Fatal("cells inside the radius must be lit")
 	}
