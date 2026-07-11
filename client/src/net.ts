@@ -42,3 +42,8 @@ export function sendSpawn(name: string) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "spawn", player: playerToken(), name }));
 }
+
+export function sendTorch(x: number, y: number) {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "torch", player: playerToken(), x, y }));
+}

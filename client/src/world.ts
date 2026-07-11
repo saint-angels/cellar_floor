@@ -14,6 +14,8 @@ export class WorldState {
   gold = 0;
   mining: Record<string, number> = {};
   terrainVersion = 0;
+  lit: boolean[] = [];
+  lightVersion = 0;
   playerState: "unknown" | "none" | "alive" | "dead" = "unknown";
   playerDwarfId: number | null = null;
   playerName = "";
@@ -41,8 +43,24 @@ export class WorldState {
     this.timeScale = m.timeScale;
     this.entities.clear();
     for (const e of (m.entities ?? [])) this.upsert(e);
+    this.recomputeLight();
     this.checkOwnDwarf();
     this.fireChange();
+  }
+
+  private recomputeLight() {
+    this.lit = new Array(this.width * this.height).fill(false);
+    for (const e of this.entities.values()) {
+      if (e.dead) continue;
+      const r = this.types[e.s]?.lightRadius ?? 0;
+      if (r <= 0) continue;
+      for (let y = Math.max(0, e.y - r); y <= Math.min(this.height - 1, e.y + r); y++) {
+        for (let x = Math.max(0, e.x - r); x <= Math.min(this.width - 1, e.x + r); x++) {
+          if ((x - e.x) ** 2 + (y - e.y) ** 2 <= r * r) this.lit[y * this.width + x] = true;
+        }
+      }
+    }
+    this.lightVersion++;
   }
 
   // a reset snapshot or a tick can both take the player's dwarf away; ids
@@ -60,8 +78,10 @@ export class WorldState {
   applyTick(m: TickMsg) {
     this.tick = m.tick;
     this.timeScale = m.timeScale;
+    const lightTouched = (m.changed ?? []).some((e) => (this.types[e.s]?.lightRadius ?? 0) > 0);
     for (const e of (m.changed ?? [])) this.upsert(e);
     for (const id of (m.removed ?? [])) this.entities.delete(id);
+    if (lightTouched) this.recomputeLight();
     this.gold = m.gold ?? this.gold;
     this.mining = m.mining ?? {};
     const diffs = m.terrain ?? [];

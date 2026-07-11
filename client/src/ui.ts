@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendReset, sendSpawn, sendTimescale } from "./net";
+import { sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
 import type { SimEvent } from "./types";
 
 export function initUI(
@@ -10,6 +10,7 @@ export function initUI(
   initEvents();
   initInspector(canvas, tileFromPixel);
   initOverlay();
+  initTorch();
   world.onChange(renderPops);
   world.onChange(renderGold);
   world.onChange(renderInspector);
@@ -18,6 +19,29 @@ export function initUI(
 }
 
 let spectating = false;
+let torchArmed = false;
+
+function setTorchArmed(on: boolean) {
+  torchArmed = on;
+  const btn = document.getElementById("torch-btn") as HTMLButtonElement;
+  btn.classList.toggle("armed", on);
+  btn.textContent = on ? "click the map" : "torch (1 gold)";
+  document.getElementById("map")!.classList.toggle("placing", on);
+}
+
+function initTorch() {
+  const btn = document.getElementById("torch-btn") as HTMLButtonElement;
+  btn.onclick = () => setTorchArmed(!torchArmed);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setTorchArmed(false);
+  });
+  world.onChange(() => {
+    btn.disabled = !(world.playerState === "alive" && world.gold >= 1);
+    if (btn.disabled && torchArmed) setTorchArmed(false);
+    const err = document.getElementById("torch-error")!;
+    err.textContent = world.playerState === "alive" ? world.playerError : "";
+  });
+}
 
 function initOverlay() {
   const btn = document.getElementById("spawn-btn") as HTMLButtonElement;
@@ -164,6 +188,11 @@ function initInspector(
 ) {
   canvas.addEventListener("click", (ev) => {
     const t = tileFromPixel(canvas, ev.clientX, ev.clientY);
+    if (torchArmed) {
+      sendTorch(t.x, t.y);
+      setTorchArmed(false);
+      return;
+    }
     let picked: number | null = null;
     let bestD = 3;
     for (const e of world.entities.values()) {

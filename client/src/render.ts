@@ -5,6 +5,7 @@ const TILE = 12;
 const TERRAIN_COLORS = ["#3d5a36", "#6b5537", "#2b4a63", "#3a3a3a", "#26221e"]; // grass dirt water rock floor
 
 let terrainCanvas: HTMLCanvasElement | null = null;
+let veilCanvas: HTMLCanvasElement | null = null;
 
 function renderTerrain() {
   terrainCanvas = document.createElement("canvas");
@@ -19,15 +20,34 @@ function renderTerrain() {
   }
 }
 
+function renderVeil() {
+  veilCanvas = document.createElement("canvas");
+  veilCanvas.width = world.width * TILE;
+  veilCanvas.height = world.height * TILE;
+  const g = veilCanvas.getContext("2d")!;
+  g.clearRect(0, 0, veilCanvas.width, veilCanvas.height);
+  g.fillStyle = "rgba(0, 0, 0, 0.75)";
+  for (let y = 0; y < world.height; y++) {
+    for (let x = 0; x < world.width; x++) {
+      if (!world.lit[y * world.width + x]) g.fillRect(x * TILE, y * TILE, TILE, TILE);
+    }
+  }
+}
+
 export function startRender(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d")!;
   const map = document.getElementById("map")!;
   const popup = document.getElementById("popup")!;
   let paintedVersion = -1;
+  let paintedLight = -1;
   world.onChange(() => {
     if (!terrainCanvas || terrainCanvas.width !== world.width * TILE || paintedVersion !== world.terrainVersion) {
       renderTerrain();
       paintedVersion = world.terrainVersion;
+    }
+    if (!veilCanvas || veilCanvas.width !== world.width * TILE || paintedLight !== world.lightVersion) {
+      renderVeil();
+      paintedLight = world.lightVersion;
     }
     canvas.width = world.width * TILE;
     canvas.height = world.height * TILE;
@@ -37,6 +57,7 @@ export function startRender(canvas: HTMLCanvasElement) {
     if (terrainCanvas) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(terrainCanvas, 0, 0);
+      if (veilCanvas) ctx.drawImage(veilCanvas, 0, 0);
       const lerpMs = world.tickIntervalMs / Math.max(world.timeScale, 1);
       for (const e of world.entities.values()) {
         const sp = world.types[e.s];
@@ -47,6 +68,8 @@ export function startRender(canvas: HTMLCanvasElement) {
         ctx.fillStyle = e.dead ? "#443c38" : sp.color;
         if (sp.kind === "flora") {
           ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+        } else if (sp.kind === "structure") {
+          ctx.fillRect(x + 4, y + 4, 4, 4); // flame pixel; dead stubs use the shared dead color
         } else {
           ctx.beginPath();
           ctx.arc(x + TILE / 2, y + TILE / 2, TILE / 2 - 1, 0, Math.PI * 2);

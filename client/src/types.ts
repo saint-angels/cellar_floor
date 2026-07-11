@@ -1,12 +1,13 @@
 export interface EntityType {
   id: string;
   name: string;
-  kind: "flora" | "fauna";
+  kind: "flora" | "fauna" | "structure";
   color: string;
   stomachSize: number;
   fearRadius: number;
   popFloor: number;
   popCap: number;
+  lightRadius: number;
   eats: string[] | null;
   shelters: string[] | null;
 }
