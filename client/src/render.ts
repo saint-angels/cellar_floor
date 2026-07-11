@@ -38,7 +38,7 @@ function renderVeil() {
 // PERIOD ms of wall clock, phase-offset by id so dwarves pop at
 // different moments
 const THOUGHT_PERIOD_MS = 60000;
-const THOUGHT_SHOW_MS = 10000;
+const THOUGHT_SHOW_MS = 3000;
 
 function thoughtVisible(id: number, now: number): boolean {
   return (now + id * 7919) % THOUGHT_PERIOD_MS < THOUGHT_SHOW_MS;
