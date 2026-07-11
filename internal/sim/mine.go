@@ -28,37 +28,53 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 
 	if adjacent(e.Pos, target) {
 		e.Action = "mining"
-		i := target.Y*w.Width + target.X
-		w.MineDamage[i] += s.MineDamage
 		w.markDirty(e.ID)
-		hp := 0
-		if tt := w.terrainAt(w.At(target)); tt != nil {
-			hp = tt.HitPoints
-		}
-		if w.MineDamage[i] < hp {
-			return nil, true
-		}
-		delete(w.MineDamage, i)
-		w.SetTerrain(target, TerrainFloor)
-		e.MineTarget = nil
-		sc := w.cfg.Sim
-		if sc.GoldChance > 0 && w.RandFloat() < sc.GoldChance {
-			amt := sc.GoldMin
-			if sc.GoldMax > sc.GoldMin {
-				amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)
+		cells := make([]int, 0, 8)
+		for _, n := range neighbors {
+			p := Point{e.Pos.X + n.X, e.Pos.Y + n.Y}
+			if !w.InBounds(p) || !w.Mineable(w.At(p)) || !w.Lit(p) {
+				continue
 			}
-			w.Gold += amt
-			e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
-			w.GoldLast24h(e)
-			return []Event{{
-				Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
-				Msg: fmt.Sprintf("%s struck gold", s.Name),
-			}}, true
+			cells = append(cells, p.Y*w.Width+p.X)
 		}
-		return []Event{{
-			Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
-			Msg: fmt.Sprintf("%s mined out a rock", s.Name),
-		}}, true
+		sortInts(cells)
+		var evs []Event
+		for _, i := range cells {
+			w.MineDamage[i] += s.MineDamage
+			hp := 0
+			if tt := w.terrainAt(w.Terrain[i]); tt != nil {
+				hp = tt.HitPoints
+			}
+			if w.MineDamage[i] < hp {
+				continue
+			}
+			p := Point{X: i % w.Width, Y: i / w.Width}
+			delete(w.MineDamage, i)
+			w.SetTerrain(p, TerrainFloor)
+			if p == target {
+				e.MineTarget = nil
+			}
+			sc := w.cfg.Sim
+			if sc.GoldChance > 0 && w.RandFloat() < sc.GoldChance {
+				amt := sc.GoldMin
+				if sc.GoldMax > sc.GoldMin {
+					amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)
+				}
+				w.Gold += amt
+				e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
+				w.GoldLast24h(e)
+				evs = append(evs, Event{
+					Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
+					Msg: fmt.Sprintf("%s struck gold", s.Name),
+				})
+			} else {
+				evs = append(evs, Event{
+					Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
+					Msg: fmt.Sprintf("%s mined out a rock", s.Name),
+				})
+			}
+		}
+		return evs, true
 	}
 
 	// walk toward the face

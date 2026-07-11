@@ -364,3 +364,63 @@ func TestDamageAccrualAndCompletion(t *testing.T) {
 		t.Fatal("completed cell must leave the damage map")
 	}
 }
+
+func TestAOEDamagesAllAdjacentLitFaces(t *testing.T) {
+	w := mineWorld(7, 7)
+	// three faces around the dwarf's cell {2,2}: north, east, northeast
+	faces := []Point{{2, 1}, {3, 2}, {3, 1}}
+	for _, f := range faces {
+		w.Terrain[idx(w, f)] = TerrainRock
+	}
+	d := w.Spawn("dwarf", Point{2, 2})
+	d.Fullness = 10
+	w.Step()
+	for _, f := range faces {
+		if got := w.MineDamage[idx(w, f)]; got != 1 {
+			t.Fatalf("face %v damage = %d, want 1", f, got)
+		}
+	}
+	// all three finish together on the 10th damage tick, three events at once
+	var events []Event
+	for i := 0; i < 11; i++ {
+		events = append(events, w.Step()...)
+	}
+	for _, f := range faces {
+		if w.At(f) != TerrainFloor {
+			t.Fatalf("face %v never completed", f)
+		}
+	}
+	n := 0
+	lastIdx := -1
+	for _, ev := range events {
+		if ev.Type == "mined" || ev.Type == "gold" {
+			n++
+		}
+	}
+	_ = lastIdx
+	if n != 3 {
+		t.Fatalf("completion events = %d, want 3", n)
+	}
+}
+
+func TestAOESkipsUnlitFaces(t *testing.T) {
+	w := NewWorld(20, 20, 1, mineCfg())
+	// faces {3,2} and {2,1}; torch at {5,2} (radius 3) lights the miner {2,2}
+	// and the target face {3,2}, but leaves the off-face {2,1} dark.
+	w.Terrain[idx(w, Point{3, 2})] = TerrainRock
+	w.Terrain[idx(w, Point{2, 1})] = TerrainRock
+	w.Spawn("torch", Point{5, 2})
+	e := w.Spawn("miner", Point{2, 2})
+	_ = e
+	// guard the geometry so any light-model change fails loudly
+	if !w.Lit(Point{3, 2}) || w.Lit(Point{2, 1}) {
+		t.Fatal("test geometry wrong: want {3,2} lit and {2,1} dark")
+	}
+	w.Step()
+	if got := w.MineDamage[idx(w, Point{3, 2})]; got == 0 {
+		t.Fatal("lit face should take damage")
+	}
+	if got := w.MineDamage[idx(w, Point{2, 1})]; got != 0 {
+		t.Fatalf("unlit face took %d damage; must take zero", got)
+	}
+}
