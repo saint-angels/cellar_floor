@@ -13,7 +13,7 @@ func undergroundCfg() *data.Config {
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
 			ClearingRadius: 4,
-			Scatter: []data.ScatterRule{{Type: "shroom", Terrain: "dirt", Chance: 0.3}},
+			Scatter:        []data.ScatterRule{{Type: "shroom", Terrain: "dirt", Chance: 0.3}},
 		},
 		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
