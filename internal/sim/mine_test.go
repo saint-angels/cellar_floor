@@ -10,11 +10,23 @@ import (
 // torchLifespan is short so light-death tests run quickly.
 const torchLifespan = 10
 
-// Fast-mining config: speed 1 (a step per tick), 10 ticks per cell.
+// canonicalWithHP is CanonicalTerrain with a fast test rock (10 hp) plus
+// a soft test type (5 hp) and a hard one (10000 hp) for gate tests.
+func canonicalWithHP() []data.TerrainType {
+	tt := data.CanonicalTerrain()
+	tt[3].HitPoints = 10
+	tt = append(tt,
+		data.TerrainType{ID: "softish", Color: "#575049", Mineable: true, HitPoints: 5},
+		data.TerrainType{ID: "hardish", Color: "#222", Mineable: true, HitPoints: 10000},
+	)
+	return tt
+}
+
+// Fast-mining config: speed 1 (a step per tick), a 10 hp test rock.
 func mineCfg() *data.Config {
 	return &data.Config{
 		Sim:     data.SimConfig{TickRate: 2},
-		Terrain: append(data.CanonicalTerrain(), data.TerrainType{ID: "softish", Color: "#575049", Mineable: true, MineFactor: 0.5}),
+		Terrain: canonicalWithHP(),
 		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.01}}},
@@ -22,13 +34,14 @@ func mineCfg() *data.Config {
 				Eats: []string{"shroom"}, BiteSize: 2, StomachSize: 10, HungerThreshold: 4,
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
 				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100,
-				MineTicks: 10},
-			// Slow-mining miner used by the lit-face gate tests: MineTicks is
-			// high so a face never mines out before a torch burns dark.
+				MineDamage: 1},
+			// Miner used by the lit-face gate tests. It also does 1 damage per
+			// tick; the gate worlds use a 10000 hp face so a face never mines
+			// out before a torch burns dark.
 			"miner": {ID: "miner", Name: "Miner", Kind: "fauna", Color: "#fff",
 				BiteSize: 2, StomachSize: 10, HungerThreshold: 0,
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
-				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100, MineTicks: 100},
+				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100, MineDamage: 1},
 			"torch": {ID: "torch", Name: "Torch", Kind: "structure", Color: "#ffb347",
 				LightRadius: 3, Lifespan: torchLifespan, DecayTicks: 5},
 			// A pinpoint campfire lights only the miner's own cell, keeping it
@@ -56,7 +69,7 @@ func mineWorld(w, h int) *World {
 func newMineWorldDark(t *testing.T) *World {
 	t.Helper()
 	w := NewWorld(20, 20, 1, mineCfg())
-	w.Terrain[idx(w, Point{4, 2})] = TerrainRock // the sole face, dark by default
+	w.Terrain[idx(w, Point{4, 2})] = Terrain(6) // the sole face (hardish), dark by default
 	// wall every neighbor of the face except the lit approach cell {3,2}
 	for _, n := range neighbors {
 		p := Point{4 + n.X, 2 + n.Y}
@@ -79,7 +92,6 @@ func goldDropWorld(t *testing.T, chance float64, lo, hi int) *World {
 	cfg.Sim.GoldChance = chance
 	cfg.Sim.GoldMin = lo
 	cfg.Sim.GoldMax = hi
-	cfg.Types["miner"].MineTicks = 10
 	w := NewWorld(5, 5, 1, cfg)
 	w.Spawn("sunstone", Point{0, 0})             // flood the world with light
 	w.Terrain[idx(w, Point{3, 2})] = TerrainRock // the sole face, beside {2,2}
@@ -141,8 +153,8 @@ func TestDwarfMinesAdjacentRock(t *testing.T) {
 	if d.Action != "mining" {
 		t.Fatalf("action = %q, want mining", d.Action)
 	}
-	if p := w.MineProgress[idx(w, rock)]; p < 0.09 || p > 0.11 {
-		t.Fatalf("progress = %v, want ~0.1", p)
+	if p := w.MineDamage[idx(w, rock)]; p != 1 {
+		t.Fatalf("damage = %v, want 1", p)
 	}
 	var events []Event
 	for i := 0; i < 12 && w.At(rock) != TerrainFloor; i++ {
@@ -151,8 +163,8 @@ func TestDwarfMinesAdjacentRock(t *testing.T) {
 	if w.At(rock) != TerrainFloor {
 		t.Fatal("rock never became floor")
 	}
-	if _, ok := w.MineProgress[idx(w, rock)]; ok {
-		t.Error("progress not cleared on completion")
+	if _, ok := w.MineDamage[idx(w, rock)]; ok {
+		t.Error("damage not cleared on completion")
 	}
 	if w.Gold != 0 {
 		t.Error("plain rock must not add gold")
@@ -274,8 +286,8 @@ func TestMineStateSurvivesSaveLoad(t *testing.T) {
 	if w2.Gold != 7 {
 		t.Errorf("gold lost: %d", w2.Gold)
 	}
-	if w2.MineProgress[idx(w, rock)] != w.MineProgress[idx(w, rock)] {
-		t.Errorf("progress lost: %v vs %v", w2.MineProgress, w.MineProgress)
+	if w2.MineDamage[idx(w, rock)] != w.MineDamage[idx(w, rock)] {
+		t.Errorf("damage lost: %v vs %v", w2.MineDamage, w.MineDamage)
 	}
 	e2 := w2.Entities[d.ID]
 	if e2.MineTarget == nil || *e2.MineTarget != rock {
@@ -329,5 +341,26 @@ func TestTargetDroppedWhenLightDies(t *testing.T) {
 	}
 	if e.MineTarget != nil {
 		t.Fatal("target must be dropped when its face goes dark")
+	}
+}
+
+func TestDamageAccrualAndCompletion(t *testing.T) {
+	w := mineWorld(5, 5)
+	face := Point{3, 2}
+	w.Terrain[idx(w, face)] = TerrainRock // 10 hp in this cfg
+	d := w.Spawn("dwarf", Point{2, 2})
+	d.Fullness = 10
+	w.Step() // adjacent: first tick of damage
+	if got := w.MineDamage[idx(w, face)]; got != 1 {
+		t.Fatalf("damage after one tick = %d, want 1", got)
+	}
+	for i := 0; i < 9; i++ {
+		w.Step()
+	}
+	if w.At(face) != TerrainFloor {
+		t.Fatal("10 hp face should be floor after 10 damage")
+	}
+	if _, ok := w.MineDamage[idx(w, face)]; ok {
+		t.Fatal("completed cell must leave the damage map")
 	}
 }

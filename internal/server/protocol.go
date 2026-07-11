@@ -50,7 +50,7 @@ type SnapshotMsg struct {
 	Entities     []EntityView                `json:"entities"`
 	TimeScale    int                         `json:"timeScale"`
 	Gold         int                         `json:"gold"`
-	Mining       map[int]float64             `json:"mining,omitempty"`
+	Mining       map[int]int                 `json:"mining,omitempty"`
 }
 
 // TerrainDiff is one mutated cell in a tick message.
@@ -60,16 +60,16 @@ type TerrainDiff struct {
 }
 
 type TickMsg struct {
-	Type      string          `json:"type"`
-	Tick      int64           `json:"tick"`
-	TimeScale int             `json:"timeScale"`
-	Changed   []EntityView    `json:"changed"`
-	Removed   []int           `json:"removed"`
-	Events    []sim.Event     `json:"events"`
-	Pops      map[string]int  `json:"pops"`
-	Gold      int             `json:"gold"`
-	Mining    map[int]float64 `json:"mining,omitempty"`
-	Terrain   []TerrainDiff   `json:"terrain,omitempty"`
+	Type      string         `json:"type"`
+	Tick      int64          `json:"tick"`
+	TimeScale int            `json:"timeScale"`
+	Changed   []EntityView   `json:"changed"`
+	Removed   []int          `json:"removed"`
+	Events    []sim.Event    `json:"events"`
+	Pops      map[string]int `json:"pops"`
+	Gold      int            `json:"gold"`
+	Mining    map[int]int    `json:"mining,omitempty"`
+	Terrain   []TerrainDiff  `json:"terrain,omitempty"`
 }
 
 type ClientMsg struct {
@@ -97,7 +97,7 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 		Width: w.Width, Height: w.Height,
 		Terrain: terrain, TerrainTypes: w.Cfg().Terrain, Types: w.Cfg().Types,
 		Entities: ents, TimeScale: scale,
-		Gold: w.Gold, Mining: w.MineProgress,
+		Gold: w.Gold, Mining: w.MineDamage,
 	}
 }
 
@@ -141,6 +141,6 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 	return TickMsg{
 		Type: "tick", Tick: w.Tick, TimeScale: scale,
 		Changed: changed, Removed: removed, Events: events, Pops: pops,
-		Gold: w.Gold, Mining: w.MineProgress, Terrain: tdiffs,
+		Gold: w.Gold, Mining: w.MineDamage, Terrain: tdiffs,
 	}
 }

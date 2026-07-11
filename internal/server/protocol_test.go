@@ -59,16 +59,16 @@ func TestTickCarriesMiningState(t *testing.T) {
 	cfg := loadCfg(t)
 	w := gen.Generate(7, cfg)
 	w.Gold = 3
-	w.MineProgress[5] = 0.25
+	w.MineDamage[5] = 25
 	w.SetTerrain(sim.Point{X: 1, Y: 0}, sim.TerrainFloor)
 
 	snap := BuildSnapshot(w, 1, nil)
-	if snap.Gold != 3 || snap.Mining[5] != 0.25 {
+	if snap.Gold != 3 || snap.Mining[5] != 25 {
 		t.Errorf("snapshot missing mining state: gold=%d mining=%v", snap.Gold, snap.Mining)
 	}
 
 	tick := BuildTick(w, nil, 1, nil)
-	if tick.Gold != 3 || tick.Mining[5] != 0.25 {
+	if tick.Gold != 3 || tick.Mining[5] != 25 {
 		t.Errorf("tick missing mining state: gold=%d mining=%v", tick.Gold, tick.Mining)
 	}
 	if len(tick.Terrain) != 1 || tick.Terrain[0].I != 1 || tick.Terrain[0].T != uint8(sim.TerrainFloor) {

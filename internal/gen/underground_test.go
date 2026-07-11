@@ -10,7 +10,7 @@ import (
 func undergroundCfg() *data.Config {
 	return &data.Config{
 		Sim:     data.SimConfig{TickRate: 2},
-		Terrain: append(data.CanonicalTerrain(), data.TerrainType{ID: "soft_rock", Color: "#575049", Mineable: true, MineFactor: 0.25}),
+		Terrain: append(data.CanonicalTerrain(), data.TerrainType{ID: "soft_rock", Color: "#575049", Mineable: true, HitPoints: 43200}),
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
 			ClearingRadius: 4,

@@ -98,8 +98,8 @@ type World struct {
 	Rng      uint64          `json:"rng"`
 	Removed  []int           `json:"-"`
 
-	Gold         int             `json:"gold"`
-	MineProgress map[int]float64 `json:"mineProgress,omitempty"`
+	Gold       int         `json:"gold"`
+	MineDamage map[int]int `json:"mineDamage,omitempty"`
 
 	cfg          *data.Config
 	dirty        map[int]bool
@@ -118,15 +118,15 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 	}
 	return &World{
 		Width: w, Height: h,
-		Terrain:      make([]Terrain, w*h),
-		Entities:     map[int]*Entity{},
-		NextID:       1,
-		Rng:          seed,
-		MineProgress: map[int]float64{},
-		cfg:          cfg,
-		dirty:        map[int]bool{},
-		occ:          map[Point]int{},
-		counts:       map[string]int{},
+		Terrain:    make([]Terrain, w*h),
+		Entities:   map[int]*Entity{},
+		NextID:     1,
+		Rng:        seed,
+		MineDamage: map[int]int{},
+		cfg:        cfg,
+		dirty:      map[int]bool{},
+		occ:        map[Point]int{},
+		counts:     map[string]int{},
 	}
 }
 
@@ -135,8 +135,8 @@ func (w *World) SetConfig(cfg *data.Config) {
 	if w.dirty == nil {
 		w.dirty = map[int]bool{}
 	}
-	if w.MineProgress == nil {
-		w.MineProgress = map[int]float64{}
+	if w.MineDamage == nil {
+		w.MineDamage = map[int]int{}
 	}
 	// older saves predate the social meter; wake up half-full, like Spawn
 	for _, e := range w.Entities {

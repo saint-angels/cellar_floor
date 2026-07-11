@@ -19,7 +19,7 @@ func socialCfg() *data.Config {
 			"dwarfish": {ID: "dwarfish", Name: "Dwarfish", Kind: "fauna", Color: "#fff",
 				Eats: []string{"shroom"}, BiteSize: 2, StomachSize: 10, HungerThreshold: 0,
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
-				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100, MineTicks: 100,
+				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100, MineDamage: 1,
 				SocialSize: 10, SocialThreshold: 4, SocialRadius: 2,
 				SocialDrain: 1, SocialRefill: 2},
 			"sunstone": {ID: "sunstone", Name: "Sunstone", Kind: "structure", Color: "#fff",

@@ -5,11 +5,11 @@ import (
 	"sort"
 )
 
-// mineStep runs the mining behavior for entity types with mine_ticks > 0.
+// mineStep runs the mining behavior for entity types with mine_damage > 0.
 // Returns (events, true) when the entity spent this tick on mining.
 func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	s := w.cfg.Types[e.Type]
-	if s.MineTicks <= 0 {
+	if s.MineDamage <= 0 {
 		return nil, false
 	}
 	if e.MineTarget != nil && (!w.Mineable(w.At(*e.MineTarget)) || !w.Lit(*e.MineTarget)) {
@@ -29,16 +29,16 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	if adjacent(e.Pos, target) {
 		e.Action = "mining"
 		i := target.Y*w.Width + target.X
-		total := float64(s.MineTicks)
-		if tt := w.terrainAt(w.At(target)); tt != nil && tt.MineFactor > 0 {
-			total *= tt.MineFactor
-		}
-		w.MineProgress[i] += 1.0 / total
+		w.MineDamage[i] += s.MineDamage
 		w.markDirty(e.ID)
-		if w.MineProgress[i] < 1 {
+		hp := 0
+		if tt := w.terrainAt(w.At(target)); tt != nil {
+			hp = tt.HitPoints
+		}
+		if w.MineDamage[i] < hp {
 			return nil, true
 		}
-		delete(w.MineProgress, i)
+		delete(w.MineDamage, i)
 		w.SetTerrain(target, TerrainFloor)
 		e.MineTarget = nil
 		sc := w.cfg.Sim

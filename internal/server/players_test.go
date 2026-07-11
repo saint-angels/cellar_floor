@@ -106,7 +106,7 @@ func TestResetWorld(t *testing.T) {
 		t.Fatalf("spawn: %+v", pm)
 	}
 	s.world.Gold = 5
-	s.world.MineProgress[42] = 0.5
+	s.world.MineDamage[42] = 5
 
 	snap := s.resetWorld()
 	if snap == nil {
@@ -126,8 +126,8 @@ func TestResetWorld(t *testing.T) {
 			t.Errorf("player %s kept stale DwarfID %d after reset", tok, p.DwarfID)
 		}
 	}
-	if s.world.Gold != 0 || len(s.world.MineProgress) != 0 {
-		t.Error("gold or mining progress survived the reset")
+	if s.world.Gold != 0 || len(s.world.MineDamage) != 0 {
+		t.Error("gold or mining damage survived the reset")
 	}
 	if got := s.playerMsg("tok1"); got.State != "dead" || got.Name != "Misha" {
 		t.Errorf("player after reset: %+v, want dead with name", got)
