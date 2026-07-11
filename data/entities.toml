@@ -26,6 +26,11 @@ pop_floor = 0
 pop_cap = 10
 decay_hours = 24
 mine_hours = 24
+social_size = 10
+social_threshold = 4
+social_radius = 3
+social_drain_days = 2
+social_refill_hours = 1
 
 [type.torch]
 name = "Torch"

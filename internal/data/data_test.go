@@ -238,3 +238,37 @@ func TestLegacyFixtureKeepsHistoricalTicks(t *testing.T) {
 		t.Errorf("tree regrow = %v, want 0", tree.Regrow)
 	}
 }
+
+func TestSocialFieldsConvert(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := cfg.Types["dwarf"]
+	if d.SocialSize != 10 || d.SocialThreshold != 4 || d.SocialRadius != 3 {
+		t.Fatalf("social basics: %v %v %d", d.SocialSize, d.SocialThreshold, d.SocialRadius)
+	}
+	if want := 10.0 / (2 * 86400 * 2); d.SocialDrain != want {
+		t.Errorf("drain = %v, want %v", d.SocialDrain, want)
+	}
+	if want := 10.0 / (1 * 3600 * 2); d.SocialRefill != want {
+		t.Errorf("refill = %v, want %v", d.SocialRefill, want)
+	}
+	if m := cfg.Types["mushroom"]; m.SocialSize != 0 || m.SocialDrain != 0 {
+		t.Errorf("mushroom must have no social: %v %v", m.SocialSize, m.SocialDrain)
+	}
+}
+
+func TestSocialValidation(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Types["shroom"].SocialSize = 5
+	if err := Validate(cfg); err == nil {
+		t.Fatal("social_size without drain and refill times must fail")
+	}
+	cfg.Types["shroom"].SocialDrainDays = 2
+	cfg.Types["shroom"].SocialRefillHours = 1
+	cfg.Types["shroom"].SocialRadius = 3
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("complete social block should validate: %v", err)
+	}
+}

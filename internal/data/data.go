@@ -55,6 +55,13 @@ type EntityType struct {
 	DecayHours        float64   `toml:"decay_hours" json:"-"`
 	MineTicks         int       `toml:"-" json:"mineTicks"`
 	MineHours         float64   `toml:"mine_hours" json:"-"`
+	SocialSize        float64   `toml:"social_size" json:"socialSize"`
+	SocialThreshold   float64   `toml:"social_threshold" json:"socialThreshold"`
+	SocialRadius      int       `toml:"social_radius" json:"-"`
+	SocialDrainDays   float64   `toml:"social_drain_days" json:"-"`
+	SocialRefillHours float64   `toml:"social_refill_hours" json:"-"`
+	SocialDrain       float64   `toml:"-" json:"-"`
+	SocialRefill      float64   `toml:"-" json:"-"`
 	LightRadius       int       `toml:"light_radius" json:"lightRadius"`
 }
 
@@ -137,6 +144,10 @@ func (c *Config) resolveTimes() {
 		if t.StomachDrainHours > 0 {
 			t.Metabolism = t.StomachSize / (t.StomachDrainHours * 3600 * tr)
 		}
+		if t.SocialSize > 0 {
+			t.SocialDrain = t.SocialSize / (t.SocialDrainDays * 86400 * tr)
+			t.SocialRefill = t.SocialSize / (t.SocialRefillHours * 3600 * tr)
+		}
 		t.Speed = t.CellsPerSecond / tr
 		for i := range t.Produces {
 			p := &t.Produces[i]
@@ -168,6 +179,13 @@ func Validate(cfg *Config) error {
 			s.LifespanDays < 0 || s.MatureDays < 0 || s.StomachDrainHours < 0 ||
 			s.CellsPerSecond < 0 {
 			return fmt.Errorf("type %s: time fields must be non-negative", id)
+		}
+		if s.SocialSize < 0 || s.SocialThreshold < 0 || s.SocialRadius < 0 ||
+			s.SocialDrainDays < 0 || s.SocialRefillHours < 0 {
+			return fmt.Errorf("type %s: social fields must be non-negative", id)
+		}
+		if s.SocialSize > 0 && (s.SocialDrainDays <= 0 || s.SocialRefillHours <= 0 || s.SocialRadius <= 0) {
+			return fmt.Errorf("type %s: social_size needs positive social_drain_days, social_refill_hours, social_radius", id)
 		}
 		for _, p := range s.Produces {
 			if p.RegrowDays < 0 {
