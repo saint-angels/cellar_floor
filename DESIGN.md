@@ -38,7 +38,7 @@ is a deliberate decision, not a side effect.
   12px-tile canvas in a dark cellar palette; muted terrain, warmer accents
   for living things and gold. No DOM per entity.
 - **The client is a viewer.** It renders state and sends only small intents
-  (timescale, future torch placement); all truth lives on the server.
+  (timescale, torch placement); all truth lives on the server.
 
 ## Code
 

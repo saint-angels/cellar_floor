@@ -20,7 +20,7 @@ Read-only JSON endpoints on the running server:
 
 ```bash
 curl -s localhost:8080/api/state                          # tick, timeScale, pops, entity count
-curl -s 'localhost:8080/api/entities?type=rabbit&alive=true'   # EntityView list, filters combinable
+curl -s 'localhost:8080/api/entities?type=dwarf&alive=true'   # EntityView list, filters combinable
 curl -s 'localhost:8080/api/entities?type=torch'              # type= matches any entity type, structures too (campfire, torch, dwarf)
 curl -s localhost:8080/api/entities/1481                  # one entity; 404 unknown id, 400 non-numeric
 curl -s -X POST 'localhost:8080/api/advance?ticks=200000' # fast-forward ~a day; broadcasts a snapshot
