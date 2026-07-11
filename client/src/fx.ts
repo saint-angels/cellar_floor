@@ -114,15 +114,20 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     const mineable = cell >= 0 && (world.terrainTypes[world.terrain[cell]]?.mineable ?? false);
     if (mineable && cell !== prev && running) {
       spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
-      const dealt = world.mining[cell] ?? 0;
-      const rec = shownDamage.get(cell);
-      if (rec == null) {
-        // baseline silently on first sight (fresh page load mid-mine)
-        const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
-        shownDamage.set(cell, { shown: dealt, hp });
-      } else if (dealt > rec.shown) {
-        spawnFloat(cx2, cy2, String(dealt - rec.shown));
-        rec.shown = dealt;
+      // only track cells the sim is actually damaging; a swept face with no
+      // mining entry (unlit, or damage not yet on the wire) would otherwise
+      // be baselined at 0 and the completion sweep would pop its full hp
+      const dealt = world.mining[cell];
+      if (dealt != null) {
+        const rec = shownDamage.get(cell);
+        if (rec == null) {
+          // baseline silently on first sight (fresh page load mid-mine)
+          const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
+          shownDamage.set(cell, { shown: dealt, hp });
+        } else if (dealt > rec.shown) {
+          spawnFloat(cx2, cy2, String(dealt - rec.shown));
+          rec.shown = dealt;
+        }
       }
     }
     toolCell.set(e.id, cell);
