@@ -8,20 +8,24 @@ import (
 )
 
 type EntityView struct {
-	ID     int                `json:"id"`
-	S      string             `json:"s"`
-	X      int                `json:"x"`
-	Y      int                `json:"y"`
-	Dead   bool               `json:"dead,omitempty"`
-	Full   float64            `json:"full"`
-	Action string             `json:"action,omitempty"`
-	Home   *sim.Point         `json:"home,omitempty"`
-	Res    map[string]float64 `json:"res,omitempty"`
-	Owner  string             `json:"owner,omitempty"`
-	MT     *sim.Point         `json:"mt,omitempty"`
+	ID       int                `json:"id"`
+	S        string             `json:"s"`
+	X        int                `json:"x"`
+	Y        int                `json:"y"`
+	Dead     bool               `json:"dead,omitempty"`
+	Full     float64            `json:"full"`
+	Action   string             `json:"action,omitempty"`
+	Home     *sim.Point         `json:"home,omitempty"`
+	Res      map[string]float64 `json:"res,omitempty"`
+	Owner    string             `json:"owner,omitempty"`
+	MT       *sim.Point         `json:"mt,omitempty"`
+	Soc      float64            `json:"soc,omitempty"`
+	G24      int                `json:"g24,omitempty"`
+	SeenID   int                `json:"seenId,omitempty"`
+	SeenTick int64              `json:"seenTick,omitempty"`
 }
 
-func ViewOf(e *sim.Entity) EntityView {
+func ViewOf(w *sim.World, e *sim.Entity) EntityView {
 	res := map[string]float64{}
 	for _, p := range e.Produces {
 		res[p.Resource] = p.Amount
@@ -29,7 +33,9 @@ func ViewOf(e *sim.Entity) EntityView {
 	return EntityView{
 		ID: e.ID, S: e.Type, X: e.Pos.X, Y: e.Pos.Y,
 		Dead: e.Dead, Full: e.Fullness, Action: e.Action, Home: e.Home, Res: res,
-		MT: e.MineTarget,
+		MT:  e.MineTarget,
+		Soc: e.Social, G24: w.GoldLast24h(e),
+		SeenID: e.SeenID, SeenTick: e.SeenTick,
 	}
 }
 
@@ -81,7 +87,7 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 	}
 	ents := make([]EntityView, 0, len(w.Entities))
 	for _, id := range w.SortedIDs() {
-		v := ViewOf(w.Entities[id])
+		v := ViewOf(w, w.Entities[id])
 		v.Owner = owners[id]
 		ents = append(ents, v)
 	}
@@ -98,7 +104,7 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 	changed := []EntityView{}
 	for _, id := range w.DirtyAndReset() {
 		if e, ok := w.Entities[id]; ok {
-			v := ViewOf(e)
+			v := ViewOf(w, e)
 			v.Owner = owners[id]
 			changed = append(changed, v)
 		}

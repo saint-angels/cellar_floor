@@ -88,7 +88,7 @@ func (s *Server) handleEntities(rw http.ResponseWriter, r *http.Request) {
 		if alive == "true" && e.Dead || alive == "false" && !e.Dead {
 			continue
 		}
-		v := ViewOf(e)
+		v := ViewOf(s.world, e)
 		v.Owner = owners[e.ID]
 		views = append(views, v)
 	}
@@ -106,7 +106,7 @@ func (s *Server) handleEntity(rw http.ResponseWriter, r *http.Request) {
 	e, ok := s.world.Entities[id]
 	var view EntityView
 	if ok {
-		view = ViewOf(e)
+		view = ViewOf(s.world, e)
 		view.Owner = s.owners()[e.ID]
 	}
 	s.mu.Unlock()
