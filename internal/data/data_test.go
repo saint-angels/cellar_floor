@@ -41,6 +41,7 @@ func TestMiningFieldsParse(t *testing.T) {
 	}
 	write("sim.toml", "tick_rate = 2.0\nautosave_minutes = 0\nsave_path = \"w.json\"\n")
 	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\nscatter = []\n")
+	write("terrain.toml", minimalTerrainTOML)
 	write("entities.toml", `
 [type.shroom]
 name = "Shroom"
@@ -79,14 +80,44 @@ mine_hours = 0.06944444444444445
 
 func minimalConfig() *Config {
 	return &Config{
-		Sim: SimConfig{TickRate: 2},
-		Gen: GenConfig{Width: 8, Height: 8},
+		Sim:     SimConfig{TickRate: 2},
+		Gen:     GenConfig{Width: 8, Height: 8},
+		Terrain: CanonicalTerrain(),
 		Types: map[string]*EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.001}}},
 		},
 	}
 }
+
+// minimalTerrainTOML is the canonical five-type terrain table used by
+// temp-dir fixtures so their loaded configs pass terrain validation.
+const minimalTerrainTOML = `
+[[terrain]]
+id = "grass"
+color = "#3d5a36"
+passable = true
+
+[[terrain]]
+id = "dirt"
+color = "#6b5537"
+passable = true
+
+[[terrain]]
+id = "water"
+color = "#2b4a63"
+
+[[terrain]]
+id = "rock"
+color = "#3a3a3a"
+mineable = true
+mine_factor = 1.0
+
+[[terrain]]
+id = "floor"
+color = "#26221e"
+passable = true
+`
 
 func TestStructureKindValidates(t *testing.T) {
 	cfg := minimalConfig()
@@ -126,6 +157,7 @@ func TestUnitFieldsConvertToTicks(t *testing.T) {
 	}
 	write("sim.toml", "tick_rate = 2.0\nautosave_minutes = 0\nsave_path = \"w.json\"\n")
 	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\nscatter = []\n")
+	write("terrain.toml", minimalTerrainTOML)
 	write("entities.toml", `
 [type.shroom]
 name = "Shroom"
@@ -303,5 +335,73 @@ func TestThoughtValidationRejectsBadRules(t *testing.T) {
 	cfg.Types["shroom"].Thoughts = []Thought{{When: "always", Text: "just a mushroom"}}
 	if err := Validate(cfg); err != nil {
 		t.Fatalf("valid thought rejected: %v", err)
+	}
+}
+
+func TestTerrainTableParses(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Terrain) != 6 {
+		t.Fatalf("terrain types = %d, want 6", len(cfg.Terrain))
+	}
+	want := []string{"grass", "dirt", "water", "rock", "floor", "soft_rock"}
+	for i, id := range want {
+		if cfg.Terrain[i].ID != id {
+			t.Fatalf("terrain[%d] = %q, want %q", i, cfg.Terrain[i].ID, id)
+		}
+	}
+	soft := cfg.Terrain[5]
+	if !soft.Mineable || soft.Passable || soft.MineFactor != 0.25 || soft.Color != "#575049" {
+		t.Fatalf("soft_rock wrong: %+v", soft)
+	}
+	if i, ok := cfg.TerrainIndex("soft_rock"); !ok || i != 5 {
+		t.Fatalf("TerrainIndex soft_rock = %d %v", i, ok)
+	}
+	if len(cfg.Gen.Veins) != 1 || cfg.Gen.Veins[0].Terrain != "soft_rock" ||
+		cfg.Gen.Veins[0].Seeds != 10 || cfg.Gen.Veins[0].Size != 14 {
+		t.Fatalf("veins wrong: %+v", cfg.Gen.Veins)
+	}
+}
+
+func TestTerrainTableValidation(t *testing.T) {
+	base := func() *Config {
+		cfg := minimalConfig()
+		cfg.Terrain = CanonicalTerrain()
+		return cfg
+	}
+	if err := Validate(base()); err != nil {
+		t.Fatalf("canonical table should validate: %v", err)
+	}
+	cfg := base()
+	cfg.Terrain[0], cfg.Terrain[1] = cfg.Terrain[1], cfg.Terrain[0]
+	if err := Validate(cfg); err == nil {
+		t.Fatal("reordered canonical terrain must fail")
+	}
+	cfg = base()
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "rock", Color: "#111"})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("duplicate id must fail")
+	}
+	cfg = base()
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Mineable: true, MineFactor: 0.5})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("missing color must fail")
+	}
+	cfg = base()
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Color: "#111", Mineable: true})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("mineable without positive mine_factor must fail")
+	}
+	cfg = base()
+	cfg.Terrain = append(cfg.Terrain, TerrainType{ID: "ore", Color: "#111", Mineable: true, MineFactor: 1, Passable: true})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("passable and mineable together must fail")
+	}
+	cfg = base()
+	cfg.Gen.Veins = []VeinRule{{Terrain: "unobtanium", Seeds: 1, Size: 2}}
+	if err := Validate(cfg); err == nil {
+		t.Fatal("vein referencing unknown terrain must fail")
 	}
 }

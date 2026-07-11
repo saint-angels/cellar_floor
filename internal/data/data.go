@@ -94,6 +94,12 @@ type ScatterRule struct {
 	Chance  float64 `toml:"chance"`
 }
 
+type VeinRule struct {
+	Terrain string `toml:"terrain"`
+	Seeds   int    `toml:"seeds"`
+	Size    int    `toml:"size"`
+}
+
 type GenConfig struct {
 	Width          int           `toml:"width"`
 	Height         int           `toml:"height"`
@@ -105,15 +111,43 @@ type GenConfig struct {
 	ClearingRadius int           `toml:"clearing_radius"`
 	Center         string        `toml:"center"`
 	Scatter        []ScatterRule `toml:"scatter"`
+	Veins          []VeinRule    `toml:"veins"`
+}
+
+type TerrainType struct {
+	ID         string  `toml:"id" json:"id"`
+	Color      string  `toml:"color" json:"color"`
+	Passable   bool    `toml:"passable" json:"passable"`
+	Mineable   bool    `toml:"mineable" json:"mineable"`
+	MineFactor float64 `toml:"mine_factor" json:"mineFactor"`
 }
 
 type Config struct {
-	Sim   SimConfig
-	Gen   GenConfig
-	Types map[string]*EntityType
+	Sim     SimConfig
+	Gen     GenConfig
+	Terrain []TerrainType
+	Types   map[string]*EntityType
 }
 
-var validTerrains = map[string]bool{"grass": true, "dirt": true, "water": true, "rock": true, "floor": true}
+// CanonicalTerrain returns the five pinned base types in wire order.
+func CanonicalTerrain() []TerrainType {
+	return []TerrainType{
+		{ID: "grass", Color: "#3d5a36", Passable: true},
+		{ID: "dirt", Color: "#6b5537", Passable: true},
+		{ID: "water", Color: "#2b4a63"},
+		{ID: "rock", Color: "#3a3a3a", Mineable: true, MineFactor: 1},
+		{ID: "floor", Color: "#26221e", Passable: true},
+	}
+}
+
+func (c *Config) TerrainIndex(id string) (int, bool) {
+	for i, t := range c.Terrain {
+		if t.ID == id {
+			return i, true
+		}
+	}
+	return 0, false
+}
 
 func Load(dir string) (*Config, error) {
 	cfg := &Config{}
@@ -123,6 +157,13 @@ func Load(dir string) (*Config, error) {
 	if _, err := toml.DecodeFile(filepath.Join(dir, "gen.toml"), &cfg.Gen); err != nil {
 		return nil, fmt.Errorf("gen.toml: %w", err)
 	}
+	var tt struct {
+		Terrain []TerrainType `toml:"terrain"`
+	}
+	if _, err := toml.DecodeFile(filepath.Join(dir, "terrain.toml"), &tt); err != nil {
+		return nil, fmt.Errorf("terrain.toml: %w", err)
+	}
+	cfg.Terrain = tt.Terrain
 	var et struct {
 		Types map[string]*EntityType `toml:"type"`
 	}
@@ -173,6 +214,29 @@ func (c *Config) resolveTimes() {
 }
 
 func Validate(cfg *Config) error {
+	canon := CanonicalTerrain()
+	if len(cfg.Terrain) < len(canon) {
+		return fmt.Errorf("terrain: table needs at least the %d canonical types", len(canon))
+	}
+	seen := map[string]bool{}
+	for i, tt := range cfg.Terrain {
+		if tt.ID == "" || tt.Color == "" {
+			return fmt.Errorf("terrain[%d]: id and color are required", i)
+		}
+		if seen[tt.ID] {
+			return fmt.Errorf("terrain: duplicate id %q", tt.ID)
+		}
+		seen[tt.ID] = true
+		if i < len(canon) && tt.ID != canon[i].ID {
+			return fmt.Errorf("terrain[%d] must be %q (saves store indices; append only), got %q", i, canon[i].ID, tt.ID)
+		}
+		if tt.Mineable && tt.MineFactor <= 0 {
+			return fmt.Errorf("terrain %s: mineable needs positive mine_factor", tt.ID)
+		}
+		if tt.Mineable && tt.Passable {
+			return fmt.Errorf("terrain %s: cannot be both passable and mineable", tt.ID)
+		}
+	}
 	produced := map[string]bool{}
 	for _, s := range cfg.Types {
 		for _, p := range s.Produces {
@@ -262,8 +326,20 @@ func Validate(cfg *Config) error {
 		if _, ok := cfg.Types[r.Type]; !ok {
 			return fmt.Errorf("scatter rule references unknown type %q", r.Type)
 		}
-		if !validTerrains[r.Terrain] {
+		if _, ok := cfg.TerrainIndex(r.Terrain); !ok {
 			return fmt.Errorf("scatter rule references unknown terrain %q", r.Terrain)
+		}
+	}
+	for _, v := range cfg.Gen.Veins {
+		idx, ok := cfg.TerrainIndex(v.Terrain)
+		if !ok {
+			return fmt.Errorf("vein rule references unknown terrain %q", v.Terrain)
+		}
+		if !cfg.Terrain[idx].Mineable {
+			return fmt.Errorf("vein terrain %q must be mineable", v.Terrain)
+		}
+		if v.Seeds < 0 || v.Size < 1 {
+			return fmt.Errorf("vein %q needs non-negative seeds and size >= 1", v.Terrain)
 		}
 	}
 	return nil
