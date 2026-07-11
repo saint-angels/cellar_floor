@@ -19,7 +19,7 @@ func testCfg(t *testing.T) *data.Config {
 
 func flatWorld(t *testing.T, w, h int, seed uint64) *World {
 	cfg := testCfg(t)
-	for _, s := range cfg.Species {
+	for _, s := range cfg.Types {
 		s.PopFloor = 0
 	}
 	return NewWorld(w, h, seed, cfg) // all grass terrain by default
@@ -29,7 +29,7 @@ func flatWorldFloors(t *testing.T, w, h int, seed uint64) *World {
 	return NewWorld(w, h, seed, testCfg(t))
 }
 
-func TestSpawnCopiesSpeciesData(t *testing.T) {
+func TestSpawnCopiesTypeData(t *testing.T) {
 	w := flatWorld(t, 8, 8, 1)
 	r := w.Spawn("rabbit", Point{2, 3})
 	if r == nil || w.Entities[r.ID] != r {
@@ -39,10 +39,10 @@ func TestSpawnCopiesSpeciesData(t *testing.T) {
 		t.Errorf("produces not copied: %+v", r.Produces)
 	}
 	r.Produces[0].Amount = 0
-	if w.Cfg().Species["rabbit"].Produces[0].Amount == 0 {
-		t.Error("spawn shares Produces slice with species template")
+	if w.Cfg().Types["rabbit"].Produces[0].Amount == 0 {
+		t.Error("spawn shares Produces slice with type template")
 	}
-	if r.Fullness != w.Cfg().Species["rabbit"].StomachSize/2 {
+	if r.Fullness != w.Cfg().Types["rabbit"].StomachSize/2 {
 		t.Errorf("fullness = %v", r.Fullness)
 	}
 }
@@ -84,10 +84,10 @@ func TestCountAliveAgreesWithBruteForce(t *testing.T) {
 	cfg := testCfg(t)
 	w := NewWorld(20, 20, 777, cfg)
 
-	bruteForce := func(speciesID string) int {
+	bruteForce := func(typeID string) int {
 		n := 0
 		for _, id := range w.SortedIDs() {
-			if e := w.Entities[id]; e.Species == speciesID && !e.Dead {
+			if e := w.Entities[id]; e.Type == typeID && !e.Dead {
 				n++
 			}
 		}
@@ -95,7 +95,7 @@ func TestCountAliveAgreesWithBruteForce(t *testing.T) {
 	}
 
 	checkAll := func(tick int) {
-		for sid := range cfg.Species {
+		for sid := range cfg.Types {
 			if got, want := w.CountAlive(sid), bruteForce(sid); got != want {
 				t.Fatalf("tick %d: CountAlive(%s) = %d, want %d (brute force)", tick, sid, got, want)
 			}

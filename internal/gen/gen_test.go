@@ -63,9 +63,9 @@ func TestGenerateContents(t *testing.T) {
 	}
 	counts := map[string]int{}
 	for _, e := range w.Entities {
-		counts[e.Species]++
-		if c.Species[e.Species].Kind == "fauna" && !sim.Passable(w.At(e.Pos)) {
-			t.Errorf("%s spawned on impassable tile %v", e.Species, e.Pos)
+		counts[e.Type]++
+		if c.Types[e.Type].Kind == "fauna" && !sim.Passable(w.At(e.Pos)) {
+			t.Errorf("%s spawned on impassable tile %v", e.Type, e.Pos)
 		}
 	}
 	if counts["mushroom"] == 0 {

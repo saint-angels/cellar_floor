@@ -5,10 +5,10 @@ import (
 	"sort"
 )
 
-// mineStep runs the mining behavior for species with mine_ticks > 0.
+// mineStep runs the mining behavior for entity types with mine_ticks > 0.
 // Returns (events, true) when the entity spent this tick on mining.
 func (w *World) mineStep(e *Entity) ([]Event, bool) {
-	s := w.cfg.Species[e.Species]
+	s := w.cfg.Types[e.Type]
 	if s.MineTicks <= 0 {
 		return nil, false
 	}
@@ -42,12 +42,12 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		if wasGold {
 			w.Gold++
 			evs = append(evs, Event{
-				Tick: w.Tick, Type: "gold", Actor: e.ID, ActorSpecies: e.Species,
+				Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
 				Msg: fmt.Sprintf("%s struck gold", s.Name),
 			})
 		} else {
 			evs = append(evs, Event{
-				Tick: w.Tick, Type: "mined", Actor: e.ID, ActorSpecies: e.Species,
+				Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
 				Msg: fmt.Sprintf("%s mined out a rock", s.Name),
 			})
 		}
@@ -84,7 +84,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 // unclaimed mineable face: near known gold if any is within gold_sense,
 // otherwise simply the nearest face.
 func (w *World) pickMineTarget(e *Entity) (Point, bool) {
-	s := w.cfg.Species[e.Species]
+	s := w.cfg.Types[e.Type]
 
 	dist := map[Point]int{e.Pos: 0}
 	queue := []Point{e.Pos}

@@ -37,7 +37,7 @@ func (s *Server) handleState(rw http.ResponseWriter, r *http.Request) {
 		Pops: map[string]int{}, Entities: len(s.world.Entities),
 		Gold: s.world.Gold,
 	}
-	for sid, sp := range s.world.Cfg().Species {
+	for sid, sp := range s.world.Cfg().Types {
 		if sp.Kind == "fauna" {
 			resp.Pops[sid] = s.world.CountAlive(sid)
 		}
@@ -75,14 +75,14 @@ func (s *Server) handleAdvance(rw http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleEntities(rw http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	species := q.Get("species")
+	typ := q.Get("type")
 	alive := q.Get("alive")
 	s.mu.Lock()
 	owners := s.owners()
 	views := []EntityView{}
 	for _, id := range s.world.SortedIDs() {
 		e := s.world.Entities[id]
-		if species != "" && e.Species != species {
+		if typ != "" && e.Type != typ {
 			continue
 		}
 		if alive == "true" && e.Dead || alive == "false" && !e.Dead {

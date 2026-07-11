@@ -35,7 +35,7 @@ func TestFiftyThousandTickStability(t *testing.T) {
 			}
 		}
 		if i%100 == 0 {
-			for sid, s := range cfg.Species {
+			for sid, s := range cfg.Types {
 				if s.Kind == "fauna" {
 					popSum[sid] += w.CountAlive(sid)
 				}
@@ -46,7 +46,7 @@ func TestFiftyThousandTickStability(t *testing.T) {
 	if guardrailSpawns > 200 {
 		t.Errorf("ecology leans on guardrails: %d floor spawns in 50k ticks", guardrailSpawns)
 	}
-	for sid, s := range cfg.Species {
+	for sid, s := range cfg.Types {
 		if s.Kind != "fauna" {
 			continue
 		}

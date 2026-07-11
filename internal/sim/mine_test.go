@@ -11,7 +11,7 @@ import (
 func mineCfg() *data.Config {
 	return &data.Config{
 		Sim: data.SimConfig{TickRate: 2},
-		Species: map[string]*data.Species{
+		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.01}}},
 			"dwarf": {ID: "dwarf", Name: "Dwarf", Kind: "fauna", Color: "#fff",

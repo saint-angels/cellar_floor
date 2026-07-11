@@ -1,4 +1,4 @@
-import type { EntityView, PlayerMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, Species } from "./types";
+import type { EntityView, PlayerMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, EntityType } from "./types";
 
 type Cb = () => void;
 
@@ -6,7 +6,7 @@ export class WorldState {
   width = 0;
   height = 0;
   terrain: number[] = [];
-  species: Record<string, Species> = {};
+  types: Record<string, EntityType> = {};
   entities = new Map<number, RenderEntity>();
   tick = 0;
   timeScale = 1;
@@ -36,7 +36,7 @@ export class WorldState {
     this.terrainVersion++;
     this.gold = m.gold ?? 0;
     this.mining = m.mining ?? {};
-    this.species = m.species;
+    this.types = m.types;
     this.tick = m.tick;
     this.timeScale = m.timeScale;
     this.entities.clear();

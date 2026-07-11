@@ -29,9 +29,9 @@ func LoadWorld(path string, cfg *data.Config) (*sim.World, error) {
 	if err := json.Unmarshal(b, &w); err != nil {
 		return nil, err
 	}
-	// Drop entities whose species no longer exists in the data files.
+	// Drop entities whose type no longer exists in the data files.
 	for id, e := range w.Entities {
-		if _, ok := cfg.Species[e.Species]; !ok {
+		if _, ok := cfg.Types[e.Type]; !ok {
 			delete(w.Entities, id)
 		}
 	}

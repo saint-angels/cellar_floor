@@ -1,10 +1,10 @@
-[species.mushroom]
+[type.mushroom]
 name = "Mushroom"
 kind = "flora"
 color = "#c4b5d9"
 produces = [{ resource = "mushroom", amount = 6, max = 6, regrow = 0.00002 }]
 
-[species.dwarf]
+[type.dwarf]
 name = "Dwarf"
 kind = "fauna"
 color = "#d9a066"

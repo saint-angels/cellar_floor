@@ -7,10 +7,10 @@ dirt_above = 0.75
 rock_above = 0.85
 
 scatter = [
-  { species = "grass",  terrain = "grass", chance = 0.18 },
-  { species = "bush",   terrain = "grass", chance = 0.06 },
-  { species = "tree",   terrain = "grass", chance = 0.04 },
-  { species = "tree",   terrain = "dirt",  chance = 0.02 },
-  { species = "rabbit", terrain = "grass", chance = 0.008 },
-  { species = "wolf",   terrain = "grass", chance = 0.002 },
+  { type = "grass",  terrain = "grass", chance = 0.18 },
+  { type = "bush",   terrain = "grass", chance = 0.06 },
+  { type = "tree",   terrain = "grass", chance = 0.04 },
+  { type = "tree",   terrain = "dirt",  chance = 0.02 },
+  { type = "rabbit", terrain = "grass", chance = 0.008 },
+  { type = "wolf",   terrain = "grass", chance = 0.002 },
 ]

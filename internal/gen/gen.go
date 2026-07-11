@@ -91,13 +91,13 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 				if w.RandFloat() >= rule.Chance {
 					continue
 				}
-				s := cfg.Species[rule.Species]
+				s := cfg.Types[rule.Type]
 				if s.Kind == "fauna" {
 					if !sim.Passable(w.At(p)) || w.FaunaAt(p) != nil {
 						continue
 					}
 				}
-				w.Spawn(rule.Species, p)
+				w.Spawn(rule.Type, p)
 			}
 		}
 	}

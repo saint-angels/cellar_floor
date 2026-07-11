@@ -4,5 +4,5 @@ clearing_radius = 6
 gold_chance = 0.005
 
 scatter = [
-  { species = "mushroom", terrain = "dirt", chance = 0.15 },
+  { type = "mushroom", terrain = "dirt", chance = 0.15 },
 ]

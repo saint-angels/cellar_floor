@@ -32,7 +32,7 @@ func (s *Server) playerMsg(token string) PlayerMsg {
 	}
 	// entity ids restart when the world is reset, so the stored id can
 	// collide with an unrelated entity; only a living dwarf counts
-	if e, exists := s.world.Entities[p.DwarfID]; exists && !e.Dead && e.Species == "dwarf" {
+	if e, exists := s.world.Entities[p.DwarfID]; exists && !e.Dead && e.Type == "dwarf" {
 		return PlayerMsg{Type: "player", State: "alive", DwarfID: p.DwarfID, Name: p.Name}
 	}
 	return PlayerMsg{Type: "player", State: "dead", Name: p.Name}
@@ -53,7 +53,7 @@ func (s *Server) spawnDwarf(token, name string) PlayerMsg {
 		pm.Error = "name required"
 		return pm
 	}
-	if s.world.CountAlive("dwarf") >= s.cfg.Species["dwarf"].PopCap {
+	if s.world.CountAlive("dwarf") >= s.cfg.Types["dwarf"].PopCap {
 		pm := s.playerMsg(token)
 		pm.Error = "the cellar is crowded"
 		return pm

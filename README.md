@@ -18,7 +18,7 @@ docs/superpowers/specs/2026-07-08-cellar-floor-design.md (original engine)
 Open http://localhost:8080. Flags: -addr, -seed, -fresh, -data, -static.
 
 The pivot to the underground world made old rabbit-era saves obsolete;
-entities of removed species are dropped on load, but for a proper start
+entities of removed types are dropped on load, but for a proper start
 run once with -fresh (or delete world.json).
 
 ## Develop
@@ -27,5 +27,5 @@ run once with -fresh (or delete world.json).
     go test ./... -short           # skip the long run
     cd client && npm run dev       # Vite dev server proxying /ws to :8080
 
-All species and balance live in data/*.toml. The engine knows nothing
+All entity types and balance live in data/*.toml. The engine knows nothing
 about rabbits.

@@ -39,7 +39,7 @@ export function startRender(canvas: HTMLCanvasElement) {
       ctx.drawImage(terrainCanvas, 0, 0);
       const lerpMs = world.tickIntervalMs / Math.max(world.timeScale, 1);
       for (const e of world.entities.values()) {
-        const sp = world.species[e.s];
+        const sp = world.types[e.s];
         if (!sp) continue;
         const t = Math.min(1, (now - e.movedAt) / lerpMs);
         const x = (e.px + (e.x - e.px) * t) * TILE;

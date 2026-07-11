@@ -28,12 +28,12 @@ func TestRabbitRemembersHomeAndReturns(t *testing.T) {
 func TestReproduction(t *testing.T) {
 	w := flatWorld(t, 10, 10, 7)
 	r := w.Spawn("rabbit", Point{5, 5})
-	r.Age = w.Cfg().Species["rabbit"].MatureAge + 1
+	r.Age = w.Cfg().Types["rabbit"].MatureAge + 1
 	r.Fullness = 10
 	born := false
 	for i := 0; i < 3000 && !born; i++ {
 		r.Fullness = 10
-		r.Age = w.Cfg().Species["rabbit"].MatureAge + 1
+		r.Age = w.Cfg().Types["rabbit"].MatureAge + 1
 		for _, ev := range w.Step() {
 			if ev.Type == "born" {
 				born = true
@@ -51,10 +51,10 @@ func TestReproduction(t *testing.T) {
 func TestPopulationFloor(t *testing.T) {
 	w := flatWorldFloors(t, 10, 10, 1)
 	evs := w.Step() // zero rabbits and wolves: floors kick in
-	if w.CountAlive("rabbit") < w.Cfg().Species["rabbit"].PopFloor {
-		t.Errorf("rabbits = %d, floor = %d", w.CountAlive("rabbit"), w.Cfg().Species["rabbit"].PopFloor)
+	if w.CountAlive("rabbit") < w.Cfg().Types["rabbit"].PopFloor {
+		t.Errorf("rabbits = %d, floor = %d", w.CountAlive("rabbit"), w.Cfg().Types["rabbit"].PopFloor)
 	}
-	if w.CountAlive("wolf") < w.Cfg().Species["wolf"].PopFloor {
+	if w.CountAlive("wolf") < w.Cfg().Types["wolf"].PopFloor {
 		t.Error("wolf floor not enforced")
 	}
 	found := false

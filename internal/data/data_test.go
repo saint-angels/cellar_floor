@@ -20,9 +20,9 @@ func TestLoadRealData(t *testing.T) {
 	if cfg.Sim.TickRate != 2.0 {
 		t.Errorf("tick_rate = %v, want 2.0", cfg.Sim.TickRate)
 	}
-	d, ok := cfg.Species["dwarf"]
+	d, ok := cfg.Types["dwarf"]
 	if !ok {
-		t.Fatal("no dwarf species")
+		t.Fatal("no dwarf type")
 	}
 	if d.Kind != "fauna" || d.ID != "dwarf" || len(d.Eats) != 1 || d.MineTicks != 172800 {
 		t.Errorf("dwarf mis-parsed: %+v", d)
@@ -41,14 +41,14 @@ func TestMiningFieldsParse(t *testing.T) {
 	}
 	write("sim.toml", "tick_rate = 2.0\nautosave_minutes = 0\nsave_path = \"w.json\"\n")
 	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\ngold_chance = 0.01\nscatter = []\n")
-	write("species.toml", `
-[species.shroom]
+	write("entities.toml", `
+[type.shroom]
 name = "Shroom"
 kind = "flora"
 color = "#fff"
 produces = [{ resource = "shroom", amount = 6, max = 6, regrow = 0.001 }]
 
-[species.dwarf]
+[type.dwarf]
 name = "Dwarf"
 kind = "fauna"
 color = "#d9a066"
@@ -69,7 +69,7 @@ gold_sense = 8
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := cfg.Species["dwarf"]
+	d := cfg.Types["dwarf"]
 	if d.MineTicks != 500 || d.GoldSense != 8 {
 		t.Errorf("mining fields: %d %d", d.MineTicks, d.GoldSense)
 	}
@@ -80,7 +80,7 @@ gold_sense = 8
 
 func TestValidationRejectsUnknownResource(t *testing.T) {
 	cfg, _ := Load(dataDir(t))
-	cfg.Species["dwarf"].Eats = append(cfg.Species["dwarf"].Eats, "plutonium")
+	cfg.Types["dwarf"].Eats = append(cfg.Types["dwarf"].Eats, "plutonium")
 	if err := Validate(cfg); err == nil {
 		t.Fatal("expected error for unknown eaten resource")
 	}
@@ -88,7 +88,7 @@ func TestValidationRejectsUnknownResource(t *testing.T) {
 
 func TestValidationRejectsBadFauna(t *testing.T) {
 	cfg, _ := Load(dataDir(t))
-	cfg.Species["dwarf"].StomachSize = 0
+	cfg.Types["dwarf"].StomachSize = 0
 	if err := Validate(cfg); err == nil {
 		t.Fatal("expected error for zero stomach_size")
 	}

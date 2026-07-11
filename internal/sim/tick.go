@@ -60,7 +60,7 @@ func (w *World) Step() []Event {
 		if !ok || e.Dead {
 			continue
 		}
-		if w.cfg.Species[e.Species].Kind == "fauna" {
+		if w.cfg.Types[e.Type].Kind == "fauna" {
 			events = append(events, w.aiStep(e)...)
 		}
 	}
@@ -71,7 +71,7 @@ func (w *World) Step() []Event {
 		if !ok || e.Dead {
 			continue
 		}
-		s := w.cfg.Species[e.Species]
+		s := w.cfg.Types[e.Type]
 		if s.Kind != "fauna" {
 			continue
 		}
@@ -113,15 +113,15 @@ func (w *World) Step() []Event {
 }
 
 func (w *World) kill(e *Entity, evType, msg string) Event {
-	s := w.cfg.Species[e.Species]
+	s := w.cfg.Types[e.Type]
 	e.Dead = true
 	w.diedThisTick[e.ID] = true
-	w.counts[e.Species]--
+	w.counts[e.Type]--
 	delete(w.occ, e.Pos)
 	e.Action = "dead"
 	e.DecayLeft = s.DecayTicks
 	w.markDirty(e.ID)
-	return Event{Tick: w.Tick, Type: evType, Actor: e.ID, ActorSpecies: e.Species, Msg: msg}
+	return Event{Tick: w.Tick, Type: evType, Actor: e.ID, ActorType: e.Type, Msg: msg}
 }
 
 func (w *World) reproduceAndGuard() []Event {
@@ -130,14 +130,14 @@ func (w *World) reproduceAndGuard() []Event {
 	// births
 	for _, id := range w.SortedIDs() {
 		e := w.Entities[id]
-		s := w.cfg.Species[e.Species]
+		s := w.cfg.Types[e.Type]
 		if e.Dead || s.Kind != "fauna" {
 			continue
 		}
 		if e.Age <= s.MatureAge || e.Fullness < s.ReproThreshold {
 			continue
 		}
-		if w.CountAlive(e.Species) >= s.PopCap {
+		if w.CountAlive(e.Type) >= s.PopCap {
 			continue
 		}
 		if w.RandFloat() >= s.ReproChance {
@@ -154,25 +154,25 @@ func (w *World) reproduceAndGuard() []Event {
 		if free == nil {
 			continue
 		}
-		baby := w.Spawn(e.Species, *free)
+		baby := w.Spawn(e.Type, *free)
 		e.Fullness -= s.ReproCost
 		w.markDirty(e.ID)
 		events = append(events, Event{
 			Tick: w.Tick, Type: "born",
-			Actor: baby.ID, ActorSpecies: baby.Species,
-			Target: e.ID, TargetSpecies: e.Species,
+			Actor: baby.ID, ActorType: baby.Type,
+			Target: e.ID, TargetType: e.Type,
 			Msg: fmt.Sprintf("a %s was born", s.Name),
 		})
 	}
 
 	// floors
-	speciesIDs := make([]string, 0, len(w.cfg.Species))
-	for id := range w.cfg.Species {
-		speciesIDs = append(speciesIDs, id)
+	typeIDs := make([]string, 0, len(w.cfg.Types))
+	for id := range w.cfg.Types {
+		typeIDs = append(typeIDs, id)
 	}
-	sort.Strings(speciesIDs)
-	for _, sid := range speciesIDs {
-		s := w.cfg.Species[sid]
+	sort.Strings(typeIDs)
+	for _, sid := range typeIDs {
+		s := w.cfg.Types[sid]
 		if s.Kind != "fauna" || s.PopFloor <= 0 {
 			continue
 		}
@@ -184,7 +184,7 @@ func (w *World) reproduceAndGuard() []Event {
 			e := w.Spawn(sid, p)
 			events = append(events, Event{
 				Tick: w.Tick, Type: "spawned",
-				Actor: e.ID, ActorSpecies: sid,
+				Actor: e.ID, ActorType: sid,
 				Msg: fmt.Sprintf("a %s wandered in", s.Name),
 			})
 		}

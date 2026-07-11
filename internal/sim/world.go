@@ -32,7 +32,7 @@ type Point struct {
 
 type Entity struct {
 	ID          int            `json:"id"`
-	Species     string         `json:"species"`
+	Type        string         `json:"type"`
 	Pos         Point          `json:"pos"`
 	Produces    []data.Produce `json:"produces"`
 	Fullness    float64        `json:"fullness"`
@@ -75,15 +75,15 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 	}
 	return &World{
 		Width: w, Height: h,
-		Terrain:  make([]Terrain, w*h),
+		Terrain:      make([]Terrain, w*h),
 		Entities:     map[int]*Entity{},
 		NextID:       1,
 		Rng:          seed,
 		MineProgress: map[int]float64{},
-		cfg:      cfg,
-		dirty:    map[int]bool{},
-		occ:      map[Point]int{},
-		counts:   map[string]int{},
+		cfg:          cfg,
+		dirty:        map[int]bool{},
+		occ:          map[Point]int{},
+		counts:       map[string]int{},
 	}
 }
 
@@ -103,7 +103,7 @@ func (w *World) rebuildCounts() {
 	w.counts = map[string]int{}
 	for _, e := range w.Entities {
 		if !e.Dead {
-			w.counts[e.Species]++
+			w.counts[e.Type]++
 		}
 	}
 }
@@ -115,7 +115,7 @@ func (w *World) rebuildOcc() {
 		if e.Dead {
 			continue
 		}
-		if s, ok := w.cfg.Species[e.Species]; ok && s.Kind == "fauna" {
+		if s, ok := w.cfg.Types[e.Type]; ok && s.Kind == "fauna" {
 			w.occ[e.Pos] = id
 		}
 	}
@@ -182,18 +182,18 @@ func (w *World) SortedIDs() []int {
 	return w.sortedCache
 }
 
-func (w *World) CountAlive(speciesID string) int {
-	return w.counts[speciesID]
+func (w *World) CountAlive(typeID string) int {
+	return w.counts[typeID]
 }
 
-func (w *World) Spawn(speciesID string, p Point) *Entity {
-	s, ok := w.cfg.Species[speciesID]
+func (w *World) Spawn(typeID string, p Point) *Entity {
+	s, ok := w.cfg.Types[typeID]
 	if !ok {
 		return nil
 	}
 	e := &Entity{
 		ID:       w.NextID,
-		Species:  speciesID,
+		Type:     typeID,
 		Pos:      p,
 		Produces: append([]data.Produce(nil), s.Produces...),
 	}
@@ -203,7 +203,7 @@ func (w *World) Spawn(speciesID string, p Point) *Entity {
 	w.NextID++
 	w.Entities[e.ID] = e
 	w.sortedDirty = true
-	w.counts[speciesID]++
+	w.counts[typeID]++
 	if s.Kind == "fauna" {
 		w.occ[p] = e.ID
 	}

@@ -49,11 +49,11 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
-func TestLoadPrunesUnknownSpecies(t *testing.T) {
+func TestLoadPrunesUnknownType(t *testing.T) {
 	cfg := loadCfg(t)
 	w := gen.Generate(5, cfg)
 	ghost := w.Spawn("dwarf", sim.Point{X: 32, Y: 32})
-	ghost.Species = "rabbit" // simulate a save from before the pivot
+	ghost.Type = "rabbit" // simulate a save from before the pivot
 	path := filepath.Join(t.TempDir(), "w.json")
 	if err := SaveWorld(w, path); err != nil {
 		t.Fatal(err)
@@ -63,7 +63,7 @@ func TestLoadPrunesUnknownSpecies(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, ok := w2.Entities[ghost.ID]; ok {
-		t.Error("unknown-species entity survived load")
+		t.Error("unknown-type entity survived load")
 	}
 }
 

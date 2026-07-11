@@ -13,9 +13,9 @@ func undergroundCfg() *data.Config {
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
 			ClearingRadius: 4, GoldChance: 0.01,
-			Scatter: []data.ScatterRule{{Species: "shroom", Terrain: "dirt", Chance: 0.3}},
+			Scatter: []data.ScatterRule{{Type: "shroom", Terrain: "dirt", Chance: 0.3}},
 		},
-		Species: map[string]*data.Species{
+		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.001}}},
 		},
@@ -47,7 +47,7 @@ func TestUndergroundGeneration(t *testing.T) {
 	}
 	shrooms := 0
 	for _, e := range w.Entities {
-		if e.Species == "shroom" {
+		if e.Type == "shroom" {
 			shrooms++
 			if w.At(e.Pos) != sim.TerrainDirt {
 				t.Error("shroom outside clearing")

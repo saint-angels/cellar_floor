@@ -1,4 +1,4 @@
-export interface Species {
+export interface EntityType {
   id: string;
   name: string;
   kind: "flora" | "fauna";
@@ -37,9 +37,9 @@ export interface SimEvent {
   tick: number;
   type: string;
   actor: number;
-  actorSpecies: string;
+  actorType: string;
   target?: number;
-  targetSpecies?: string;
+  targetType?: string;
   msg: string;
 }
 
@@ -54,7 +54,7 @@ export interface SnapshotMsg {
   width: number;
   height: number;
   terrain: string; // base64-encoded byte per cell (Go marshals []uint8 as base64)
-  species: Record<string, Species>;
+  types: Record<string, EntityType>;
   entities: EntityView[];
   timeScale: number;
   gold: number;

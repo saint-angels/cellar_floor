@@ -16,8 +16,8 @@ func TestSnapshotAndTickMessages(t *testing.T) {
 	if snap.Type != "snapshot" || snap.Width != 64 || len(snap.Entities) == 0 {
 		t.Fatalf("bad snapshot: %+v", snap.Type)
 	}
-	if _, ok := snap.Species["dwarf"]; !ok {
-		t.Error("snapshot missing species table")
+	if _, ok := snap.Types["dwarf"]; !ok {
+		t.Error("snapshot missing types table")
 	}
 	b, err := json.Marshal(snap)
 	if err != nil || len(b) == 0 {
@@ -107,7 +107,7 @@ func TestOwnerDecoration(t *testing.T) {
 		t.Fatal("dwarf not in snapshot")
 	}
 
-	evs := []sim.Event{{Actor: d.ID, ActorSpecies: "dwarf", Msg: "Dwarf struck gold"}}
+	evs := []sim.Event{{Actor: d.ID, ActorType: "dwarf", Msg: "Dwarf struck gold"}}
 	tick := BuildTick(w, evs, 1, owners)
 	if tick.Events[0].Msg != "Misha's dwarf struck gold" {
 		t.Errorf("decorated msg = %q", tick.Events[0].Msg)
@@ -117,7 +117,7 @@ func TestOwnerDecoration(t *testing.T) {
 	}
 
 	// unowned actors stay untouched
-	evs2 := []sim.Event{{Actor: 999999, ActorSpecies: "dwarf", Msg: "Dwarf starved"}}
+	evs2 := []sim.Event{{Actor: 999999, ActorType: "dwarf", Msg: "Dwarf starved"}}
 	if got := BuildTick(w, evs2, 1, owners); got.Events[0].Msg != "Dwarf starved" {
 		t.Errorf("unowned msg changed: %q", got.Events[0].Msg)
 	}

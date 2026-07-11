@@ -33,7 +33,7 @@ func TestSpawnAndHelloAlive(t *testing.T) {
 		t.Fatalf("spawn reply %+v", pm)
 	}
 	e := s.world.Entities[pm.DwarfID]
-	if e == nil || e.Species != "dwarf" {
+	if e == nil || e.Type != "dwarf" {
 		t.Fatal("no dwarf entity spawned")
 	}
 	if !s.world.InBounds(e.Pos) || s.world.At(e.Pos) != sim.TerrainDirt {
@@ -65,7 +65,7 @@ func TestDeathAndRespawn(t *testing.T) {
 	s := newPlayerServer(t)
 	pm := s.spawnDwarf("tok1", "Misha")
 	for _, id := range s.world.SortedIDs() {
-		if c := s.world.Entities[id]; c.Species == "mushroom" {
+		if c := s.world.Entities[id]; c.Type == "mushroom" {
 			for i := range c.Produces {
 				c.Produces[i].Amount = 0 // nothing to eat, starvation must win
 			}
@@ -73,7 +73,7 @@ func TestDeathAndRespawn(t *testing.T) {
 	}
 	e := s.world.Entities[pm.DwarfID]
 	e.Fullness = 0
-	e.StarvingFor = s.cfg.Species["dwarf"].StarveTicks + 1
+	e.StarvingFor = s.cfg.Types["dwarf"].StarveTicks + 1
 	s.world.Step()
 	if got := s.playerMsg("tok1"); got.State != "dead" || got.Name != "Misha" {
 		t.Fatalf("after death %+v, want dead", got)
@@ -86,7 +86,7 @@ func TestDeathAndRespawn(t *testing.T) {
 
 func TestSpawnCrowded(t *testing.T) {
 	s := newPlayerServer(t)
-	popCap := s.cfg.Species["dwarf"].PopCap
+	popCap := s.cfg.Types["dwarf"].PopCap
 	for i := 0; i < popCap; i++ {
 		if pm := s.spawnDwarf(fmt.Sprintf("tok%d", i), "P"); pm.State != "alive" {
 			t.Fatalf("spawn %d failed: %+v", i, pm)

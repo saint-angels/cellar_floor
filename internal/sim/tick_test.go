@@ -21,7 +21,7 @@ func TestStarvation(t *testing.T) {
 	w := flatWorld(t, 4, 4, 1)
 	r := w.Spawn("rabbit", Point{0, 0})
 	r.Fullness = 0.01
-	starve := w.Cfg().Species["rabbit"].StarveTicks
+	starve := w.Cfg().Types["rabbit"].StarveTicks
 	var events []Event
 	for i := 0; i < starve+60; i++ {
 		events = append(events, w.Step()...)
@@ -41,7 +41,7 @@ func TestStarvation(t *testing.T) {
 	if !found {
 		t.Error("no starved event")
 	}
-	if r.DecayLeft != w.Cfg().Species["rabbit"].DecayTicks {
+	if r.DecayLeft != w.Cfg().Types["rabbit"].DecayTicks {
 		t.Errorf("decay not set: %d", r.DecayLeft)
 	}
 }
@@ -49,7 +49,7 @@ func TestStarvation(t *testing.T) {
 func TestOldAgeAndDecayRemoval(t *testing.T) {
 	w := flatWorld(t, 4, 4, 1)
 	r := w.Spawn("rabbit", Point{0, 0})
-	r.Age = w.Cfg().Species["rabbit"].Lifespan
+	r.Age = w.Cfg().Types["rabbit"].Lifespan
 	r.Fullness = 10
 	w.Step()
 	if !r.Dead {

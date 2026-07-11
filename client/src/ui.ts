@@ -61,7 +61,7 @@ function renderMyDwarf() {
   if (world.playerState === "alive" && world.playerDwarfId != null) {
     const e = world.entities.get(world.playerDwarfId);
     if (e) {
-      const cap = world.species[e.s]?.stomachSize ?? 0;
+      const cap = world.types[e.s]?.stomachSize ?? 0;
       box.textContent = `#${e.id}, ${e.action || "idle"}, fullness ${e.full.toFixed(1)} / ${cap}`;
       return;
     }
@@ -133,7 +133,7 @@ function renderPops() {
       const row = document.createElement("div");
       row.className = "pop-row";
       const label = document.createElement("span");
-      label.style.color = world.species[sid]?.color ?? "#fff";
+      label.style.color = world.types[sid]?.color ?? "#fff";
       label.dataset.sid = sid;
       c = document.createElement("canvas");
       c.width = 120;
@@ -143,11 +143,11 @@ function renderPops() {
       box.appendChild(row);
     }
     const label = c.parentElement!.querySelector("span")!;
-    label.textContent = `${world.species[sid]?.name ?? sid}: ${hist[hist.length - 1] ?? 0}`;
+    label.textContent = `${world.types[sid]?.name ?? sid}: ${hist[hist.length - 1] ?? 0}`;
     const g = c.getContext("2d")!;
     g.clearRect(0, 0, c.width, c.height);
-    const max = Math.max(...hist, world.species[sid]?.popCap ?? 1);
-    g.strokeStyle = world.species[sid]?.color ?? "#fff";
+    const max = Math.max(...hist, world.types[sid]?.popCap ?? 1);
+    g.strokeStyle = world.types[sid]?.color ?? "#fff";
     g.beginPath();
     hist.forEach((v, i) => {
       const x = (i / 119) * c.width;
@@ -167,7 +167,7 @@ function initInspector(
     let picked: number | null = null;
     let bestD = 3;
     for (const e of world.entities.values()) {
-      const sp = world.species[e.s];
+      const sp = world.types[e.s];
       const d = Math.max(Math.abs(e.x - t.x), Math.abs(e.y - t.y));
       // prefer fauna over flora on the same tile
       const score = d + (sp?.kind === "flora" ? 0.5 : 0);
@@ -188,7 +188,7 @@ function renderInspector() {
     box.style.display = "none";
     return;
   }
-  const sp = world.species[e.s];
+  const sp = world.types[e.s];
   const lines = [
     `${sp?.name ?? e.s} #${e.id}${e.owner ? ` (${e.owner})` : ""}${e.dead ? " (dead)" : ""}`,
     `at ${e.x},${e.y}`,

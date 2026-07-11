@@ -20,7 +20,7 @@ type Desire struct {
 	Aversion bool    `toml:"aversion" json:"aversion"`
 }
 
-type Species struct {
+type EntityType struct {
 	ID              string    `toml:"-" json:"id"`
 	Name            string    `toml:"name" json:"name"`
 	Kind            string    `toml:"kind" json:"kind"`
@@ -56,7 +56,7 @@ type SimConfig struct {
 }
 
 type ScatterRule struct {
-	Species string  `toml:"species"`
+	Type    string  `toml:"type"`
 	Terrain string  `toml:"terrain"`
 	Chance  float64 `toml:"chance"`
 }
@@ -75,9 +75,9 @@ type GenConfig struct {
 }
 
 type Config struct {
-	Sim     SimConfig
-	Gen     GenConfig
-	Species map[string]*Species
+	Sim   SimConfig
+	Gen   GenConfig
+	Types map[string]*EntityType
 }
 
 var validTerrains = map[string]bool{"grass": true, "dirt": true, "water": true, "rock": true, "floor": true, "gold": true}
@@ -90,15 +90,15 @@ func Load(dir string) (*Config, error) {
 	if _, err := toml.DecodeFile(filepath.Join(dir, "gen.toml"), &cfg.Gen); err != nil {
 		return nil, fmt.Errorf("gen.toml: %w", err)
 	}
-	var sp struct {
-		Species map[string]*Species `toml:"species"`
+	var et struct {
+		Types map[string]*EntityType `toml:"type"`
 	}
-	if _, err := toml.DecodeFile(filepath.Join(dir, "species.toml"), &sp); err != nil {
-		return nil, fmt.Errorf("species.toml: %w", err)
+	if _, err := toml.DecodeFile(filepath.Join(dir, "entities.toml"), &et); err != nil {
+		return nil, fmt.Errorf("entities.toml: %w", err)
 	}
-	cfg.Species = sp.Species
-	for id, s := range cfg.Species {
-		s.ID = id
+	cfg.Types = et.Types
+	for id, t := range cfg.Types {
+		t.ID = id
 	}
 	if err := Validate(cfg); err != nil {
 		return nil, err
@@ -108,39 +108,39 @@ func Load(dir string) (*Config, error) {
 
 func Validate(cfg *Config) error {
 	produced := map[string]bool{}
-	for _, s := range cfg.Species {
+	for _, s := range cfg.Types {
 		for _, p := range s.Produces {
 			produced[p.Resource] = true
 		}
 	}
-	for id, s := range cfg.Species {
+	for id, s := range cfg.Types {
 		if s.Kind != "flora" && s.Kind != "fauna" {
-			return fmt.Errorf("species %s: kind must be flora or fauna, got %q", id, s.Kind)
+			return fmt.Errorf("type %s: kind must be flora or fauna, got %q", id, s.Kind)
 		}
 		if s.Name == "" || s.Color == "" {
-			return fmt.Errorf("species %s: name and color are required", id)
+			return fmt.Errorf("type %s: name and color are required", id)
 		}
 		for _, r := range s.Eats {
 			if !produced[r] {
-				return fmt.Errorf("species %s eats %q which nothing produces", id, r)
+				return fmt.Errorf("type %s eats %q which nothing produces", id, r)
 			}
 		}
 		for _, r := range s.Shelters {
 			if !produced[r] {
-				return fmt.Errorf("species %s shelters in %q which nothing produces", id, r)
+				return fmt.Errorf("type %s shelters in %q which nothing produces", id, r)
 			}
 		}
 		if s.Kind == "fauna" {
 			if s.StomachSize <= 0 || s.BiteSize <= 0 || s.Speed <= 0 ||
 				s.Metabolism <= 0 || s.StarveTicks <= 0 || s.DecayTicks <= 0 ||
 				s.Lifespan <= 0 || s.PopCap <= 0 {
-				return fmt.Errorf("species %s: fauna requires positive stomach_size, bite_size, speed, metabolism, starve_ticks, decay_ticks, lifespan, pop_cap", id)
+				return fmt.Errorf("type %s: fauna requires positive stomach_size, bite_size, speed, metabolism, starve_ticks, decay_ticks, lifespan, pop_cap", id)
 			}
 			if len(s.Eats) == 0 {
-				return fmt.Errorf("species %s: fauna must eat something", id)
+				return fmt.Errorf("type %s: fauna must eat something", id)
 			}
 			if s.MineTicks < 0 || s.GoldSense < 0 {
-				return fmt.Errorf("species %s: mine_ticks and gold_sense must be non-negative", id)
+				return fmt.Errorf("type %s: mine_ticks and gold_sense must be non-negative", id)
 			}
 		}
 	}
@@ -151,8 +151,8 @@ func Validate(cfg *Config) error {
 		return fmt.Errorf("gen: width and height must be positive")
 	}
 	for _, r := range cfg.Gen.Scatter {
-		if _, ok := cfg.Species[r.Species]; !ok {
-			return fmt.Errorf("scatter rule references unknown species %q", r.Species)
+		if _, ok := cfg.Types[r.Type]; !ok {
+			return fmt.Errorf("scatter rule references unknown type %q", r.Type)
 		}
 		if !validTerrains[r.Terrain] {
 			return fmt.Errorf("scatter rule references unknown terrain %q", r.Terrain)

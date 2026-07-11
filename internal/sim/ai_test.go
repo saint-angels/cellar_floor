@@ -12,7 +12,7 @@ func TestHungryRabbitEatsAdjacentBush(t *testing.T) {
 	if b.Produces[0].Amount >= before {
 		t.Errorf("bush not eaten: %v", b.Produces[0].Amount)
 	}
-	if r.Fullness <= 1-w.Cfg().Species["rabbit"].Metabolism {
+	if r.Fullness <= 1-w.Cfg().Types["rabbit"].Metabolism {
 		t.Errorf("rabbit fullness did not rise: %v", r.Fullness)
 	}
 	found := false
@@ -63,7 +63,7 @@ func TestFullRabbitDoesNotEat(t *testing.T) {
 	w := flatWorld(t, 8, 8, 1)
 	b := w.Spawn("bush", Point{2, 2})
 	r := w.Spawn("rabbit", Point{2, 3})
-	r.Fullness = w.Cfg().Species["rabbit"].StomachSize
+	r.Fullness = w.Cfg().Types["rabbit"].StomachSize
 	before := b.Produces[0].Amount
 	w.Step()
 	if b.Produces[0].Amount < before {

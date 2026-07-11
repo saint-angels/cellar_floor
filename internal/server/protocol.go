@@ -27,23 +27,23 @@ func ViewOf(e *sim.Entity) EntityView {
 		res[p.Resource] = p.Amount
 	}
 	return EntityView{
-		ID: e.ID, S: e.Species, X: e.Pos.X, Y: e.Pos.Y,
+		ID: e.ID, S: e.Type, X: e.Pos.X, Y: e.Pos.Y,
 		Dead: e.Dead, Full: e.Fullness, Action: e.Action, Home: e.Home, Res: res,
 		MT: e.MineTarget,
 	}
 }
 
 type SnapshotMsg struct {
-	Type      string                   `json:"type"`
-	Tick      int64                    `json:"tick"`
-	Width     int                      `json:"width"`
-	Height    int                      `json:"height"`
-	Terrain   []uint8                  `json:"terrain"`
-	Species   map[string]*data.Species `json:"species"`
-	Entities  []EntityView             `json:"entities"`
-	TimeScale int                      `json:"timeScale"`
-	Gold      int                      `json:"gold"`
-	Mining    map[int]float64          `json:"mining,omitempty"`
+	Type      string                      `json:"type"`
+	Tick      int64                       `json:"tick"`
+	Width     int                         `json:"width"`
+	Height    int                         `json:"height"`
+	Terrain   []uint8                     `json:"terrain"`
+	Types     map[string]*data.EntityType `json:"types"`
+	Entities  []EntityView                `json:"entities"`
+	TimeScale int                         `json:"timeScale"`
+	Gold      int                         `json:"gold"`
+	Mining    map[int]float64             `json:"mining,omitempty"`
 }
 
 // TerrainDiff is one mutated cell in a tick message.
@@ -86,7 +86,7 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 	return SnapshotMsg{
 		Type: "snapshot", Tick: w.Tick,
 		Width: w.Width, Height: w.Height,
-		Terrain: terrain, Species: w.Cfg().Species,
+		Terrain: terrain, Types: w.Cfg().Types,
 		Entities: ents, TimeScale: scale,
 		Gold: w.Gold, Mining: w.MineProgress,
 	}
@@ -102,7 +102,7 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 		}
 	}
 	pops := map[string]int{}
-	for sid, s := range w.Cfg().Species {
+	for sid, s := range w.Cfg().Types {
 		if s.Kind == "fauna" {
 			pops[sid] = w.CountAlive(sid)
 		}
@@ -119,7 +119,7 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 		if name == "" {
 			continue
 		}
-		if sp := w.Cfg().Species[decorated[i].ActorSpecies]; sp != nil {
+		if sp := w.Cfg().Types[decorated[i].ActorType]; sp != nil {
 			decorated[i].Msg = strings.Replace(decorated[i].Msg, sp.Name, name+"'s dwarf", 1)
 		}
 	}

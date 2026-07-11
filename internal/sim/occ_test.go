@@ -22,7 +22,7 @@ func TestFaunaAtOccIndexAgreesWithBruteForce(t *testing.T) {
 			if e.Dead {
 				continue
 			}
-			s, ok := cfg.Species[e.Species]
+			s, ok := cfg.Types[e.Type]
 			if !ok || s.Kind != "fauna" {
 				continue
 			}

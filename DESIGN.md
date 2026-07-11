@@ -18,7 +18,7 @@ is a deliberate decision, not a side effect.
 - **Deterministic per seed.** The same seed produces the same world and the
   same history. Sim code never depends on map iteration order or wall-clock
   time.
-- **The engine knows no species.** All creatures, resources, and balance
+- **The engine knows no entity types.** All creatures, resources, and balance
   live in data/*.toml; engine code implements generic behaviors (eating,
   mining) that data switches on. New content should be data first, code
   only for genuinely new behavior.

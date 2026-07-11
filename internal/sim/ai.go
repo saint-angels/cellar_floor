@@ -6,7 +6,7 @@ import (
 	"cellarfloor/internal/data"
 )
 
-func speciesEatsProduceOf(eater, victim *data.Species) bool {
+func typeEatsProduceOf(eater, victim *data.EntityType) bool {
 	if eater.ID == victim.ID || eater.Kind != "fauna" {
 		return false
 	}
@@ -31,7 +31,7 @@ var neighbors = []Point{
 func adjacent(a, b Point) bool { return Dist(a, b) <= 1 }
 
 func (w *World) aiStep(e *Entity) []Event {
-	s := w.cfg.Species[e.Species]
+	s := w.cfg.Types[e.Type]
 
 	// 1. danger (implemented in Task 5)
 	if evs, fled := w.fleeStep(e); fled {
@@ -74,14 +74,14 @@ func (w *World) aiStep(e *Entity) []Event {
 
 func (w *World) findFood(e *Entity) *Entity {
 	eats := map[string]bool{}
-	for _, r := range w.cfg.Species[e.Species].Eats {
+	for _, r := range w.cfg.Types[e.Type].Eats {
 		eats[r] = true
 	}
 	var best *Entity
 	bestD := 1 << 30
 	for _, id := range w.SortedIDs() {
 		c := w.Entities[id]
-		if c.ID == e.ID || c.Species == e.Species {
+		if c.ID == e.ID || c.Type == e.Type {
 			continue
 		}
 		edible := false
@@ -102,9 +102,9 @@ func (w *World) findFood(e *Entity) *Entity {
 }
 
 func (w *World) eatFrom(e *Entity, food *Entity) []Event {
-	s := w.cfg.Species[e.Species]
+	s := w.cfg.Types[e.Type]
 	// Live fauna prey is killed first (Task 5 covers the hunt event path).
-	if !food.Dead && w.cfg.Species[food.Species].Kind == "fauna" {
+	if !food.Dead && w.cfg.Types[food.Type].Kind == "fauna" {
 		return w.huntStrike(e, food)
 	}
 	eats := map[string]bool{}
@@ -133,9 +133,9 @@ func (w *World) eatFrom(e *Entity, food *Entity) []Event {
 		w.markDirty(food.ID)
 		return []Event{{
 			Tick: w.Tick, Type: "ate",
-			Actor: e.ID, ActorSpecies: e.Species,
-			Target: food.ID, TargetSpecies: food.Species,
-			Msg: fmt.Sprintf("%s ate %s from %s", s.Name, p.Resource, w.cfg.Species[food.Species].Name),
+			Actor: e.ID, ActorType: e.Type,
+			Target: food.ID, TargetType: food.Type,
+			Msg: fmt.Sprintf("%s ate %s from %s", s.Name, p.Resource, w.cfg.Types[food.Type].Name),
 		}}
 	}
 	return nil
@@ -145,7 +145,7 @@ func (w *World) moveToward(e *Entity, target Point) { w.move(e, target, false) }
 func (w *World) moveAway(e *Entity, from Point)     { w.move(e, from, true) }
 
 func (w *World) move(e *Entity, ref Point, away bool) {
-	e.MoveAcc += w.cfg.Species[e.Species].Speed
+	e.MoveAcc += w.cfg.Types[e.Type].Speed
 	for e.MoveAcc >= 1 {
 		e.MoveAcc--
 		best := e.Pos
@@ -171,7 +171,7 @@ func (w *World) move(e *Entity, ref Point, away bool) {
 }
 
 func (w *World) wander(e *Entity) {
-	e.MoveAcc += w.cfg.Species[e.Species].Speed
+	e.MoveAcc += w.cfg.Types[e.Type].Speed
 	for e.MoveAcc >= 1 {
 		e.MoveAcc--
 		n := neighbors[w.RandN(len(neighbors))]
@@ -186,7 +186,7 @@ func (w *World) wander(e *Entity) {
 }
 
 func (w *World) fleeStep(e *Entity) ([]Event, bool) {
-	me := w.cfg.Species[e.Species]
+	me := w.cfg.Types[e.Type]
 	if me.FearRadius <= 0 {
 		return nil, false
 	}
@@ -197,8 +197,8 @@ func (w *World) fleeStep(e *Entity) ([]Event, bool) {
 		if c.Dead || c.ID == e.ID {
 			continue
 		}
-		cs := w.cfg.Species[c.Species]
-		if !speciesEatsProduceOf(cs, me) {
+		cs := w.cfg.Types[c.Type]
+		if !typeEatsProduceOf(cs, me) {
 			continue
 		}
 		if d := Dist(e.Pos, c.Pos); d < bestD {
@@ -212,9 +212,9 @@ func (w *World) fleeStep(e *Entity) ([]Event, bool) {
 	if e.Action != "fleeing" {
 		evs = append(evs, Event{
 			Tick: w.Tick, Type: "fled",
-			Actor: e.ID, ActorSpecies: e.Species,
-			Target: threat.ID, TargetSpecies: threat.Species,
-			Msg: fmt.Sprintf("%s fled from %s", me.Name, w.cfg.Species[threat.Species].Name),
+			Actor: e.ID, ActorType: e.Type,
+			Target: threat.ID, TargetType: threat.Type,
+			Msg: fmt.Sprintf("%s fled from %s", me.Name, w.cfg.Types[threat.Type].Name),
 		})
 	}
 	e.Action = "fleeing"
@@ -223,23 +223,23 @@ func (w *World) fleeStep(e *Entity) ([]Event, bool) {
 }
 
 func (w *World) huntStrike(e *Entity, prey *Entity) []Event {
-	s := w.cfg.Species[e.Species]
-	ev := w.kill(prey, "killed", fmt.Sprintf("%s was killed by %s", w.cfg.Species[prey.Species].Name, s.Name))
+	s := w.cfg.Types[e.Type]
+	ev := w.kill(prey, "killed", fmt.Sprintf("%s was killed by %s", w.cfg.Types[prey.Type].Name, s.Name))
 	ev.Target = e.ID
-	ev.TargetSpecies = e.Species
+	ev.TargetType = e.Type
 	e.Action = "hunting"
 	w.markDirty(e.ID)
 	hunt := Event{
 		Tick: w.Tick, Type: "hunted",
-		Actor: e.ID, ActorSpecies: e.Species,
-		Target: prey.ID, TargetSpecies: prey.Species,
-		Msg: fmt.Sprintf("%s hunted down %s", s.Name, w.cfg.Species[prey.Species].Name),
+		Actor: e.ID, ActorType: e.Type,
+		Target: prey.ID, TargetType: prey.Type,
+		Msg: fmt.Sprintf("%s hunted down %s", s.Name, w.cfg.Types[prey.Type].Name),
 	}
 	return []Event{hunt, ev}
 }
 
 func (w *World) shelterStep(e *Entity) bool {
-	s := w.cfg.Species[e.Species]
+	s := w.cfg.Types[e.Type]
 	if len(s.Shelters) == 0 {
 		return false
 	}

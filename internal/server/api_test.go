@@ -79,7 +79,7 @@ func TestAPIEntities(t *testing.T) {
 	mux, w := newTestAPI(t)
 	var deadID int
 	for _, id := range w.SortedIDs() {
-		if w.Entities[id].Species == "dwarf" {
+		if w.Entities[id].Type == "dwarf" {
 			w.Entities[id].Dead = true
 			deadID = id
 			break
@@ -95,24 +95,24 @@ func TestAPIEntities(t *testing.T) {
 	}
 
 	var dwarfs []EntityView
-	json.Unmarshal(apiGet(t, mux, "/api/entities?species=dwarf").Body.Bytes(), &dwarfs)
+	json.Unmarshal(apiGet(t, mux, "/api/entities?type=dwarf").Body.Bytes(), &dwarfs)
 	if len(dwarfs) == 0 || len(dwarfs) >= len(all) {
-		t.Errorf("species filter broken: %d of %d", len(dwarfs), len(all))
+		t.Errorf("type filter broken: %d of %d", len(dwarfs), len(all))
 	}
 	for _, e := range dwarfs {
 		if e.S != "dwarf" {
-			t.Errorf("filter leaked species %q", e.S)
+			t.Errorf("filter leaked type %q", e.S)
 		}
 	}
 
 	var deadDwarfs []EntityView
-	json.Unmarshal(apiGet(t, mux, "/api/entities?species=dwarf&alive=false").Body.Bytes(), &deadDwarfs)
+	json.Unmarshal(apiGet(t, mux, "/api/entities?type=dwarf&alive=false").Body.Bytes(), &deadDwarfs)
 	if len(deadDwarfs) != 1 || deadDwarfs[0].ID != deadID {
 		t.Errorf("alive=false filter broken: %+v", deadDwarfs)
 	}
 
 	var aliveDwarfs []EntityView
-	json.Unmarshal(apiGet(t, mux, "/api/entities?species=dwarf&alive=true").Body.Bytes(), &aliveDwarfs)
+	json.Unmarshal(apiGet(t, mux, "/api/entities?type=dwarf&alive=true").Body.Bytes(), &aliveDwarfs)
 	if len(aliveDwarfs) != len(dwarfs)-1 {
 		t.Errorf("alive=true filter broken: %d, want %d", len(aliveDwarfs), len(dwarfs)-1)
 	}
