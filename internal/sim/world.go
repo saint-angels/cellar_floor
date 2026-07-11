@@ -43,6 +43,9 @@ type Entity struct {
 	Action      string         `json:"action"`
 	MoveAcc     float64        `json:"moveAcc"`
 	MineTarget  *Point         `json:"mineTarget,omitempty"`
+	Social      float64        `json:"social,omitempty"`
+	SeenID      int            `json:"seenId,omitempty"`
+	SeenTick    int64          `json:"seenTick,omitempty"`
 }
 
 type World struct {
@@ -94,6 +97,15 @@ func (w *World) SetConfig(cfg *data.Config) {
 	}
 	if w.MineProgress == nil {
 		w.MineProgress = map[int]float64{}
+	}
+	// older saves predate the social meter; wake up half-full, like Spawn
+	for _, e := range w.Entities {
+		if e.Dead {
+			continue
+		}
+		if s, ok := cfg.Types[e.Type]; ok && s.SocialSize > 0 && e.Social == 0 {
+			e.Social = s.SocialSize / 2
+		}
 	}
 	w.rebuildOcc()
 	w.rebuildCounts()
@@ -232,6 +244,9 @@ func (w *World) Spawn(typeID string, p Point) *Entity {
 	}
 	if s.Kind == "fauna" {
 		e.Fullness = s.StomachSize / 2
+		if s.SocialSize > 0 {
+			e.Social = s.SocialSize / 2
+		}
 	}
 	w.NextID++
 	w.Entities[e.ID] = e

@@ -92,6 +92,21 @@ func (w *World) Step() []Event {
 		} else {
 			e.StarvingFor = 0
 		}
+		if s.SocialSize > 0 {
+			if c := w.companionInRadius(e, s.SocialRadius); c != nil {
+				e.Social += s.SocialRefill
+				if e.Social > s.SocialSize {
+					e.Social = s.SocialSize
+				}
+				e.SeenID = c.ID
+				e.SeenTick = w.Tick
+			} else {
+				e.Social -= s.SocialDrain
+				if e.Social < 0 {
+					e.Social = 0
+				}
+			}
+		}
 		w.markDirty(id)
 		if e.StarvingFor > s.StarveTicks {
 			events = append(events, w.kill(e, "starved", fmt.Sprintf("%s starved", s.Name)))
