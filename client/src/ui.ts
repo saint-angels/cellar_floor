@@ -88,7 +88,6 @@ function renderMyDwarf() {
     if (e) {
       const sp = world.types[e.s];
       const lines = [
-        `#${e.id}`,
         e.action || "idle",
         `fullness ${e.full.toFixed(1)} / ${sp?.stomachSize ?? 0}`,
       ];
@@ -229,7 +228,7 @@ function renderInspector() {
   }
   const sp = world.types[e.s];
   const lines = [
-    `${sp?.name ?? e.s} #${e.id}${e.owner ? ` (${e.owner})` : ""}${e.dead ? " (dead)" : ""}`,
+    `${sp?.name ?? e.s}${e.owner ? ` (${e.owner})` : ""}${e.dead ? " (dead)" : ""}`,
     `at ${e.x},${e.y}`,
   ];
   if (sp?.kind === "fauna" && !e.dead) {
