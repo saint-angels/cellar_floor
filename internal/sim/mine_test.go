@@ -254,6 +254,28 @@ func TestMineStateSurvivesSaveLoad(t *testing.T) {
 	}
 }
 
+func TestGoldWindowTracksLast24h(t *testing.T) {
+	w := newMineWorld(t) // chance 1.0, drop exactly 2
+	e := w.Spawn("miner", Point{2, 2})
+	for i := 0; i < 30; i++ {
+		w.Step()
+	}
+	if got := w.GoldLast24h(e); got != 2 {
+		t.Fatalf("gold last 24h = %d, want 2", got)
+	}
+	if len(e.GoldStrikes) != 1 {
+		t.Fatalf("strikes = %d, want 1", len(e.GoldStrikes))
+	}
+	// push the strike out of the window: 24h at tick_rate 2 is 172800 ticks
+	w.Tick += 172801
+	if got := w.GoldLast24h(e); got != 0 {
+		t.Fatalf("stale gold still counted: %d", got)
+	}
+	if len(e.GoldStrikes) != 0 {
+		t.Fatal("stale strikes must be pruned")
+	}
+}
+
 func TestOnlyLitFacesPicked(t *testing.T) {
 	// world where the only reachable rock face is dark: no target
 	w := newMineWorldDark(t) // rock faces exist, zero light sources

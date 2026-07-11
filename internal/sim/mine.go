@@ -44,6 +44,8 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 				amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)
 			}
 			w.Gold += amt
+			e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
+			w.GoldLast24h(e)
 			return []Event{{
 				Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
 				Msg: fmt.Sprintf("%s struck gold", s.Name),

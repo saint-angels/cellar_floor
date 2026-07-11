@@ -46,6 +46,28 @@ type Entity struct {
 	Social      float64        `json:"social,omitempty"`
 	SeenID      int            `json:"seenId,omitempty"`
 	SeenTick    int64          `json:"seenTick,omitempty"`
+	GoldStrikes []GoldStrike   `json:"goldStrikes,omitempty"`
+}
+
+// GoldStrike records one gold drop for the rolling last-24h count.
+type GoldStrike struct {
+	Tick   int64 `json:"tick"`
+	Amount int   `json:"amount"`
+}
+
+// GoldLast24h prunes strikes older than 24 hours and sums the rest.
+func (w *World) GoldLast24h(e *Entity) int {
+	window := int64(86400 * w.cfg.Sim.TickRate)
+	keep := e.GoldStrikes[:0]
+	sum := 0
+	for _, g := range e.GoldStrikes {
+		if w.Tick-g.Tick <= window {
+			keep = append(keep, g)
+			sum += g.Amount
+		}
+	}
+	e.GoldStrikes = keep
+	return sum
 }
 
 type World struct {
