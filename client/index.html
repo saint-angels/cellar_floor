@@ -7,7 +7,9 @@
   <style>
     :root { color-scheme: dark; }
     body { margin: 0; background: #14110f; color: #cfc9bf; font: 13px/1.4 ui-monospace, monospace; display: flex; height: 100vh; }
-    #map { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; }
+    #map { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; overflow: hidden; }
+    #map.zoomed canvas { cursor: grab; }
+    #map.panning canvas { cursor: grabbing; }
     canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
     #side { width: 320px; border-left: 1px solid #333; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
     h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8d857a; margin: 0 0 4px; }

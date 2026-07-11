@@ -1,5 +1,6 @@
 import { world } from "./world";
 import { sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
+import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
 export function initUI(
@@ -187,6 +188,7 @@ function initInspector(
   tileFromPixel: (c: HTMLCanvasElement, x: number, y: number) => { x: number; y: number },
 ) {
   canvas.addEventListener("click", (ev) => {
+    if (consumePan()) return;
     const t = tileFromPixel(canvas, ev.clientX, ev.clientY);
     if (torchArmed) {
       sendTorch(t.x, t.y);
