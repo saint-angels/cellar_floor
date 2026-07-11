@@ -10,7 +10,7 @@ import (
 func undergroundCfg() *data.Config {
 	return &data.Config{
 		Sim:     data.SimConfig{TickRate: 2},
-		Terrain: data.CanonicalTerrain(),
+		Terrain: append(data.CanonicalTerrain(), data.TerrainType{ID: "soft_rock", Color: "#575049", Mineable: true, MineFactor: 0.25}),
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
 			ClearingRadius: 4,
@@ -84,5 +84,52 @@ func TestUndergroundGeneration(t *testing.T) {
 		if w.Terrain[i] != b.Terrain[i] {
 			t.Fatal("underground gen not deterministic")
 		}
+	}
+}
+
+func TestVeinsGrowConnectedBlobsInRock(t *testing.T) {
+	cfg := undergroundCfg()
+	cfg.Gen.Veins = []data.VeinRule{{Terrain: "soft_rock", Seeds: 3, Size: 8}}
+	w := Generate(11, cfg)
+	soft := sim.Terrain(5)
+	cells := map[sim.Point]bool{}
+	for y := 0; y < cfg.Gen.Height; y++ {
+		for x := 0; x < cfg.Gen.Width; x++ {
+			if w.At(sim.Point{X: x, Y: y}) == soft {
+				cells[sim.Point{X: x, Y: y}] = true
+			}
+		}
+	}
+	if len(cells) != 3*8 {
+		t.Fatalf("soft cells = %d, want 24", len(cells))
+	}
+	// every soft cell touches another soft cell unless it is a size-1 blob
+	for p := range cells {
+		touching := false
+		for dy := -1; dy <= 1; dy++ {
+			for dx := -1; dx <= 1; dx++ {
+				if dx == 0 && dy == 0 {
+					continue
+				}
+				if cells[sim.Point{X: p.X + dx, Y: p.Y + dy}] {
+					touching = true
+				}
+			}
+		}
+		if !touching {
+			t.Fatalf("isolated soft cell at %v; veins must be connected", p)
+		}
+	}
+	// determinism
+	w2 := Generate(11, cfg)
+	for i := range w.Terrain {
+		if w.Terrain[i] != w2.Terrain[i] {
+			t.Fatal("veins not deterministic per seed")
+		}
+	}
+	// clearing untouched
+	c := sim.Point{X: cfg.Gen.Width / 2, Y: cfg.Gen.Height / 2}
+	if w.At(c) != sim.TerrainDirt {
+		t.Fatal("vein replaced the clearing")
 	}
 }

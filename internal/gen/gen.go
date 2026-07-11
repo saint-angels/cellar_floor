@@ -38,6 +38,31 @@ func fractal(seed int64, x, y int, scale float64, octaves int) float64 {
 	return sum / norm
 }
 
+// randomRockCell picks a uniformly random plain-rock cell, or reports none.
+func randomRockCell(w *sim.World) (sim.Point, bool) {
+	for i := 0; i < 200; i++ {
+		p := sim.Point{X: w.RandN(w.Width), Y: w.RandN(w.Height)}
+		if w.At(p) == sim.TerrainRock {
+			return p, true
+		}
+	}
+	return sim.Point{}, false
+}
+
+// randomRockNeighbor picks a random 8-neighbor of p that is still plain rock.
+func randomRockNeighbor(w *sim.World, p sim.Point) (sim.Point, bool) {
+	start := w.RandN(8)
+	dirs := [8][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+	for i := 0; i < 8; i++ {
+		d := dirs[(start+i)%8]
+		q := sim.Point{X: p.X + d[0], Y: p.Y + d[1]}
+		if w.InBounds(q) && w.At(q) == sim.TerrainRock {
+			return q, true
+		}
+	}
+	return sim.Point{}, false
+}
+
 func Generate(seed int64, cfg *data.Config) *sim.World {
 	g := cfg.Gen
 	w := sim.NewWorld(g.Width, g.Height, uint64(seed), cfg)
@@ -56,6 +81,33 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 					t = sim.TerrainRock
 				}
 				w.Terrain[y*g.Width+x] = t
+			}
+		}
+		for _, vein := range g.Veins {
+			idx, ok := cfg.TerrainIndex(vein.Terrain)
+			if !ok {
+				continue // validated at load; belt and braces
+			}
+			vt := sim.Terrain(idx)
+			for s := 0; s < vein.Seeds; s++ {
+				seed, found := randomRockCell(w)
+				if !found {
+					break
+				}
+				blob := []sim.Point{seed}
+				w.Terrain[seed.Y*g.Width+seed.X] = vt
+				for tries := 0; len(blob) < vein.Size && tries < vein.Size*20; tries++ {
+					p := blob[w.RandN(len(blob))]
+					q, ok := randomRockNeighbor(w, p)
+					if !ok {
+						continue
+					}
+					w.Terrain[q.Y*g.Width+q.X] = vt
+					blob = append(blob, q)
+					if len(blob) >= vein.Size {
+						break
+					}
+				}
 			}
 		}
 		if g.Center != "" {
