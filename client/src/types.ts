@@ -26,7 +26,7 @@ export interface TerrainType {
   color: string;
   passable: boolean;
   mineable: boolean;
-  mineFactor: number;
+  hitPoints: number;
 }
 
 export interface EntityView {

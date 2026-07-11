@@ -144,8 +144,10 @@ export function startRender(canvas: HTMLCanvasElement) {
         ctx.fillText(thought, bx, by - 1);
       }
       ctx.textAlign = "start";
-      for (const [k, p] of Object.entries(world.mining)) {
+      for (const [k, dmg] of Object.entries(world.mining)) {
         const i = Number(k);
+        const hp = world.terrainTypes[world.terrain[i]]?.hitPoints ?? 0;
+        const p = hp > 0 ? dmg / hp : 0;
         const bx = (i % world.width) * TILE;
         const by = Math.floor(i / world.width) * TILE;
         ctx.fillStyle = "#1a1815";
