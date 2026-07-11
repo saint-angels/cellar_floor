@@ -46,7 +46,6 @@ type EntityType struct {
 	PopCap          int       `toml:"pop_cap" json:"popCap"`
 	DecayTicks      int       `toml:"decay_ticks" json:"decayTicks"`
 	MineTicks       int       `toml:"mine_ticks" json:"mineTicks"`
-	GoldSense       int       `toml:"gold_sense" json:"goldSense"`
 	LightRadius     int       `toml:"light_radius" json:"lightRadius"`
 }
 
@@ -54,6 +53,9 @@ type SimConfig struct {
 	TickRate        float64 `toml:"tick_rate"`
 	AutosaveMinutes int     `toml:"autosave_minutes"`
 	SavePath        string  `toml:"save_path"`
+	GoldChance      float64 `toml:"gold_chance"`
+	GoldMin         int     `toml:"gold_min"`
+	GoldMax         int     `toml:"gold_max"`
 }
 
 type ScatterRule struct {
@@ -71,7 +73,6 @@ type GenConfig struct {
 	DirtAbove      float64       `toml:"dirt_above"`
 	RockAbove      float64       `toml:"rock_above"`
 	ClearingRadius int           `toml:"clearing_radius"`
-	GoldChance     float64       `toml:"gold_chance"`
 	Center         string        `toml:"center"`
 	Scatter        []ScatterRule `toml:"scatter"`
 }
@@ -82,7 +83,7 @@ type Config struct {
 	Types map[string]*EntityType
 }
 
-var validTerrains = map[string]bool{"grass": true, "dirt": true, "water": true, "rock": true, "floor": true, "gold": true}
+var validTerrains = map[string]bool{"grass": true, "dirt": true, "water": true, "rock": true, "floor": true}
 
 func Load(dir string) (*Config, error) {
 	cfg := &Config{}
@@ -147,13 +148,19 @@ func Validate(cfg *Config) error {
 			if len(s.Eats) == 0 {
 				return fmt.Errorf("type %s: fauna must eat something", id)
 			}
-			if s.MineTicks < 0 || s.GoldSense < 0 {
-				return fmt.Errorf("type %s: mine_ticks and gold_sense must be non-negative", id)
+			if s.MineTicks < 0 {
+				return fmt.Errorf("type %s: mine_ticks must be non-negative", id)
 			}
 		}
 	}
 	if cfg.Sim.TickRate <= 0 {
 		return fmt.Errorf("sim: tick_rate must be positive")
+	}
+	if cfg.Sim.GoldChance < 0 || cfg.Sim.GoldChance > 1 {
+		return fmt.Errorf("sim: gold_chance must be between 0 and 1")
+	}
+	if cfg.Sim.GoldChance > 0 && (cfg.Sim.GoldMin < 1 || cfg.Sim.GoldMax < cfg.Sim.GoldMin) {
+		return fmt.Errorf("sim: gold drop needs 1 <= gold_min <= gold_max")
 	}
 	if cfg.Gen.Width <= 0 || cfg.Gen.Height <= 0 {
 		return fmt.Errorf("gen: width and height must be positive")

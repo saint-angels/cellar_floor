@@ -52,8 +52,6 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 				switch {
 				case dx*dx+dy*dy <= r2:
 					t = sim.TerrainDirt
-				case w.RandFloat() < g.GoldChance:
-					t = sim.TerrainGold
 				default:
 					t = sim.TerrainRock
 				}

@@ -12,7 +12,7 @@ func undergroundCfg() *data.Config {
 		Sim: data.SimConfig{TickRate: 2},
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
-			ClearingRadius: 4, GoldChance: 0.01,
+			ClearingRadius: 4,
 			Scatter: []data.ScatterRule{{Type: "shroom", Terrain: "dirt", Chance: 0.3}},
 		},
 		Types: map[string]*data.EntityType{
@@ -50,8 +50,10 @@ func TestUndergroundGeneration(t *testing.T) {
 	if counts[sim.TerrainRock] < 32*32*6/10 {
 		t.Errorf("map not mostly rock: %v", counts)
 	}
-	if counts[sim.TerrainGold] == 0 {
-		t.Error("no gold generated")
+	for tr := range counts {
+		if tr > sim.TerrainFloor {
+			t.Errorf("terrain value %d exceeds floor: %v", tr, counts)
+		}
 	}
 	if counts[sim.TerrainFloor] != 0 || counts[sim.TerrainWater] != 0 || counts[sim.TerrainGrass] != 0 {
 		t.Errorf("unexpected terrain in underground map: %v", counts)

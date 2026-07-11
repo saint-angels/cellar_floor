@@ -26,7 +26,6 @@ pop_floor = 0
 pop_cap = 10
 decay_ticks = 172800
 mine_ticks = 172800
-gold_sense = 8
 
 [type.torch]
 name = "Torch"

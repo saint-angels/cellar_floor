@@ -21,7 +21,7 @@ func mineCfg() *data.Config {
 				Eats: []string{"shroom"}, BiteSize: 2, StomachSize: 10, HungerThreshold: 4,
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
 				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100,
-				MineTicks: 10, GoldSense: 4},
+				MineTicks: 10},
 			// Slow-mining miner used by the lit-face gate tests: MineTicks is
 			// high so a face never mines out before a torch burns dark.
 			"miner": {ID: "miner", Name: "Miner", Kind: "fauna", Color: "#fff",
@@ -70,6 +70,65 @@ func newMineWorldDark(t *testing.T) *World {
 
 func idx(w *World, p Point) int { return p.Y*w.Width + p.X }
 
+// goldDropWorld builds a lit 5x5 world with one rock face beside the spawn
+// point {2,2} and a miner that mines a face out within the test's step budget.
+func goldDropWorld(t *testing.T, chance float64, lo, hi int) *World {
+	t.Helper()
+	cfg := mineCfg()
+	cfg.Sim.GoldChance = chance
+	cfg.Sim.GoldMin = lo
+	cfg.Sim.GoldMax = hi
+	cfg.Types["miner"].MineTicks = 10
+	w := NewWorld(5, 5, 1, cfg)
+	w.Spawn("sunstone", Point{0, 0})             // flood the world with light
+	w.Terrain[idx(w, Point{3, 2})] = TerrainRock // the sole face, beside {2,2}
+	return w
+}
+
+// newMineWorld guarantees a drop of exactly 2 gold per mined rock.
+func newMineWorld(t *testing.T) *World { return goldDropWorld(t, 1.0, 2, 2) }
+
+// newMineWorldNoGold is newMineWorld with the drop chance set to zero.
+func newMineWorldNoGold(t *testing.T) *World { return goldDropWorld(t, 0, 1, 3) }
+
+func TestMinedRockRollsGoldDrop(t *testing.T) {
+	w := newMineWorld(t) // gold_chance 1.0, gold_min 2, gold_max 2 in this test's cfg
+	e := w.Spawn("miner", Point{2, 2})
+	var goldEv bool
+	for i := 0; i < 30; i++ { // mine_ticks 10 in test cfg plus walking
+		for _, ev := range w.Step() {
+			if ev.Type == "gold" && ev.Actor == e.ID {
+				goldEv = true
+			}
+		}
+	}
+	if w.Gold != 2 {
+		t.Fatalf("gold = %d, want 2", w.Gold)
+	}
+	if !goldEv {
+		t.Fatal("expected a struck gold event")
+	}
+}
+
+func TestNoDropFiresMinedEvent(t *testing.T) {
+	w := newMineWorldNoGold(t) // same but gold_chance 0
+	e := w.Spawn("miner", Point{2, 2})
+	var mined bool
+	for i := 0; i < 30; i++ {
+		for _, ev := range w.Step() {
+			if ev.Type == "mined" && ev.Actor == e.ID {
+				mined = true
+			}
+		}
+	}
+	if w.Gold != 0 {
+		t.Fatalf("gold = %d, want 0", w.Gold)
+	}
+	if !mined {
+		t.Fatal("expected a mined out a rock event")
+	}
+}
+
 func TestDwarfMinesAdjacentRock(t *testing.T) {
 	w := mineWorld(5, 5)
 	rock := Point{3, 2}
@@ -108,62 +167,6 @@ func TestDwarfMinesAdjacentRock(t *testing.T) {
 	}
 	if len(w.TerrainDirtyAndReset()) == 0 {
 		t.Error("terrain change not in dirty set")
-	}
-}
-
-func TestGoldAddsToCounter(t *testing.T) {
-	w := mineWorld(5, 5)
-	g := Point{3, 2}
-	w.Terrain[idx(w, g)] = TerrainGold
-	d := w.Spawn("dwarf", Point{2, 2})
-	d.Fullness = 10
-	var events []Event
-	for i := 0; i < 15 && w.Gold == 0; i++ {
-		events = append(events, w.Step()...)
-	}
-	if w.Gold != 1 {
-		t.Fatalf("gold = %d, want 1", w.Gold)
-	}
-	struck := false
-	for _, ev := range events {
-		if ev.Type == "gold" {
-			struck = true
-		}
-	}
-	if !struck {
-		t.Error("no gold event")
-	}
-}
-
-func TestGoldSenseBeatsNearerRock(t *testing.T) {
-	w := mineWorld(9, 5)
-	near := Point{1, 2} // rock 1 tile from dwarf
-	gold := Point{5, 2} // gold 3 tiles away, within sense 4
-	w.Terrain[idx(w, near)] = TerrainRock
-	w.Terrain[idx(w, gold)] = TerrainGold
-	d := w.Spawn("dwarf", Point{2, 2})
-	d.Fullness = 10
-	w.Step()
-	if d.MineTarget == nil || *d.MineTarget != gold {
-		t.Fatalf("target = %v, want %v", d.MineTarget, gold)
-	}
-}
-
-func TestGoldBiasDigsTowardBuriedGold(t *testing.T) {
-	w := mineWorld(9, 7)
-	for y := 0; y < 7; y++ {
-		for x := 5; x < 9; x++ {
-			w.Terrain[idx(w, Point{x, y})] = TerrainRock // solid rock mass
-		}
-	}
-	gold := Point{6, 3}
-	w.Terrain[idx(w, gold)] = TerrainGold // buried one cell deep
-	d := w.Spawn("dwarf", Point{4, 3})
-	d.Fullness = 10
-	w.Step()
-	// any wall face touching the gold is a correct dig toward it
-	if d.MineTarget == nil || Dist(*d.MineTarget, gold) != 1 {
-		t.Fatalf("target = %v, want a face adjacent to gold %v", d.MineTarget, gold)
 	}
 }
 

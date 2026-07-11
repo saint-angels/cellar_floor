@@ -14,16 +14,15 @@ const (
 	TerrainWater
 	TerrainRock
 	TerrainFloor // mined-out stone
-	TerrainGold  // gold vein, mineable like rock
 )
 
-var terrainNames = [...]string{"grass", "dirt", "water", "rock", "floor", "gold"}
+var terrainNames = [...]string{"grass", "dirt", "water", "rock", "floor"}
 
 func TerrainName(t Terrain) string { return terrainNames[t] }
 func Passable(t Terrain) bool {
 	return t == TerrainGrass || t == TerrainDirt || t == TerrainFloor
 }
-func Mineable(t Terrain) bool { return t == TerrainRock || t == TerrainGold }
+func Mineable(t Terrain) bool { return t == TerrainRock }
 
 type Point struct {
 	X int `json:"x"`

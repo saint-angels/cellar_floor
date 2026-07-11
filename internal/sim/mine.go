@@ -34,24 +34,25 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		if w.MineProgress[i] < 1 {
 			return nil, true
 		}
-		wasGold := w.At(target) == TerrainGold
 		delete(w.MineProgress, i)
 		w.SetTerrain(target, TerrainFloor)
 		e.MineTarget = nil
-		var evs []Event
-		if wasGold {
-			w.Gold++
-			evs = append(evs, Event{
+		sc := w.cfg.Sim
+		if sc.GoldChance > 0 && w.RandFloat() < sc.GoldChance {
+			amt := sc.GoldMin
+			if sc.GoldMax > sc.GoldMin {
+				amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)
+			}
+			w.Gold += amt
+			return []Event{{
 				Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
 				Msg: fmt.Sprintf("%s struck gold", s.Name),
-			})
-		} else {
-			evs = append(evs, Event{
-				Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
-				Msg: fmt.Sprintf("%s mined out a rock", s.Name),
-			})
+			}}, true
 		}
-		return evs, true
+		return []Event{{
+			Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
+			Msg: fmt.Sprintf("%s mined out a rock", s.Name),
+		}}, true
 	}
 
 	// walk toward the face
@@ -80,12 +81,9 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	return nil, true
 }
 
-// pickMineTarget BFSes the walkable region around e and returns the best
-// unclaimed mineable face: near known gold if any is within gold_sense,
-// otherwise simply the nearest face.
+// pickMineTarget BFSes the walkable region around e and returns the nearest
+// unclaimed, lit mineable face.
 func (w *World) pickMineTarget(e *Entity) (Point, bool) {
-	s := w.cfg.Types[e.Type]
-
 	dist := map[Point]int{e.Pos: 0}
 	queue := []Point{e.Pos}
 	faceDist := map[Point]int{}
@@ -129,26 +127,7 @@ func (w *World) pickMineTarget(e *Entity) (Point, bool) {
 		return Point{}, false
 	}
 
-	// nearest gold within sense radius (buried or exposed)
-	var gold *Point
-	if s.GoldSense > 0 {
-		bestD := s.GoldSense + 1
-		for y := maxInt(0, e.Pos.Y-s.GoldSense); y <= minInt(w.Height-1, e.Pos.Y+s.GoldSense); y++ {
-			for x := maxInt(0, e.Pos.X-s.GoldSense); x <= minInt(w.Width-1, e.Pos.X+s.GoldSense); x++ {
-				p := Point{x, y}
-				if w.At(p) != TerrainGold {
-					continue
-				}
-				if d := Dist(e.Pos, p); d < bestD {
-					bestD = d
-					g := p
-					gold = &g
-				}
-			}
-		}
-	}
-
-	// deterministic choice: sort faces by cell index
+	// deterministic choice: sort faces by cell index, take the nearest
 	faces := make([]Point, 0, len(faceDist))
 	for f := range faceDist {
 		faces = append(faces, f)
@@ -157,14 +136,9 @@ func (w *World) pickMineTarget(e *Entity) (Point, bool) {
 		return faces[i].Y*w.Width+faces[i].X < faces[j].Y*w.Width+faces[j].X
 	})
 	best := faces[0]
-	bestScore := 1 << 30
 	for _, f := range faces {
-		score := faceDist[f]
-		if gold != nil {
-			score = Dist(f, *gold)*10000 + faceDist[f]
-		}
-		if score < bestScore {
-			best, bestScore = f, score
+		if faceDist[f] < faceDist[best] {
+			best = f
 		}
 	}
 	return best, true

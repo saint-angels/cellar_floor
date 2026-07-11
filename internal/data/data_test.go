@@ -40,7 +40,7 @@ func TestMiningFieldsParse(t *testing.T) {
 		}
 	}
 	write("sim.toml", "tick_rate = 2.0\nautosave_minutes = 0\nsave_path = \"w.json\"\n")
-	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\ngold_chance = 0.01\nscatter = []\n")
+	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\nscatter = []\n")
 	write("entities.toml", `
 [type.shroom]
 name = "Shroom"
@@ -63,18 +63,17 @@ lifespan = 100000
 pop_cap = 10
 decay_ticks = 100
 mine_ticks = 500
-gold_sense = 8
 `)
 	cfg, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	d := cfg.Types["dwarf"]
-	if d.MineTicks != 500 || d.GoldSense != 8 {
-		t.Errorf("mining fields: %d %d", d.MineTicks, d.GoldSense)
+	if d.MineTicks != 500 {
+		t.Errorf("mining fields: %d", d.MineTicks)
 	}
-	if cfg.Gen.ClearingRadius != 3 || cfg.Gen.GoldChance != 0.01 {
-		t.Errorf("gen fields: %d %v", cfg.Gen.ClearingRadius, cfg.Gen.GoldChance)
+	if cfg.Gen.ClearingRadius != 3 {
+		t.Errorf("gen fields: %d", cfg.Gen.ClearingRadius)
 	}
 }
 

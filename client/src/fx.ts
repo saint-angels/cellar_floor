@@ -9,7 +9,7 @@ const TOOL_SIZE = 3;
 const TOOL_COLOR = "#cfd6dd";
 const DEBRIS_PER_HIT = 6;
 const MAX_PARTICLES = 300;
-const DEBRIS_COLORS: Record<number, string> = { 3: "#8a8a8a", 5: "#e8c84a" }; // rock, gold
+const DEBRIS_COLOR = "#8a8a8a";
 
 interface Particle {
   x: number; y: number;
@@ -49,8 +49,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
       tx >= e.mt.x * TILE && tx < (e.mt.x + 1) * TILE &&
       ty >= e.mt.y * TILE && ty < (e.mt.y + 1) * TILE;
     if (inside && !wasInside.get(e.id) && running) {
-      const terrain = world.terrain[e.mt.y * world.width + e.mt.x];
-      spawnDebris(tx, ty, cx, cy, DEBRIS_COLORS[terrain] ?? "#8a8a8a");
+      spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
     }
     wasInside.set(e.id, inside);
   }

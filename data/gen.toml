@@ -1,7 +1,6 @@
 width = 64
 height = 64
 clearing_radius = 6
-gold_chance = 0.005
 center = "campfire"
 
 scatter = [

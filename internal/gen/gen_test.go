@@ -29,16 +29,31 @@ func TestGenerateDeterministic(t *testing.T) {
 	if len(a.Entities) != len(b.Entities) {
 		t.Fatalf("entity counts differ: %d vs %d", len(a.Entities), len(b.Entities))
 	}
+	// The clearing map's terrain is pure geometry now, so a different seed
+	// yields identical terrain but must still shuffle the scattered entities.
 	c2 := Generate(124, c)
-	same := true
 	for i := range a.Terrain {
 		if a.Terrain[i] != c2.Terrain[i] {
+			t.Fatal("clearing terrain should be seed-independent")
+		}
+	}
+	positions := func(w *sim.World) map[sim.Point]bool {
+		m := map[sim.Point]bool{}
+		for _, e := range w.Entities {
+			m[e.Pos] = true
+		}
+		return m
+	}
+	pa, pc := positions(a), positions(c2)
+	same := len(pa) == len(pc)
+	for p := range pa {
+		if !pc[p] {
 			same = false
 			break
 		}
 	}
 	if same {
-		t.Error("different seeds produced identical terrain")
+		t.Error("different seeds produced identical entity scatter")
 	}
 }
 
@@ -54,9 +69,6 @@ func TestGenerateContents(t *testing.T) {
 	}
 	if terrain[sim.TerrainRock] < 64*64*7/10 {
 		t.Errorf("map not mostly rock: %v", terrain)
-	}
-	if terrain[sim.TerrainGold] == 0 {
-		t.Error("no gold veins")
 	}
 	if w.At(sim.Point{X: 32, Y: 32}) != sim.TerrainDirt {
 		t.Error("no clearing at center")
