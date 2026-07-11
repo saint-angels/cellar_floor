@@ -34,6 +34,23 @@ function renderVeil() {
   }
 }
 
+// dominant thought: starving > hungry > lonely > gold today > seen > content
+export function composeThought(e: import("./types").RenderEntity): string | null {
+  const sp = world.types[e.s];
+  if (!sp || sp.kind !== "fauna" || e.dead) return null;
+  if (e.full <= 0) return "starving...";
+  if (e.full < sp.hungerThreshold) return "hungry";
+  if (sp.socialSize > 0 && (e.soc ?? 0) < sp.socialThreshold) return "feeling lonely";
+  if ((e.g24 ?? 0) > 0) return `struck ${e.g24} gold today!`;
+  const dayTicks = 86400 * (1000 / world.tickIntervalMs);
+  if (e.seenTick && world.tick - e.seenTick <= dayTicks) {
+    const seen = e.seenId != null ? world.entities.get(e.seenId) : undefined;
+    const name = seen?.owner ?? "a dwarf";
+    return `seen ${name} recently!`;
+  }
+  return "content";
+}
+
 export function startRender(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d")!;
   const map = document.getElementById("map")!;
@@ -94,6 +111,21 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.stroke();
         }
       }
+      ctx.font = "9px ui-monospace, monospace";
+      ctx.textAlign = "center";
+      for (const e of world.entities.values()) {
+        const thought = composeThought(e);
+        if (!thought) continue;
+        const t = Math.min(1, (now - e.movedAt) / lerpMs);
+        const bx = (e.px + (e.x - e.px) * t) * TILE + TILE / 2;
+        const by = (e.py + (e.y - e.py) * t) * TILE - 4;
+        const w2 = ctx.measureText(thought).width / 2 + 4;
+        ctx.fillStyle = "rgba(20, 17, 15, 0.85)";
+        ctx.fillRect(bx - w2, by - 10, w2 * 2, 12);
+        ctx.fillStyle = "#cfc9bf";
+        ctx.fillText(thought, bx, by - 1);
+      }
+      ctx.textAlign = "start";
       for (const [k, p] of Object.entries(world.mining)) {
         const i = Number(k);
         const bx = (i % world.width) * TILE;

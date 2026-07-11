@@ -224,6 +224,10 @@ function renderInspector() {
   ];
   if (sp?.kind === "fauna" && !e.dead) {
     lines.push(`fullness ${e.full.toFixed(1)} / ${sp.stomachSize}`);
+    if (sp.socialSize > 0) {
+      lines.push(`social ${(e.soc ?? 0).toFixed(1)} / ${sp.socialSize}`);
+    }
+    lines.push(`gold today: ${e.g24 ?? 0}`);
     lines.push(`doing: ${e.action || "idle"}`);
     if (e.home) lines.push(`home: ${e.home.x},${e.home.y}`);
   }

@@ -4,6 +4,9 @@ export interface EntityType {
   kind: "flora" | "fauna" | "structure";
   color: string;
   stomachSize: number;
+  hungerThreshold: number;
+  socialSize: number;
+  socialThreshold: number;
   fearRadius: number;
   popFloor: number;
   popCap: number;
@@ -24,6 +27,10 @@ export interface EntityView {
   res?: Record<string, number>;
   owner?: string;
   mt?: { x: number; y: number };
+  soc?: number;
+  g24?: number;
+  seenId?: number;
+  seenTick?: number;
 }
 
 export interface PlayerMsg {
