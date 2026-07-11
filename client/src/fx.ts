@@ -37,7 +37,7 @@ let floats: FloatText[] = [];
 const shownDamage = new Map<number, { shown: number; hp: number }>();
 let fxClock = 0;
 let lastNow = 0;
-const wasInside = new Map<number, boolean>();
+const toolCell = new Map<number, number>();
 // snapshots replace the world wholesale; local fx tracking would pop phantom
 // remainder numbers at stale cells, so drop it when a new snapshot lands
 let seenSnapshot = -1;
@@ -72,7 +72,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     seenSnapshot = world.snapshotVersion;
     shownDamage.clear();
     floats = [];
-    wasInside.clear();
+    toolCell.clear();
   }
   const dt = lastNow ? Math.min(now - lastNow, 100) : 16;
   lastNow = now;
@@ -94,7 +94,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
 
   for (const e of world.entities.values()) {
     if (e.dead || e.action !== "mining" || !e.mt) {
-      wasInside.delete(e.id);
+      toolCell.delete(e.id);
       continue;
     }
     const t = Math.min(1, (now - e.movedAt) / lerpMs);
@@ -106,12 +106,14 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     ctx.fillStyle = TOOL_COLOR;
     ctx.fillRect(tx - TOOL_SIZE / 2, ty - TOOL_SIZE / 2, TOOL_SIZE, TOOL_SIZE);
 
-    const inside =
-      tx >= e.mt.x * TILE && tx < (e.mt.x + 1) * TILE &&
-      ty >= e.mt.y * TILE && ty < (e.mt.y + 1) * TILE;
-    if (inside && !wasInside.get(e.id) && running) {
+    const cx2 = Math.floor(tx / TILE);
+    const cy2 = Math.floor(ty / TILE);
+    const inWorld = cx2 >= 0 && cy2 >= 0 && cx2 < world.width && cy2 < world.height;
+    const cell = inWorld ? cy2 * world.width + cx2 : -1;
+    const prev = toolCell.get(e.id) ?? -1;
+    const mineable = cell >= 0 && (world.terrainTypes[world.terrain[cell]]?.mineable ?? false);
+    if (mineable && cell !== prev && running) {
       spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
-      const cell = e.mt.y * world.width + e.mt.x;
       const dealt = world.mining[cell] ?? 0;
       const rec = shownDamage.get(cell);
       if (rec == null) {
@@ -119,11 +121,11 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
         shownDamage.set(cell, { shown: dealt, hp });
       } else if (dealt > rec.shown) {
-        spawnFloat(e.mt.x, e.mt.y, String(dealt - rec.shown));
+        spawnFloat(cx2, cy2, String(dealt - rec.shown));
         rec.shown = dealt;
       }
     }
-    wasInside.set(e.id, inside);
+    toolCell.set(e.id, cell);
   }
 
   // completion sweep, once per frame: a tracked cell that left the mining map
