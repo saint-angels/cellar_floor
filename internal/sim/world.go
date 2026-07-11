@@ -16,13 +16,31 @@ const (
 	TerrainFloor // mined-out stone
 )
 
-var terrainNames = [...]string{"grass", "dirt", "water", "rock", "floor"}
-
-func TerrainName(t Terrain) string { return terrainNames[t] }
-func Passable(t Terrain) bool {
-	return t == TerrainGrass || t == TerrainDirt || t == TerrainFloor
+// terrainAt looks a terrain value up in the config table; nil when the
+// value is out of range, which callers treat as inert.
+func (w *World) terrainAt(t Terrain) *data.TerrainType {
+	if int(t) >= len(w.cfg.Terrain) {
+		return nil
+	}
+	return &w.cfg.Terrain[t]
 }
-func Mineable(t Terrain) bool { return t == TerrainRock }
+
+func (w *World) Passable(t Terrain) bool {
+	tt := w.terrainAt(t)
+	return tt != nil && tt.Passable
+}
+
+func (w *World) Mineable(t Terrain) bool {
+	tt := w.terrainAt(t)
+	return tt != nil && tt.Mineable
+}
+
+func (w *World) TerrainName(t Terrain) string {
+	if tt := w.terrainAt(t); tt != nil {
+		return tt.ID
+	}
+	return "unknown"
+}
 
 type Point struct {
 	X int `json:"x"`

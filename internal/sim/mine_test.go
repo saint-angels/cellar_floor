@@ -13,7 +13,8 @@ const torchLifespan = 10
 // Fast-mining config: speed 1 (a step per tick), 10 ticks per cell.
 func mineCfg() *data.Config {
 	return &data.Config{
-		Sim: data.SimConfig{TickRate: 2},
+		Sim:     data.SimConfig{TickRate: 2},
+		Terrain: append(data.CanonicalTerrain(), data.TerrainType{ID: "softish", Color: "#575049", Mineable: true, MineFactor: 0.5}),
 		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.01}}},
@@ -167,6 +168,34 @@ func TestDwarfMinesAdjacentRock(t *testing.T) {
 	}
 	if len(w.TerrainDirtyAndReset()) == 0 {
 		t.Error("terrain change not in dirty set")
+	}
+}
+
+func TestSoftRockMinesFaster(t *testing.T) {
+	// two identical worlds, one face each; soft face at factor 0.5
+	// completes in half the steps of the plain rock face
+	steps := func(soft bool) int {
+		w := mineWorld(5, 5)
+		face := Point{3, 2}
+		w.Terrain[idx(w, face)] = TerrainRock
+		if soft {
+			w.Terrain[idx(w, face)] = Terrain(5)
+		}
+		d := w.Spawn("dwarf", Point{2, 2})
+		d.Fullness = 10
+		for i := 0; i < 60; i++ {
+			w.Step()
+			if w.At(face) == TerrainFloor {
+				return i
+			}
+		}
+		t.Fatalf("face never mined (soft=%v)", soft)
+		return -1
+	}
+	hard := steps(false)
+	softSteps := steps(true)
+	if softSteps >= hard {
+		t.Fatalf("soft rock not faster: soft %d vs hard %d", softSteps, hard)
 	}
 }
 

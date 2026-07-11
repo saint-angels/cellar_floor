@@ -10,7 +10,8 @@ import (
 // light source used to carve a lit island out of an otherwise dark world.
 func darkCfg() *data.Config {
 	return &data.Config{
-		Sim: data.SimConfig{TickRate: 2},
+		Sim:     data.SimConfig{TickRate: 2},
+		Terrain: data.CanonicalTerrain(),
 		Types: map[string]*data.EntityType{
 			"miner": {ID: "miner", Name: "Miner", Kind: "fauna", Color: "#fff",
 				BiteSize: 2, StomachSize: 10, HungerThreshold: 0,

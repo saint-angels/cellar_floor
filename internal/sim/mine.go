@@ -12,7 +12,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	if s.MineTicks <= 0 {
 		return nil, false
 	}
-	if e.MineTarget != nil && (!Mineable(w.At(*e.MineTarget)) || !w.Lit(*e.MineTarget)) {
+	if e.MineTarget != nil && (!w.Mineable(w.At(*e.MineTarget)) || !w.Lit(*e.MineTarget)) {
 		e.MineTarget = nil
 		w.markDirty(e.ID)
 	}
@@ -29,7 +29,11 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	if adjacent(e.Pos, target) {
 		e.Action = "mining"
 		i := target.Y*w.Width + target.X
-		w.MineProgress[i] += 1.0 / float64(s.MineTicks)
+		total := float64(s.MineTicks)
+		if tt := w.terrainAt(w.At(target)); tt != nil && tt.MineFactor > 0 {
+			total *= tt.MineFactor
+		}
+		w.MineProgress[i] += 1.0 / total
 		w.markDirty(e.ID)
 		if w.MineProgress[i] < 1 {
 			return nil, true
@@ -98,7 +102,7 @@ func (w *World) pickMineTarget(e *Entity) (Point, bool) {
 				continue
 			}
 			t := w.At(q)
-			if Mineable(t) {
+			if w.Mineable(t) {
 				if !w.Lit(q) {
 					continue
 				}
@@ -107,7 +111,7 @@ func (w *World) pickMineTarget(e *Entity) (Point, bool) {
 				}
 				continue
 			}
-			if !Passable(t) {
+			if !w.Passable(t) {
 				continue
 			}
 			if _, seen := dist[q]; seen {
@@ -163,7 +167,7 @@ func (w *World) nextStepToward(start, target Point) (Point, bool) {
 			if _, seen := prev[q]; seen {
 				continue
 			}
-			if !Passable(w.At(q)) {
+			if !w.Passable(w.At(q)) {
 				continue
 			}
 			prev[q] = p

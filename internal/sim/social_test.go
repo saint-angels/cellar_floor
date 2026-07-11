@@ -11,7 +11,8 @@ import (
 // Drain 1/tick from size 10, refill 2/tick, radius 2, threshold 4.
 func socialCfg() *data.Config {
 	return &data.Config{
-		Sim: data.SimConfig{TickRate: 2},
+		Sim:     data.SimConfig{TickRate: 2},
+		Terrain: data.CanonicalTerrain(),
 		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
 				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6}}},

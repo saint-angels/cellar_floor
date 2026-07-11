@@ -162,7 +162,7 @@ func (w *World) move(e *Entity, ref Point, away bool) {
 		bestD := Dist(e.Pos, ref)
 		for _, n := range neighbors {
 			p := Point{e.Pos.X + n.X, e.Pos.Y + n.Y}
-			if !w.InBounds(p) || !Passable(w.At(p)) || w.FaunaAt(p) != nil {
+			if !w.InBounds(p) || !w.Passable(w.At(p)) || w.FaunaAt(p) != nil {
 				continue
 			}
 			d := Dist(p, ref)
@@ -186,7 +186,7 @@ func (w *World) wander(e *Entity) {
 		e.MoveAcc--
 		n := neighbors[w.RandN(len(neighbors))]
 		p := Point{e.Pos.X + n.X, e.Pos.Y + n.Y}
-		if w.InBounds(p) && Passable(w.At(p)) && w.FaunaAt(p) == nil {
+		if w.InBounds(p) && w.Passable(w.At(p)) && w.FaunaAt(p) == nil {
 			delete(w.occ, e.Pos)
 			e.Pos = p
 			w.occ[p] = e.ID

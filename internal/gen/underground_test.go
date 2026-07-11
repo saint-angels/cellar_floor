@@ -9,7 +9,8 @@ import (
 
 func undergroundCfg() *data.Config {
 	return &data.Config{
-		Sim: data.SimConfig{TickRate: 2},
+		Sim:     data.SimConfig{TickRate: 2},
+		Terrain: data.CanonicalTerrain(),
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
 			ClearingRadius: 4,

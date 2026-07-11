@@ -173,7 +173,7 @@ func (w *World) reproduceAndGuard() []Event {
 		var free *Point
 		for _, n := range neighbors {
 			p := Point{e.Pos.X + n.X, e.Pos.Y + n.Y}
-			if w.InBounds(p) && Passable(w.At(p)) && w.FaunaAt(p) == nil {
+			if w.InBounds(p) && w.Passable(w.At(p)) && w.FaunaAt(p) == nil {
 				free = &p
 				break
 			}
@@ -222,7 +222,7 @@ func (w *World) reproduceAndGuard() []Event {
 func (w *World) randomFreeTile() (Point, bool) {
 	for i := 0; i < 50; i++ {
 		p := Point{w.RandN(w.Width), w.RandN(w.Height)}
-		if Passable(w.At(p)) && w.FaunaAt(p) == nil {
+		if w.Passable(w.At(p)) && w.FaunaAt(p) == nil {
 			return p, true
 		}
 	}

@@ -22,6 +22,8 @@ func flatWorld(t *testing.T, w, h int, seed uint64) *World {
 	for _, s := range cfg.Types {
 		s.PopFloor = 0
 	}
+	// an appended sixth type so table-driven terrain tests can probe it
+	cfg.Terrain = append(cfg.Terrain, data.TerrainType{ID: "softish", Color: "#575049", Mineable: true, MineFactor: 0.5})
 	return NewWorld(w, h, seed, cfg) // all grass terrain by default
 }
 

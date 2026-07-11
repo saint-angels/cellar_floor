@@ -84,7 +84,7 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 	for y := 0; y < g.Height; y++ {
 		for x := 0; x < g.Width; x++ {
 			p := sim.Point{X: x, Y: y}
-			tname := sim.TerrainName(w.At(p))
+			tname := w.TerrainName(w.At(p))
 			for _, rule := range g.Scatter {
 				if rule.Terrain != tname {
 					continue
@@ -94,7 +94,7 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 				}
 				s := cfg.Types[rule.Type]
 				if s.Kind == "fauna" {
-					if !sim.Passable(w.At(p)) || w.FaunaAt(p) != nil {
+					if !w.Passable(w.At(p)) || w.FaunaAt(p) != nil {
 						continue
 					}
 				}

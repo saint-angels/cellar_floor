@@ -18,7 +18,7 @@ func (s *Server) placeTorch(token string, x, y int) PlayerMsg {
 		return pm
 	}
 	p := sim.Point{X: x, Y: y}
-	if !s.world.InBounds(p) || !sim.Passable(s.world.At(p)) {
+	if !s.world.InBounds(p) || !s.world.Passable(s.world.At(p)) {
 		pm.Error = "can't place a torch there"
 		return pm
 	}

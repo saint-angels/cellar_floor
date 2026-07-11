@@ -9,7 +9,8 @@ import (
 // structCfg has a torch that burns out and decays, and an eternal campfire.
 func structCfg() *data.Config {
 	return &data.Config{
-		Sim: data.SimConfig{TickRate: 2},
+		Sim:     data.SimConfig{TickRate: 2},
+		Terrain: data.CanonicalTerrain(),
 		Types: map[string]*data.EntityType{
 			"torch": {ID: "torch", Name: "Torch", Kind: "structure", Color: "#ffb347",
 				LightRadius: 3, Lifespan: 10, DecayTicks: 5},
@@ -51,7 +52,8 @@ func TestTorchBurnsOutAndDecays(t *testing.T) {
 
 func TestBurnoutKeepsFaunaOccupancy(t *testing.T) {
 	cfg := &data.Config{
-		Sim: data.SimConfig{TickRate: 2},
+		Sim:     data.SimConfig{TickRate: 2},
+		Terrain: data.CanonicalTerrain(),
 		Types: map[string]*data.EntityType{
 			"torch": {ID: "torch", Name: "Torch", Kind: "structure", Color: "#ffb347",
 				LightRadius: 3, Lifespan: 3, DecayTicks: 5},

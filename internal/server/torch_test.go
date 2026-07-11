@@ -20,7 +20,7 @@ func findFreeDirt(t *testing.T, s *Server) sim.Point {
 	for y := 0; y < w.Height; y++ {
 		for x := 0; x < w.Width; x++ {
 			p := sim.Point{X: x, Y: y}
-			if sim.Passable(w.At(p)) && !occupied[p] {
+			if w.Passable(w.At(p)) && !occupied[p] {
 				return p
 			}
 		}
@@ -36,7 +36,7 @@ func findRock(t *testing.T, s *Server) sim.Point {
 	for y := 0; y < w.Height; y++ {
 		for x := 0; x < w.Width; x++ {
 			p := sim.Point{X: x, Y: y}
-			if !sim.Passable(w.At(p)) {
+			if !w.Passable(w.At(p)) {
 				return p
 			}
 		}
@@ -125,7 +125,7 @@ func TestPlaceTorchOnFaunaCellAllowed(t *testing.T) {
 	found := false
 	for _, id := range s.world.SortedIDs() {
 		e := s.world.Entities[id]
-		if !e.Dead && s.cfg.Types[e.Type].Kind == "fauna" && sim.Passable(s.world.At(e.Pos)) {
+		if !e.Dead && s.cfg.Types[e.Type].Kind == "fauna" && s.world.Passable(s.world.At(e.Pos)) {
 			faunaPos = e.Pos
 			found = true
 			break
