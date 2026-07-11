@@ -34,21 +34,39 @@ function renderVeil() {
   }
 }
 
-// dominant thought: starving > hungry > lonely > gold today > seen > content
+// bubble pacing: each entity shows its thought for SHOW ms out of every
+// PERIOD ms of wall clock, phase-offset by id so dwarves pop at
+// different moments
+const THOUGHT_PERIOD_MS = 60000;
+const THOUGHT_SHOW_MS = 10000;
+
+function thoughtVisible(id: number, now: number): boolean {
+  return (now + id * 7919) % THOUGHT_PERIOD_MS < THOUGHT_SHOW_MS;
+}
+
+// thought rules live in the type's data (entities.toml thoughts list);
+// the first rule whose named condition matches wins
 export function composeThought(e: import("./types").RenderEntity): string | null {
   const sp = world.types[e.s];
-  if (!sp || sp.kind !== "fauna" || e.dead) return null;
-  if (e.full <= 0) return "starving...";
-  if (e.full < sp.hungerThreshold) return "hungry";
-  if (sp.socialSize > 0 && (e.soc ?? 0) < sp.socialThreshold) return "feeling lonely";
-  if ((e.g24 ?? 0) > 0) return `struck ${e.g24} gold today!`;
+  if (!sp || sp.kind !== "fauna" || e.dead || !sp.thoughts) return null;
   const dayTicks = 86400 * (1000 / world.tickIntervalMs);
-  if (e.seenTick && world.tick - e.seenTick <= dayTicks) {
+  for (const rule of sp.thoughts) {
+    let match = false;
+    switch (rule.when) {
+      case "starving": match = e.full <= 0; break;
+      case "hungry": match = e.full < sp.hungerThreshold; break;
+      case "lonely": match = sp.socialSize > 0 && (e.soc ?? 0) < sp.socialThreshold; break;
+      case "struck_gold": match = (e.g24 ?? 0) > 0; break;
+      case "seen_recently": match = !!e.seenTick && world.tick - e.seenTick <= dayTicks; break;
+      case "always": match = true; break;
+    }
+    if (!match) continue;
     const seen = e.seenId != null ? world.entities.get(e.seenId) : undefined;
-    const name = seen?.owner ?? "a dwarf";
-    return `seen ${name} recently!`;
+    return rule.text
+      .replace("{gold}", String(e.g24 ?? 0))
+      .replace("{name}", seen?.owner ?? "a dwarf");
   }
-  return "content";
+  return null;
 }
 
 export function startRender(canvas: HTMLCanvasElement) {
@@ -114,6 +132,7 @@ export function startRender(canvas: HTMLCanvasElement) {
       ctx.font = "9px ui-monospace, monospace";
       ctx.textAlign = "center";
       for (const e of world.entities.values()) {
+        if (!thoughtVisible(e.id, now)) continue;
         const thought = composeThought(e);
         if (!thought) continue;
         const t = Math.min(1, (now - e.movedAt) / lerpMs);

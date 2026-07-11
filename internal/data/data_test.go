@@ -272,3 +272,36 @@ func TestSocialValidation(t *testing.T) {
 		t.Fatalf("complete social block should validate: %v", err)
 	}
 }
+
+func TestThoughtsParseAndValidate(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := cfg.Types["dwarf"]
+	if len(d.Thoughts) != 6 {
+		t.Fatalf("dwarf thoughts = %d, want 6", len(d.Thoughts))
+	}
+	if d.Thoughts[0].When != "starving" || d.Thoughts[5].When != "always" {
+		t.Fatalf("thought order wrong: first %q last %q", d.Thoughts[0].When, d.Thoughts[5].When)
+	}
+	if m := cfg.Types["mushroom"]; len(m.Thoughts) != 0 {
+		t.Fatal("mushroom should have no thoughts")
+	}
+}
+
+func TestThoughtValidationRejectsBadRules(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Types["shroom"].Thoughts = []Thought{{When: "moody", Text: "hmm"}}
+	if err := Validate(cfg); err == nil {
+		t.Fatal("unknown thought condition must fail validation")
+	}
+	cfg.Types["shroom"].Thoughts = []Thought{{When: "always", Text: ""}}
+	if err := Validate(cfg); err == nil {
+		t.Fatal("empty thought text must fail validation")
+	}
+	cfg.Types["shroom"].Thoughts = []Thought{{When: "always", Text: "just a mushroom"}}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("valid thought rejected: %v", err)
+	}
+}

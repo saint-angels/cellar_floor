@@ -31,6 +31,14 @@ social_threshold = 4
 social_radius = 3
 social_drain_days = 2
 social_refill_hours = 1
+thoughts = [
+  { when = "starving",      text = "starving..." },
+  { when = "hungry",        text = "hungry" },
+  { when = "lonely",        text = "feeling lonely" },
+  { when = "struck_gold",   text = "struck {gold} gold today!" },
+  { when = "seen_recently", text = "seen {name} recently!" },
+  { when = "always",        text = "content" },
+]
 
 [type.torch]
 name = "Torch"

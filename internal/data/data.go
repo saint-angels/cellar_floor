@@ -22,6 +22,19 @@ type Desire struct {
 	Aversion bool    `toml:"aversion" json:"aversion"`
 }
 
+// Thought is one bubble rule: the first list entry whose condition
+// matches wins. Conditions come from a fixed vocabulary; text may use
+// {gold} and {name} placeholders, substituted client-side.
+type Thought struct {
+	When string `toml:"when" json:"when"`
+	Text string `toml:"text" json:"text"`
+}
+
+var validThoughtConditions = map[string]bool{
+	"starving": true, "hungry": true, "lonely": true,
+	"struck_gold": true, "seen_recently": true, "always": true,
+}
+
 type EntityType struct {
 	ID                string    `toml:"-" json:"id"`
 	Name              string    `toml:"name" json:"name"`
@@ -63,6 +76,7 @@ type EntityType struct {
 	SocialDrain       float64   `toml:"-" json:"-"`
 	SocialRefill      float64   `toml:"-" json:"-"`
 	LightRadius       int       `toml:"light_radius" json:"lightRadius"`
+	Thoughts          []Thought `toml:"thoughts" json:"thoughts,omitempty"`
 }
 
 type SimConfig struct {
@@ -190,6 +204,14 @@ func Validate(cfg *Config) error {
 		for _, p := range s.Produces {
 			if p.RegrowDays < 0 {
 				return fmt.Errorf("type %s: regrow_days must be non-negative", id)
+			}
+		}
+		for _, th := range s.Thoughts {
+			if !validThoughtConditions[th.When] {
+				return fmt.Errorf("type %s: unknown thought condition %q", id, th.When)
+			}
+			if th.Text == "" {
+				return fmt.Errorf("type %s: thought %q needs text", id, th.When)
 			}
 		}
 		if s.Kind == "structure" && s.Lifespan > 0 && s.DecayTicks <= 0 {

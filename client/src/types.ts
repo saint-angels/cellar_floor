@@ -1,3 +1,8 @@
+export interface Thought {
+  when: string;
+  text: string;
+}
+
 export interface EntityType {
   id: string;
   name: string;
@@ -13,6 +18,7 @@ export interface EntityType {
   lightRadius: number;
   eats: string[] | null;
   shelters: string[] | null;
+  thoughts?: Thought[];
 }
 
 export interface EntityView {
