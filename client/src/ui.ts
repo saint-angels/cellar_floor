@@ -86,8 +86,12 @@ function renderMyDwarf() {
   if (world.playerState === "alive" && world.playerDwarfId != null) {
     const e = world.entities.get(world.playerDwarfId);
     if (e) {
-      const cap = world.types[e.s]?.stomachSize ?? 0;
-      box.textContent = `#${e.id}, ${e.action || "idle"}, fullness ${e.full.toFixed(1)} / ${cap}`;
+      const sp = world.types[e.s];
+      let line = `#${e.id}, ${e.action || "idle"}, fullness ${e.full.toFixed(1)} / ${sp?.stomachSize ?? 0}`;
+      if ((sp?.socialSize ?? 0) > 0) {
+        line += `, social ${(e.soc ?? 0).toFixed(1)} / ${sp!.socialSize}`;
+      }
+      box.textContent = line;
       return;
     }
   }
