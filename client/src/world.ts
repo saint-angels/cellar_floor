@@ -15,6 +15,7 @@ export class WorldState {
   gold = 0;
   mining: Record<string, number> = {};
   terrainVersion = 0;
+  snapshotVersion = 0;
   lit: boolean[] = [];
   lightVersion = 0;
   playerState: "unknown" | "none" | "alive" | "dead" = "unknown";
@@ -45,6 +46,7 @@ export class WorldState {
     this.timeScale = m.timeScale;
     this.entities.clear();
     for (const e of (m.entities ?? [])) this.upsert(e);
+    this.snapshotVersion++;
     this.recomputeLight();
     this.checkOwnDwarf();
     this.fireChange();

@@ -38,6 +38,9 @@ const shownDamage = new Map<number, { shown: number; hp: number }>();
 let fxClock = 0;
 let lastNow = 0;
 const wasInside = new Map<number, boolean>();
+// snapshots replace the world wholesale; local fx tracking would pop phantom
+// remainder numbers at stale cells, so drop it when a new snapshot lands
+let seenSnapshot = -1;
 
 const easeInQuad = (t: number) => t * t;
 
@@ -65,6 +68,12 @@ export function initFx() {
 }
 
 export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: number) {
+  if (world.snapshotVersion !== seenSnapshot) {
+    seenSnapshot = world.snapshotVersion;
+    shownDamage.clear();
+    floats = [];
+    wasInside.clear();
+  }
   const dt = lastNow ? Math.min(now - lastNow, 100) : 16;
   lastNow = now;
   const running = world.timeScale > 0;
