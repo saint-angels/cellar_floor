@@ -67,6 +67,7 @@ type World struct {
 	counts       map[string]int
 	sortedCache  []int
 	sortedDirty  bool
+	lit          []bool
 }
 
 func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
@@ -97,6 +98,39 @@ func (w *World) SetConfig(cfg *data.Config) {
 	}
 	w.rebuildOcc()
 	w.rebuildCounts()
+	w.RecomputeLight()
+}
+
+// RecomputeLight rebuilds the derived lit bitfield from living light
+// sources. Called on load and whenever a light source spawns or dies.
+func (w *World) RecomputeLight() {
+	w.lit = make([]bool, w.Width*w.Height)
+	for _, id := range w.SortedIDs() {
+		e := w.Entities[id]
+		if e.Dead {
+			continue
+		}
+		s, ok := w.cfg.Types[e.Type]
+		if !ok || s.LightRadius <= 0 {
+			continue
+		}
+		r := s.LightRadius
+		for y := maxInt(0, e.Pos.Y-r); y <= minInt(w.Height-1, e.Pos.Y+r); y++ {
+			for x := maxInt(0, e.Pos.X-r); x <= minInt(w.Width-1, e.Pos.X+r); x++ {
+				dx, dy := x-e.Pos.X, y-e.Pos.Y
+				if dx*dx+dy*dy <= r*r {
+					w.lit[y*w.Width+x] = true
+				}
+			}
+		}
+	}
+}
+
+func (w *World) Lit(p Point) bool {
+	if w.lit == nil {
+		return false
+	}
+	return w.lit[p.Y*w.Width+p.X]
 }
 
 func (w *World) rebuildCounts() {
@@ -208,6 +242,9 @@ func (w *World) Spawn(typeID string, p Point) *Entity {
 		w.occ[p] = e.ID
 	}
 	w.dirty[e.ID] = true
+	if s.LightRadius > 0 {
+		w.RecomputeLight()
+	}
 	return e
 }
 

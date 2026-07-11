@@ -128,6 +128,9 @@ func (w *World) kill(e *Entity, evType, msg string) Event {
 	e.Action = "dead"
 	e.DecayLeft = s.DecayTicks
 	w.markDirty(e.ID)
+	if s.LightRadius > 0 {
+		w.RecomputeLight()
+	}
 	return Event{Tick: w.Tick, Type: evType, Actor: e.ID, ActorType: e.Type, Msg: msg}
 }
 

@@ -21,7 +21,7 @@ func structCfg() *data.Config {
 
 func newStructWorld(t *testing.T) *World {
 	t.Helper()
-	return NewWorld(5, 5, 1, structCfg())
+	return NewWorld(20, 20, 1, structCfg())
 }
 
 func TestTorchBurnsOutAndDecays(t *testing.T) {
