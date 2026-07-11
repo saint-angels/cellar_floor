@@ -64,8 +64,14 @@ func (s *Server) spawnDwarf(token, name string) PlayerMsg {
 		pm.Error = "no room in the clearing"
 		return pm
 	}
+	_, returning := s.players[token]
 	e := s.world.Spawn("dwarf", pos)
 	s.players[token] = &Player{Name: name, DwarfID: e.ID}
+	if !returning {
+		// a brand-new player brings one coin to the colony pot; respawns
+		// bring nothing, so cycling dwarves cannot farm gold
+		s.world.Gold++
+	}
 	return PlayerMsg{Type: "player", State: "alive", DwarfID: e.ID, Name: name}
 }
 

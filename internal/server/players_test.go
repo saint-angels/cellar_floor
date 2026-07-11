@@ -148,3 +148,30 @@ func TestPlayersPersistRoundTrip(t *testing.T) {
 		t.Fatalf("missing file should yield empty map, got %v %v", empty, err)
 	}
 }
+
+func TestFirstSpawnGrantsOneGold(t *testing.T) {
+	s := newPlayerServer(t)
+	start := s.world.Gold
+	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
+		t.Fatalf("spawn: %v", pm.Error)
+	}
+	if s.world.Gold != start+1 {
+		t.Fatalf("gold = %d, want %d after a new player's first spawn", s.world.Gold, start+1)
+	}
+	// a second new player brings another coin
+	if pm := s.spawnDwarf("tok2", "Sasha"); pm.Error != "" {
+		t.Fatalf("spawn: %v", pm.Error)
+	}
+	if s.world.Gold != start+2 {
+		t.Fatalf("gold = %d, want %d after a second new player", s.world.Gold, start+2)
+	}
+	// mark tok1's dwarf dead; the respawn must not grant again
+	// (flipping Dead is enough for spawnDwarf's alive check; pop cap is far off)
+	s.world.Entities[s.players["tok1"].DwarfID].Dead = true
+	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
+		t.Fatalf("respawn: %v", pm.Error)
+	}
+	if s.world.Gold != start+2 {
+		t.Fatalf("gold = %d, want %d; respawn must not farm gold", s.world.Gold, start+2)
+	}
+}
