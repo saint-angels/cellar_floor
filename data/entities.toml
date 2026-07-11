@@ -31,6 +31,9 @@ social_threshold = 4
 social_radius = 3
 social_drain_days = 2
 social_refill_hours = 1
+# thought bubbles: first matching rule wins, order is priority
+# conditions: starving, hungry, lonely, struck_gold, seen_recently, always
+# placeholders in text: {gold} = gold in last 24h, {name} = last seen dwarf
 thoughts = [
   { when = "starving",      text = "starving..." },
   { when = "hungry",        text = "hungry" },
