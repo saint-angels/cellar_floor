@@ -2,7 +2,7 @@
 name = "Mushroom"
 kind = "flora"
 color = "#c4b5d9"
-produces = [{ resource = "mushroom", amount = 6, max = 6, regrow = 0.00002 }]
+produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 1.75 }]
 
 [type.dwarf]
 name = "Dwarf"
@@ -12,32 +12,32 @@ eats = ["mushroom"]
 bite_size = 2.0
 stomach_size = 10.0
 hunger_threshold = 4.0
-metabolism = 0.00006
-starve_ticks = 350000
+stomach_drain_hours = 24
+starve_hours = 48
 fear_radius = 0
-speed = 0.5          # cells per tick at 2 ticks per second: 1 cell per second
+cells_per_second = 1.0
 home_range = 0
-lifespan = 10000000
-mature_age = 1000000
+lifespan_days = 58
+mature_days = 6
 repro_threshold = 9.0
 repro_chance = 0.0
 repro_cost = 5.0
 pop_floor = 0
 pop_cap = 10
-decay_ticks = 172800
-mine_ticks = 172800
+decay_hours = 24
+mine_hours = 24
 
 [type.torch]
 name = "Torch"
 kind = "structure"
 color = "#ffb347"
 light_radius = 5
-lifespan = 172800   # ~1 real day at tick_rate 2.0
-decay_ticks = 3600  # burnt stub lingers ~30 min
+lifespan_days = 1
+decay_hours = 0.5   # burnt stub lingers 30 min
 
 [type.campfire]
 name = "Campfire"
 kind = "structure"
 color = "#e25822"
 light_radius = 8
-lifespan = 0        # never burns out
+lifespan_days = 0   # never burns out

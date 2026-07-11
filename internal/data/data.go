@@ -2,16 +2,18 @@ package data
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 )
 
 type Produce struct {
-	Resource string  `toml:"resource" json:"resource"`
-	Amount   float64 `toml:"amount" json:"amount"`
-	Max      float64 `toml:"max" json:"max"`
-	Regrow   float64 `toml:"regrow" json:"regrow"`
+	Resource   string  `toml:"resource" json:"resource"`
+	Amount     float64 `toml:"amount" json:"amount"`
+	Max        float64 `toml:"max" json:"max"`
+	Regrow     float64 `toml:"-" json:"regrow"`
+	RegrowDays float64 `toml:"regrow_days" json:"-"`
 }
 
 type Desire struct {
@@ -21,32 +23,39 @@ type Desire struct {
 }
 
 type EntityType struct {
-	ID              string    `toml:"-" json:"id"`
-	Name            string    `toml:"name" json:"name"`
-	Kind            string    `toml:"kind" json:"kind"`
-	Color           string    `toml:"color" json:"color"`
-	Produces        []Produce `toml:"produces" json:"produces"`
-	Eats            []string  `toml:"eats" json:"eats"`
-	Shelters        []string  `toml:"shelters" json:"shelters"`
-	Desires         []Desire  `toml:"desires" json:"desires"`
-	BiteSize        float64   `toml:"bite_size" json:"biteSize"`
-	StomachSize     float64   `toml:"stomach_size" json:"stomachSize"`
-	HungerThreshold float64   `toml:"hunger_threshold" json:"hungerThreshold"`
-	Metabolism      float64   `toml:"metabolism" json:"metabolism"`
-	StarveTicks     int       `toml:"starve_ticks" json:"starveTicks"`
-	FearRadius      int       `toml:"fear_radius" json:"fearRadius"`
-	Speed           float64   `toml:"speed" json:"speed"`
-	HomeRange       int       `toml:"home_range" json:"homeRange"`
-	Lifespan        int       `toml:"lifespan" json:"lifespan"`
-	MatureAge       int       `toml:"mature_age" json:"matureAge"`
-	ReproThreshold  float64   `toml:"repro_threshold" json:"reproThreshold"`
-	ReproChance     float64   `toml:"repro_chance" json:"reproChance"`
-	ReproCost       float64   `toml:"repro_cost" json:"reproCost"`
-	PopFloor        int       `toml:"pop_floor" json:"popFloor"`
-	PopCap          int       `toml:"pop_cap" json:"popCap"`
-	DecayTicks      int       `toml:"decay_ticks" json:"decayTicks"`
-	MineTicks       int       `toml:"mine_ticks" json:"mineTicks"`
-	LightRadius     int       `toml:"light_radius" json:"lightRadius"`
+	ID                string    `toml:"-" json:"id"`
+	Name              string    `toml:"name" json:"name"`
+	Kind              string    `toml:"kind" json:"kind"`
+	Color             string    `toml:"color" json:"color"`
+	Produces          []Produce `toml:"produces" json:"produces"`
+	Eats              []string  `toml:"eats" json:"eats"`
+	Shelters          []string  `toml:"shelters" json:"shelters"`
+	Desires           []Desire  `toml:"desires" json:"desires"`
+	BiteSize          float64   `toml:"bite_size" json:"biteSize"`
+	StomachSize       float64   `toml:"stomach_size" json:"stomachSize"`
+	HungerThreshold   float64   `toml:"hunger_threshold" json:"hungerThreshold"`
+	Metabolism        float64   `toml:"-" json:"metabolism"`
+	StomachDrainHours float64   `toml:"stomach_drain_hours" json:"-"`
+	StarveTicks       int       `toml:"-" json:"starveTicks"`
+	StarveHours       float64   `toml:"starve_hours" json:"-"`
+	FearRadius        int       `toml:"fear_radius" json:"fearRadius"`
+	Speed             float64   `toml:"-" json:"speed"`
+	CellsPerSecond    float64   `toml:"cells_per_second" json:"-"`
+	HomeRange         int       `toml:"home_range" json:"homeRange"`
+	Lifespan          int       `toml:"-" json:"lifespan"`
+	LifespanDays      float64   `toml:"lifespan_days" json:"-"`
+	MatureAge         int       `toml:"-" json:"matureAge"`
+	MatureDays        float64   `toml:"mature_days" json:"-"`
+	ReproThreshold    float64   `toml:"repro_threshold" json:"reproThreshold"`
+	ReproChance       float64   `toml:"repro_chance" json:"reproChance"`
+	ReproCost         float64   `toml:"repro_cost" json:"reproCost"`
+	PopFloor          int       `toml:"pop_floor" json:"popFloor"`
+	PopCap            int       `toml:"pop_cap" json:"popCap"`
+	DecayTicks        int       `toml:"-" json:"decayTicks"`
+	DecayHours        float64   `toml:"decay_hours" json:"-"`
+	MineTicks         int       `toml:"-" json:"mineTicks"`
+	MineHours         float64   `toml:"mine_hours" json:"-"`
+	LightRadius       int       `toml:"light_radius" json:"lightRadius"`
 }
 
 type SimConfig struct {
@@ -103,10 +112,39 @@ func Load(dir string) (*Config, error) {
 	for id, t := range cfg.Types {
 		t.ID = id
 	}
+	if cfg.Sim.TickRate <= 0 {
+		return nil, fmt.Errorf("sim: tick_rate must be positive")
+	}
+	cfg.resolveTimes()
 	if err := Validate(cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+// resolveTimes converts the unit-named data fields into internal ticks
+// and per-tick rates using the sim tick rate.
+func (c *Config) resolveTimes() {
+	tr := c.Sim.TickRate
+	hours := func(h float64) int { return int(math.Round(h * 3600 * tr)) }
+	days := func(d float64) int { return int(math.Round(d * 86400 * tr)) }
+	for _, t := range c.Types {
+		t.MineTicks = hours(t.MineHours)
+		t.StarveTicks = hours(t.StarveHours)
+		t.DecayTicks = hours(t.DecayHours)
+		t.Lifespan = days(t.LifespanDays)
+		t.MatureAge = days(t.MatureDays)
+		if t.StomachDrainHours > 0 {
+			t.Metabolism = t.StomachSize / (t.StomachDrainHours * 3600 * tr)
+		}
+		t.Speed = t.CellsPerSecond / tr
+		for i := range t.Produces {
+			p := &t.Produces[i]
+			if p.RegrowDays > 0 {
+				p.Regrow = p.Max / (p.RegrowDays * 86400 * tr)
+			}
+		}
+	}
 }
 
 func Validate(cfg *Config) error {
@@ -126,6 +164,16 @@ func Validate(cfg *Config) error {
 		if s.LightRadius < 0 {
 			return fmt.Errorf("type %s: light_radius must be non-negative", id)
 		}
+		if s.MineHours < 0 || s.StarveHours < 0 || s.DecayHours < 0 ||
+			s.LifespanDays < 0 || s.MatureDays < 0 || s.StomachDrainHours < 0 ||
+			s.CellsPerSecond < 0 {
+			return fmt.Errorf("type %s: time fields must be non-negative", id)
+		}
+		for _, p := range s.Produces {
+			if p.RegrowDays < 0 {
+				return fmt.Errorf("type %s: regrow_days must be non-negative", id)
+			}
+		}
 		if s.Kind == "structure" && s.Lifespan > 0 && s.DecayTicks <= 0 {
 			return fmt.Errorf("type %s: a structure with a lifespan needs positive decay_ticks", id)
 		}
@@ -143,13 +191,13 @@ func Validate(cfg *Config) error {
 			if s.StomachSize <= 0 || s.BiteSize <= 0 || s.Speed <= 0 ||
 				s.Metabolism <= 0 || s.StarveTicks <= 0 || s.DecayTicks <= 0 ||
 				s.Lifespan <= 0 || s.PopCap <= 0 {
-				return fmt.Errorf("type %s: fauna requires positive stomach_size, bite_size, speed, metabolism, starve_ticks, decay_ticks, lifespan, pop_cap", id)
+				return fmt.Errorf("type %s: fauna requires positive stomach_size, bite_size, cells_per_second, stomach_drain_hours, starve_hours, decay_hours, lifespan_days, pop_cap", id)
 			}
 			if len(s.Eats) == 0 {
 				return fmt.Errorf("type %s: fauna must eat something", id)
 			}
 			if s.MineTicks < 0 {
-				return fmt.Errorf("type %s: mine_ticks must be non-negative", id)
+				return fmt.Errorf("type %s: mine_hours must be non-negative", id)
 			}
 		}
 	}
