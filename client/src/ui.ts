@@ -55,10 +55,10 @@ function initLevel() {
   const btn = document.getElementById("claim-btn") as HTMLButtonElement;
   btn.onclick = () => sendClaim();
   world.onChange(() => {
-    label.textContent = `Lv ${world.level}`;
     const span = world.nextLevelGold - world.prevLevelGold;
-    const frac = span > 0 ? (world.goldMined - world.prevLevelGold) / span : 0;
-    fill.style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
+    const into = Math.max(0, Math.min(span, world.goldMined - world.prevLevelGold));
+    label.textContent = span > 0 ? `Lv ${world.level} ${into}/${span}` : `Lv ${world.level}`;
+    fill.style.width = `${span > 0 ? (into / span) * 100 : 0}%`;
     const next = world.pending[0];
     if (!next) {
       card.style.display = "none";
