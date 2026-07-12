@@ -79,10 +79,14 @@ the terrain table and the mining map.
 ## Compatibility
 
 Terrain append keeps old saves loading. The user's existing world gains
-mold only after a reset (crust is gen-time; spread needs dark floor,
-which existing worlds do have, so spread WILL begin in old worlds'
-dark tunnels immediately, which is intended). sim.toml loses its
-gold_chance line in the same commit that adds the per-terrain ones.
+mold only after a reset: crust is gen-time, and spread grows FROM
+existing mold blocks, so a world with no mold has no source and spread
+never starts there. (E2e also showed sources are scarce in practice:
+the crust sits inside the campfire's light and gets mined away early,
+and dwarves only dig lit tunnels, so dark floor bordering live mold is
+rare. A follow-up idea is spontaneous sprouting on dark floor; not in
+this feature.) sim.toml loses its gold_chance line in the same commit
+that adds the per-terrain ones.
 
 ## Out of scope
 
