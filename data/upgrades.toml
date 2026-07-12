@@ -51,3 +51,9 @@ max = 1
 color = "#8fd3ff"
 radius = 14
 period_ms = 1500
+
+[[upgrade]]
+name = "Swift Boots"
+kind = "speed"
+amount = 25
+max = 3

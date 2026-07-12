@@ -76,6 +76,8 @@ type EntityType struct {
 	SocialDrain       float64   `toml:"-" json:"-"`
 	SocialRefill      float64   `toml:"-" json:"-"`
 	LightRadius       int       `toml:"light_radius" json:"lightRadius"`
+	CarryCapacity     int       `toml:"carry_capacity" json:"carryCapacity"`
+	Market            bool      `toml:"market" json:"market"`
 	Thoughts          []Thought `toml:"thoughts" json:"thoughts,omitempty"`
 }
 
@@ -109,6 +111,7 @@ type GenConfig struct {
 	RockAbove      float64       `toml:"rock_above"`
 	ClearingRadius int           `toml:"clearing_radius"`
 	Center         string        `toml:"center"`
+	Market         string        `toml:"market"`
 	Crust          string        `toml:"crust"`
 	CrustChance    float64       `toml:"crust_chance"`
 	Scatter        []ScatterRule `toml:"scatter"`
@@ -293,7 +296,7 @@ func Validate(cfg *Config) error {
 		}
 	}
 	upNames := map[string]bool{}
-	validKinds := map[string]bool{"damage": true, "luck": true, "weapon": true, "beam": true, "missile": true}
+	validKinds := map[string]bool{"damage": true, "luck": true, "weapon": true, "beam": true, "missile": true, "speed": true}
 	for i, u := range cfg.Upgrades {
 		if u.Name == "" {
 			return fmt.Errorf("upgrade[%d]: name is required", i)
@@ -330,6 +333,9 @@ func Validate(cfg *Config) error {
 		}
 		if s.LightRadius < 0 {
 			return fmt.Errorf("type %s: light_radius must be non-negative", id)
+		}
+		if s.CarryCapacity < 0 {
+			return fmt.Errorf("type %s: carry_capacity must be non-negative", id)
 		}
 		if s.StarveHours < 0 || s.DecayHours < 0 ||
 			s.LifespanDays < 0 || s.MatureDays < 0 || s.StomachDrainHours < 0 ||
@@ -404,6 +410,11 @@ func Validate(cfg *Config) error {
 	if cfg.Gen.Center != "" {
 		if _, ok := cfg.Types[cfg.Gen.Center]; !ok {
 			return fmt.Errorf("gen: center references unknown type %q", cfg.Gen.Center)
+		}
+	}
+	if cfg.Gen.Market != "" {
+		if _, ok := cfg.Types[cfg.Gen.Market]; !ok {
+			return fmt.Errorf("gen: market references unknown type %q", cfg.Gen.Market)
 		}
 	}
 	if cfg.Gen.Crust != "" {

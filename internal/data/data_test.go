@@ -515,8 +515,8 @@ func TestUpgradePoolParses(t *testing.T) {
 	if cfg.LevelBase != 2.0 || cfg.LevelGrowth != 1.6 {
 		t.Fatalf("curve = %v %v, want 2.0 1.6", cfg.LevelBase, cfg.LevelGrowth)
 	}
-	if len(cfg.Upgrades) != 6 {
-		t.Fatalf("pool = %d entries, want 6", len(cfg.Upgrades))
+	if len(cfg.Upgrades) != 7 {
+		t.Fatalf("pool = %d entries, want 7", len(cfg.Upgrades))
 	}
 	sharper := cfg.Upgrades[0]
 	if sharper.Name != "Sharper Picks" || sharper.Kind != "damage" || sharper.Amount != 1 || sharper.Max != 0 {
@@ -533,6 +533,54 @@ func TestUpgradePoolParses(t *testing.T) {
 	seeker := cfg.Upgrades[5]
 	if seeker.Kind != "missile" || seeker.Color != "#8fd3ff" || seeker.Radius != 14 || seeker.PeriodMs != 1500 || seeker.Amount != 2 || seeker.Max != 1 {
 		t.Fatalf("seeker = %+v", seeker)
+	}
+	boots := cfg.Upgrades[6]
+	if boots.Name != "Swift Boots" || boots.Kind != "speed" || boots.Amount != 25 || boots.Max != 3 {
+		t.Fatalf("boots = %+v", boots)
+	}
+	if boots.Color != "" || boots.Radius != 0 || boots.PeriodMs != 0 {
+		t.Fatalf("speed upgrade must not require color/radius/period: %+v", boots)
+	}
+}
+
+func TestCarryCapacityAndMarketParse(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cc := cfg.Types["dwarf"].CarryCapacity; cc != 3 {
+		t.Fatalf("dwarf carry_capacity = %d, want 3", cc)
+	}
+	m, ok := cfg.Types["market"]
+	if !ok {
+		t.Fatal("no market type")
+	}
+	if !m.Market || m.Kind != "structure" || m.CarryCapacity != 0 {
+		t.Fatalf("market mis-parsed: %+v", m)
+	}
+	if cfg.Gen.Market != "market" {
+		t.Fatalf("gen market = %q, want \"market\"", cfg.Gen.Market)
+	}
+}
+
+func TestNegativeCarryCapacityRejected(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Types["shroom"].CarryCapacity = -1
+	if err := Validate(cfg); err == nil {
+		t.Fatal("negative carry_capacity must fail validation")
+	}
+}
+
+func TestSpeedUpgradeValidates(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.LevelBase, cfg.LevelGrowth = 2, 1.6
+	cfg.Upgrades = []Upgrade{{Name: "Swift Boots", Kind: "speed", Amount: 25, Max: 3}}
+	if err := Validate(cfg); err != nil {
+		t.Fatalf("speed upgrade without color/radius/period must validate: %v", err)
+	}
+	cfg.Upgrades[0].Amount = 0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("speed upgrade with non-positive amount must fail")
 	}
 }
 

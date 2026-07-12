@@ -27,6 +27,7 @@ pop_floor = 0
 pop_cap = 10
 decay_hours = 24
 mine_damage = 1
+carry_capacity = 3
 social_size = 10
 social_threshold = 4
 social_radius = 3
@@ -58,3 +59,9 @@ kind = "structure"
 color = "#e25822"
 light_radius = 8
 lifespan_days = 0   # never burns out
+
+[type.market]
+name = "Market"
+kind = "structure"
+color = "#b8860b"
+market = true

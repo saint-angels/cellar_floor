@@ -43,6 +43,47 @@ func TestCampfireAtClearingCenter(t *testing.T) {
 	}
 }
 
+func TestMarketPlacedNearCenter(t *testing.T) {
+	cfg := undergroundCfg()
+	cfg.Gen.Center = "campfire"
+	cfg.Gen.Market = "market"
+	cfg.Types["market"] = &data.EntityType{ID: "market", Name: "Market",
+		Kind: "structure", Color: "#b8860b", Market: true}
+	w := Generate(7, cfg)
+	cx, cy := cfg.Gen.Width/2, cfg.Gen.Height/2
+	var markets []*sim.Entity
+	for _, e := range w.Entities {
+		if e.Type == "market" {
+			markets = append(markets, e)
+		}
+	}
+	if len(markets) != 1 {
+		t.Fatalf("markets = %d, want exactly 1", len(markets))
+	}
+	m := markets[0]
+	if !w.Passable(w.At(m.Pos)) {
+		t.Fatalf("market placed on impassable tile %v", m.Pos)
+	}
+	// scan starts at center+(2,0); the surrounding clearing is dirt so the
+	// market lands close to the center rather than out in the rock.
+	if dx, dy := m.Pos.X-cx, m.Pos.Y-cy; dx*dx+dy*dy > cfg.Gen.ClearingRadius*cfg.Gen.ClearingRadius {
+		t.Fatalf("market at %v is not near center (%d,%d)", m.Pos, cx, cy)
+	}
+}
+
+func TestNoMarketWhenUnset(t *testing.T) {
+	cfg := undergroundCfg()
+	cfg.Gen.Center = "campfire"
+	cfg.Types["market"] = &data.EntityType{ID: "market", Name: "Market",
+		Kind: "structure", Color: "#b8860b", Market: true}
+	w := Generate(7, cfg)
+	for _, e := range w.Entities {
+		if e.Type == "market" {
+			t.Fatal("no market should be placed when gen.market is empty")
+		}
+	}
+}
+
 func TestUndergroundGeneration(t *testing.T) {
 	cfg := undergroundCfg()
 	w := Generate(42, cfg)

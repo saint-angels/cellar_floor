@@ -1,6 +1,8 @@
 package gen
 
 import (
+	"sort"
+
 	"cellarfloor/internal/data"
 	"cellarfloor/internal/sim"
 )
@@ -61,6 +63,42 @@ func randomRockNeighbor(w *sim.World, p sim.Point) (sim.Point, bool) {
 		}
 	}
 	return sim.Point{}, false
+}
+
+// marketTile scans rings of increasing Chebyshev radius outward from
+// the origin (ox, oy) and returns the first passable tile, visiting the
+// cells of each ring in ascending cell-index order for determinism.
+func marketTile(w *sim.World, ox, oy int) (sim.Point, bool) {
+	for r := 1; r <= w.Width+w.Height; r++ {
+		var ring []sim.Point
+		for y := oy - r; y <= oy+r; y++ {
+			for x := ox - r; x <= ox+r; x++ {
+				if max(abs(x-ox), abs(y-oy)) != r {
+					continue
+				}
+				p := sim.Point{X: x, Y: y}
+				if w.InBounds(p) {
+					ring = append(ring, p)
+				}
+			}
+		}
+		sort.Slice(ring, func(i, j int) bool {
+			return ring[i].Y*w.Width+ring[i].X < ring[j].Y*w.Width+ring[j].X
+		})
+		for _, p := range ring {
+			if w.Passable(w.At(p)) {
+				return p, true
+			}
+		}
+	}
+	return sim.Point{}, false
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 func Generate(seed int64, cfg *data.Config) *sim.World {
@@ -136,6 +174,11 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 		}
 		if g.Center != "" {
 			w.Spawn(g.Center, sim.Point{X: g.Width / 2, Y: g.Height / 2})
+		}
+		if g.Market != "" {
+			if p, ok := marketTile(w, g.Width/2+2, g.Height/2); ok {
+				w.Spawn(g.Market, p)
+			}
 		}
 	} else {
 		for y := 0; y < g.Height; y++ {
