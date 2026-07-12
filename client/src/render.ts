@@ -142,9 +142,13 @@ export function startRender(canvas: HTMLCanvasElement) {
         const me = world.entities.get(world.playerDwarfId);
         if (me && !me.dead) {
           ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 0.75;
           if (me.mt) {
-            ctx.strokeRect(me.mt.x * TILE + 1, me.mt.y * TILE + 1, TILE - 2, TILE - 2);
+            ctx.save();
+            ctx.translate(me.mt.x * TILE + TILE / 2, me.mt.y * TILE + TILE / 2);
+            ctx.rotate(((now % 3000) / 3000) * Math.PI * 2);
+            ctx.strokeRect(-(TILE - 2) / 2, -(TILE - 2) / 2, TILE - 2, TILE - 2);
+            ctx.restore();
           } else if (me.tid) {
             const tgt = world.entities.get(me.tid);
             if (tgt && !tgt.dead) {
