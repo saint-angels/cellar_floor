@@ -51,6 +51,8 @@ type SnapshotMsg struct {
 	TimeScale    int                         `json:"timeScale"`
 	Gold         int                         `json:"gold"`
 	Mining       map[int]int                 `json:"mining,omitempty"`
+	Upgrades     []data.Upgrade              `json:"upgrades"`
+	UpgradeLevel int                         `json:"upgradeLevel"`
 }
 
 // TerrainDiff is one mutated cell in a tick message.
@@ -60,16 +62,17 @@ type TerrainDiff struct {
 }
 
 type TickMsg struct {
-	Type      string         `json:"type"`
-	Tick      int64          `json:"tick"`
-	TimeScale int            `json:"timeScale"`
-	Changed   []EntityView   `json:"changed"`
-	Removed   []int          `json:"removed"`
-	Events    []sim.Event    `json:"events"`
-	Pops      map[string]int `json:"pops"`
-	Gold      int            `json:"gold"`
-	Mining    map[int]int    `json:"mining,omitempty"`
-	Terrain   []TerrainDiff  `json:"terrain,omitempty"`
+	Type         string         `json:"type"`
+	Tick         int64          `json:"tick"`
+	TimeScale    int            `json:"timeScale"`
+	Changed      []EntityView   `json:"changed"`
+	Removed      []int          `json:"removed"`
+	Events       []sim.Event    `json:"events"`
+	Pops         map[string]int `json:"pops"`
+	Gold         int            `json:"gold"`
+	Mining       map[int]int    `json:"mining,omitempty"`
+	Terrain      []TerrainDiff  `json:"terrain,omitempty"`
+	UpgradeLevel int            `json:"upgradeLevel"`
 }
 
 type ClientMsg struct {
@@ -98,6 +101,7 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 		Terrain: terrain, TerrainTypes: w.Cfg().Terrain, Types: w.Cfg().Types,
 		Entities: ents, TimeScale: scale,
 		Gold: w.Gold, Mining: w.MineDamage,
+		Upgrades: w.Cfg().Upgrades, UpgradeLevel: w.UpgradeLevel,
 	}
 }
 
@@ -142,5 +146,6 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 		Type: "tick", Tick: w.Tick, TimeScale: scale,
 		Changed: changed, Removed: removed, Events: events, Pops: pops,
 		Gold: w.Gold, Mining: w.MineDamage, Terrain: tdiffs,
+		UpgradeLevel: w.UpgradeLevel,
 	}
 }

@@ -133,6 +133,58 @@ func TestWSTorch(t *testing.T) {
 	}
 }
 
+func TestWSUpgrade(t *testing.T) {
+	s, ts := newWSServer(t)
+	c := dialWS(t, ts)
+
+	send(t, c, map[string]any{"type": "spawn", "player": "tok1", "name": "Misha"})
+	if pm := readPlayerMsg(t, c); pm.State != "alive" {
+		t.Fatalf("spawn: %+v", pm)
+	}
+
+	s.mu.Lock()
+	s.world.Gold = 100
+	s.mu.Unlock()
+
+	send(t, c, map[string]any{"type": "upgrade", "player": "tok1"})
+	if res := readPlayerMsg(t, c); res.Error != "" {
+		t.Fatalf("upgrade reply error: %q", res.Error)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.world.UpgradeLevel != 1 {
+		t.Fatalf("upgrade level = %d, want 1", s.world.UpgradeLevel)
+	}
+}
+
+func TestWSSnapshotCarriesUpgrades(t *testing.T) {
+	s, ts := newWSServer(t)
+	s.mu.Lock()
+	s.world.UpgradeLevel = 2
+	s.mu.Unlock()
+	c := dialWS(t, ts)
+
+	c.SetReadDeadline(time.Now().Add(3 * time.Second))
+	for {
+		_, b, err := c.ReadMessage()
+		if err != nil {
+			t.Fatalf("no snapshot arrived: %v", err)
+		}
+		var snap SnapshotMsg
+		if json.Unmarshal(b, &snap) != nil || snap.Type != "snapshot" {
+			continue
+		}
+		if len(snap.Upgrades) != len(s.cfg.Upgrades) {
+			t.Fatalf("snapshot upgrades = %d, want %d", len(snap.Upgrades), len(s.cfg.Upgrades))
+		}
+		if snap.UpgradeLevel != 2 {
+			t.Fatalf("snapshot upgradeLevel = %d, want 2", snap.UpgradeLevel)
+		}
+		break
+	}
+}
+
 func TestWSReset(t *testing.T) {
 	s, ts := newWSServer(t)
 	s.cfg.Sim.SavePath = filepath.Join(t.TempDir(), "world.json")

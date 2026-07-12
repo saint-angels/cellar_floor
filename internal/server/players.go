@@ -18,6 +18,50 @@ const firstSpawnGold = 5
 type Player struct {
 	Name    string `json:"name"`
 	DwarfID int    `json:"dwarfId"`
+	// Seen* snapshot the world counters as of this player's last hello, so a
+	// returning player can be told what changed while they were away.
+	SeenTick   int64 `json:"seenTick"`
+	SeenBlocks int   `json:"seenBlocks"`
+	SeenGold   int   `json:"seenGold"`
+	SeenMold   int   `json:"seenMold"`
+}
+
+type RecapMsg struct {
+	Type   string `json:"type"`
+	Ticks  int64  `json:"ticks"`
+	Blocks int    `json:"blocks"`
+	Gold   int    `json:"gold"`
+	Mold   int    `json:"mold"`
+}
+
+// max0 clamps a delta at zero so a stale snapshot (for instance one left over
+// from a world that was reset to lower counters) never reports negative.
+func max0[T int | int64](v T) T {
+	if v < 0 {
+		return 0
+	}
+	return v
+}
+
+// recapFor builds the away-summary for a known token and advances its
+// snapshot. Nil for unknown tokens. Caller holds s.mu.
+func (s *Server) recapFor(token string) *RecapMsg {
+	p, ok := s.players[token]
+	if !ok {
+		return nil
+	}
+	r := &RecapMsg{
+		Type:   "recap",
+		Ticks:  max0(s.world.Tick - p.SeenTick),
+		Blocks: max0(s.world.BlocksMined - p.SeenBlocks),
+		Gold:   max0(s.world.GoldMined - p.SeenGold),
+		Mold:   max0(s.world.MoldGrown - p.SeenMold),
+	}
+	p.SeenTick = s.world.Tick
+	p.SeenBlocks = s.world.BlocksMined
+	p.SeenGold = s.world.GoldMined
+	p.SeenMold = s.world.MoldGrown
+	return r
 }
 
 type PlayerMsg struct {
@@ -70,7 +114,23 @@ func (s *Server) spawnDwarf(token, name string) PlayerMsg {
 	}
 	prev, returning := s.players[token]
 	e := s.world.Spawn("dwarf", pos)
-	s.players[token] = &Player{Name: name, DwarfID: e.ID}
+	np := &Player{Name: name, DwarfID: e.ID}
+	if returning {
+		// a respawn after death must not fake a recap: carry the old
+		// snapshot forward so nothing looks earned during the away time
+		np.SeenTick = prev.SeenTick
+		np.SeenBlocks = prev.SeenBlocks
+		np.SeenGold = prev.SeenGold
+		np.SeenMold = prev.SeenMold
+	} else {
+		// a brand new token starts even with the world: its first recap is
+		// empty, only genuine future absence counts
+		np.SeenTick = s.world.Tick
+		np.SeenBlocks = s.world.BlocksMined
+		np.SeenGold = s.world.GoldMined
+		np.SeenMold = s.world.MoldGrown
+	}
+	s.players[token] = np
 	// the purse arrives with a player's first spawn in each world: brand
 	// new tokens, and returning players after a reset (which zeroes their
 	// DwarfID). Death respawns keep the old id, so dying farms nothing.

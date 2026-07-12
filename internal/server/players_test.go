@@ -107,6 +107,12 @@ func TestResetWorld(t *testing.T) {
 	}
 	s.world.Gold = 5
 	s.world.MineDamage[42] = 5
+	// dirty the away-recap snapshot so a reset must scrub it: leftover Seen*
+	// values from the old world would make the next recap go negative
+	s.players["tok1"].SeenTick = 999
+	s.players["tok1"].SeenBlocks = 7
+	s.players["tok1"].SeenGold = 4
+	s.players["tok1"].SeenMold = 2
 
 	snap := s.resetWorld()
 	if snap == nil {
@@ -124,6 +130,9 @@ func TestResetWorld(t *testing.T) {
 	for tok, p := range s.players {
 		if p.DwarfID != 0 {
 			t.Errorf("player %s kept stale DwarfID %d after reset", tok, p.DwarfID)
+		}
+		if p.SeenTick != 0 || p.SeenBlocks != 0 || p.SeenGold != 0 || p.SeenMold != 0 {
+			t.Errorf("player %s kept stale Seen* after reset: %+v", tok, p)
 		}
 	}
 	if s.world.Gold != 0 || len(s.world.MineDamage) != 0 {

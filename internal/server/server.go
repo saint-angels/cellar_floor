@@ -132,6 +132,12 @@ func (s *Server) resetWorld() []byte {
 	// with an unrelated new entity and make owners() flip names
 	for _, p := range s.players {
 		p.DwarfID = 0
+		// the counters restart at zero too, so old snapshots would make the
+		// next recap go negative; scrub them alongside the id
+		p.SeenTick = 0
+		p.SeenBlocks = 0
+		p.SeenGold = 0
+		p.SeenMold = 0
 	}
 	log.Printf("world reset: %d entities", len(s.world.Entities))
 	snap, err := json.Marshal(BuildSnapshot(s.world, int(s.scale.Load()), s.owners()))
@@ -202,11 +208,33 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 			case (m.Type == "hello" || m.Type == "spawn") && m.Player != "":
 				s.mu.Lock()
 				var pm PlayerMsg
+				var recap *RecapMsg
 				if m.Type == "hello" {
 					pm = s.playerMsg(m.Player)
+					// a known player returning gets an away-summary computed
+					// under the same lock hold; the snapshot advances inside
+					recap = s.recapFor(m.Player)
 				} else {
 					pm = s.spawnDwarf(m.Player, m.Name)
 				}
+				s.mu.Unlock()
+				if b, err := json.Marshal(pm); err == nil {
+					select {
+					case c.send <- b:
+					default:
+					}
+				}
+				if recap != nil {
+					if b, err := json.Marshal(recap); err == nil {
+						select {
+						case c.send <- b:
+						default:
+						}
+					}
+				}
+			case m.Type == "upgrade" && m.Player != "":
+				s.mu.Lock()
+				pm := s.buyUpgrade(m.Player)
 				s.mu.Unlock()
 				if b, err := json.Marshal(pm); err == nil {
 					select {
