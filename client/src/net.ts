@@ -45,6 +45,11 @@ export function sendReset() {
     ws.send(JSON.stringify({ type: "reset", admin: adminToken() }));
 }
 
+export function sendDebug(action: string, name = "", n = 0) {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "debug", action, name, n, admin: adminToken() }));
+}
+
 export function sendSpawn(name: string) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "spawn", player: playerToken(), name }));

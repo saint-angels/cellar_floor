@@ -93,6 +93,8 @@ type ClientMsg struct {
 	X      int    `json:"x"`
 	Y      int    `json:"y"`
 	Admin  string `json:"admin"`
+	Action string `json:"action"` // debug intent: gold, level, claims
+	N      int    `json:"n"`
 }
 
 func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {

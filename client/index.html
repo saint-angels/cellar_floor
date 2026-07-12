@@ -21,6 +21,13 @@
     #torch-btn:disabled { opacity: 0.4; cursor: default; }
     #torch-error { color: #d9724a; min-height: 1em; }
     #goldicon { width: 12px; height: 14px; image-rendering: pixelated; vertical-align: -2px; }
+    #debugmenu { position: absolute; top: 8px; left: 8px; display: none; background: rgba(20, 17, 15, 0.95); border: 1px solid #6a5a2e; padding: 10px 14px; z-index: 5; }
+    #debugmenu h2 { margin: 6px 0 4px; }
+    #debugmenu .hint { color: #8d857a; text-transform: none; }
+    #debugmenu button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 3px 8px; cursor: pointer; margin: 2px 4px 2px 0; font: inherit; }
+    #debug-claims .claim-row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+    #debug-claims .claim-row span.count { min-width: 2ch; text-align: right; }
+    #debug-claims .claim-row span.name { flex: 1; }
     #levelbox { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
     #levelbar { flex: 1; height: 10px; background: #1a1815; border: 1px solid #444; }
     #levelfill { height: 100%; width: 0%; background: #4a7c3f; }
@@ -45,6 +52,13 @@
 </head>
 <body>
   <div id="map"><canvas id="canvas"></canvas><div id="popup"></div><div id="recap"></div>
+    <div id="debugmenu">
+      <h2>debug <span class="hint">(tab)</span></h2>
+      <div id="timescale"><h2>Speed</h2></div>
+      <div><h2>Gold</h2><button id="debug-gold10">+10 gold</button><button id="debug-gold100">+100 gold</button></div>
+      <div><h2>Level</h2><button id="debug-level">complete level</button></div>
+      <div><h2>Claims</h2><div id="debug-claims"></div></div>
+    </div>
     <div id="claimcard"><div id="claimtext"></div><button id="claim-btn">Claim</button><div id="claimmore"></div></div>
     <div id="overlay">
       <div id="overlay-card">
@@ -58,7 +72,6 @@
     </div>
   </div>
   <div id="side">
-    <div id="timescale"><h2>Speed</h2></div>
     <div><h2>Populations</h2><div id="pops"></div></div>
     <div><h2>Gold</h2><div id="gold"><img id="goldicon" src="/coin.png" alt=""> <span id="goldnum">0</span></div>
       <button id="torch-btn" disabled>torch (1 gold)</button>

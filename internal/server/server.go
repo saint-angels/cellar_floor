@@ -210,6 +210,10 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 			switch {
 			case m.Type == "timescale" && validScales[m.Scale] && s.adminOK(m.Admin):
 				s.scale.Store(int64(m.Scale))
+			case m.Type == "debug" && s.adminOK(m.Admin):
+				s.mu.Lock()
+				s.debugAction(m)
+				s.mu.Unlock()
 			case m.Type == "reset" && s.adminOK(m.Admin):
 				if b := s.resetWorld(); b != nil {
 					s.hub.Broadcast(b)

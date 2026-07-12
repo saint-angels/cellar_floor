@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendClaim, sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
+import { sendClaim, sendDebug, sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
 import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
@@ -14,6 +14,7 @@ export function initUI(
   initTorch();
   initLevel();
   initRecap();
+  initDebug();
   world.onChange(renderPops);
   world.onChange(renderGold);
   world.onChange(renderInspector);
@@ -171,6 +172,51 @@ function renderMyDwarf() {
 function renderGold() {
   const el = document.getElementById("goldnum")!;
   el.textContent = String(world.gold);
+}
+
+// the debug menu (Tab) bundles the admin-gated world controls: speed,
+// reset, gold grants, level completion, and claim counts
+function initDebug() {
+  const menu = document.getElementById("debugmenu")!;
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const t = e.target as HTMLElement;
+    if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
+    e.preventDefault();
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  });
+  (document.getElementById("debug-gold10") as HTMLButtonElement).onclick = () => sendDebug("gold", "", 10);
+  (document.getElementById("debug-gold100") as HTMLButtonElement).onclick = () => sendDebug("gold", "", 100);
+  (document.getElementById("debug-level") as HTMLButtonElement).onclick = () => sendDebug("level");
+
+  // one row per pool entry, built once the pool arrives; counts update live
+  const box = document.getElementById("debug-claims")!;
+  const counts = new Map<string, HTMLElement>();
+  world.onChange(() => {
+    if (counts.size !== world.upgrades.length) {
+      box.textContent = "";
+      counts.clear();
+      for (const u of world.upgrades) {
+        const row = document.createElement("div");
+        row.className = "claim-row";
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = u.name;
+        const count = document.createElement("span");
+        count.className = "count";
+        const minus = document.createElement("button");
+        minus.textContent = "-";
+        minus.onclick = () => sendDebug("claims", u.name, -1);
+        const plus = document.createElement("button");
+        plus.textContent = "+";
+        plus.onclick = () => sendDebug("claims", u.name, 1);
+        row.append(name, count, minus, plus);
+        box.appendChild(row);
+        counts.set(u.name, count);
+      }
+    }
+    for (const [name, el] of counts) el.textContent = String(world.claims[name] ?? 0);
+  });
 }
 
 function initTimescale() {
