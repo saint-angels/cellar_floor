@@ -75,4 +75,80 @@ export function initCamera(canvas: HTMLCanvasElement) {
     map.classList.remove("panning");
     if (dragMoved > DRAG_THRESHOLD_PX) suppressClick = true;
   });
+
+  // touch: one finger pans, two fingers pinch-zoom around their midpoint;
+  // taps still land as synthesized clicks (#map has touch-action: none)
+  let pinchDist = 0;
+  let midX = 0;
+  let midY = 0;
+  const tDist = (ts: TouchList) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+
+  map.addEventListener(
+    "touchstart",
+    (ev) => {
+      if (ev.touches.length === 1) {
+        dragging = true;
+        dragMoved = 0;
+        lastX = ev.touches[0].clientX;
+        lastY = ev.touches[0].clientY;
+      } else if (ev.touches.length === 2) {
+        dragging = false;
+        pinchDist = tDist(ev.touches);
+        midX = (ev.touches[0].clientX + ev.touches[1].clientX) / 2;
+        midY = (ev.touches[0].clientY + ev.touches[1].clientY) / 2;
+        suppressClick = true; // a pinch never selects or places
+      }
+    },
+    { passive: true },
+  );
+
+  map.addEventListener(
+    "touchmove",
+    (ev) => {
+      ev.preventDefault();
+      if (ev.touches.length === 1 && dragging) {
+        const t = ev.touches[0];
+        tx += t.clientX - lastX;
+        ty += t.clientY - lastY;
+        dragMoved += Math.abs(t.clientX - lastX) + Math.abs(t.clientY - lastY);
+        lastX = t.clientX;
+        lastY = t.clientY;
+        if (dragMoved > DRAG_THRESHOLD_PX) suppressClick = true;
+        apply();
+      } else if (ev.touches.length === 2) {
+        const mx = (ev.touches[0].clientX + ev.touches[1].clientX) / 2;
+        const my = (ev.touches[0].clientY + ev.touches[1].clientY) / 2;
+        const nd = tDist(ev.touches);
+        if (pinchDist > 0) {
+          const r = canvas.getBoundingClientRect();
+          const px = mx - r.left;
+          const py = my - r.top;
+          const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * (nd / pinchDist)));
+          tx = px + tx - (px / zoom) * next;
+          ty = py + ty - (py / zoom) * next;
+          zoom = next;
+        }
+        tx += mx - midX;
+        ty += my - midY;
+        pinchDist = nd;
+        midX = mx;
+        midY = my;
+        apply();
+      }
+    },
+    { passive: false },
+  );
+
+  map.addEventListener("touchend", (ev) => {
+    if (ev.touches.length === 0) {
+      dragging = false;
+    } else if (ev.touches.length === 1) {
+      // a pinch collapsed to one finger: continue as a pan, never a tap
+      dragging = true;
+      dragMoved = DRAG_THRESHOLD_PX + 1;
+      lastX = ev.touches[0].clientX;
+      lastY = ev.touches[0].clientY;
+      pinchDist = 0;
+    }
+  });
 }

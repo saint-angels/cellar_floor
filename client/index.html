@@ -6,8 +6,9 @@
   <title>Cellar Floor</title>
   <style>
     :root { color-scheme: dark; }
-    body { margin: 0; background: #14110f; color: #cfc9bf; font: 13px/1.4 ui-monospace, monospace; display: flex; height: 100vh; }
-    #map { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; overflow: hidden; }
+    body { margin: 0; background: #14110f; color: #cfc9bf; font: 13px/1.4 ui-monospace, monospace; display: flex; height: 100dvh; overscroll-behavior: none; }
+    #map { flex: 1; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+    button, a, #side { touch-action: manipulation; }
     #map.zoomed canvas { cursor: grab; }
     #map.panning canvas { cursor: grabbing; }
     canvas { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
@@ -21,7 +22,7 @@
     #torch-btn:disabled { opacity: 0.4; cursor: default; }
     #torch-error { color: #d9724a; min-height: 1em; }
     #goldicon { width: 12px; height: 14px; image-rendering: pixelated; vertical-align: -2px; }
-    #debugmenu { position: absolute; top: 8px; left: 8px; display: none; background: rgba(20, 17, 15, 0.95); border: 1px solid #6a5a2e; padding: 10px 14px; z-index: 5; }
+    #debugmenu { position: absolute; top: 8px; left: 8px; display: none; background: rgba(20, 17, 15, 0.95); border: 1px solid #6a5a2e; padding: 10px 14px; z-index: 5; max-height: calc(100% - 24px); overflow-y: auto; }
     #debugmenu h2 { margin: 6px 0 4px; }
     #debugmenu .hint { color: #8d857a; text-transform: none; }
     #debugmenu button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 3px 8px; cursor: pointer; margin: 2px 4px 2px 0; font: inherit; }
@@ -48,6 +49,18 @@
     #events div { padding: 1px 0; border-bottom: 1px dotted #2a2a2a; }
     .pop-row { display: flex; align-items: center; gap: 8px; }
     .pop-row canvas { width: 120px; height: 24px; }
+    /* narrow screens: the sidebar becomes a bottom sheet under the map */
+    @media (max-width: 700px) {
+      body { flex-direction: column; }
+      #map { min-height: 0; }
+      #side { width: auto; max-height: 42dvh; border-left: none; border-top: 1px solid #333; }
+    }
+    /* thumb-sized controls on touch devices */
+    @media (pointer: coarse) {
+      body { font-size: 15px; }
+      #timescale button, #torch-btn, #debugmenu button, #claimcard button, #spawn-btn { padding: 10px 16px; }
+      #claim-btn { padding: 10px 22px; }
+    }
   </style>
 </head>
 <body>

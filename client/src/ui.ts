@@ -178,12 +178,19 @@ function renderGold() {
 // reset, gold grants, level completion, and claim counts
 function initDebug() {
   const menu = document.getElementById("debugmenu")!;
+  const toggle = () => {
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  };
   window.addEventListener("keydown", (e) => {
     if (e.key !== "Tab") return;
     const t = e.target as HTMLElement;
     if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
     e.preventDefault();
-    menu.style.display = menu.style.display === "block" ? "none" : "block";
+    toggle();
+  });
+  // no Tab key on touch screens: a three-finger tap opens the menu
+  window.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 3) toggle();
   });
   (document.getElementById("debug-gold10") as HTMLButtonElement).onclick = () => sendDebug("gold", "", 10);
   (document.getElementById("debug-gold100") as HTMLButtonElement).onclick = () => sendDebug("gold", "", 100);
