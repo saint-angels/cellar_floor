@@ -40,19 +40,24 @@ func ViewOf(w *sim.World, e *sim.Entity) EntityView {
 }
 
 type SnapshotMsg struct {
-	Type         string                      `json:"type"`
-	Tick         int64                       `json:"tick"`
-	Width        int                         `json:"width"`
-	Height       int                         `json:"height"`
-	Terrain      []uint8                     `json:"terrain"`
-	TerrainTypes []data.TerrainType          `json:"terrainTypes"`
-	Types        map[string]*data.EntityType `json:"types"`
-	Entities     []EntityView                `json:"entities"`
-	TimeScale    int                         `json:"timeScale"`
-	Gold         int                         `json:"gold"`
-	Mining       map[int]int                 `json:"mining,omitempty"`
-	Upgrades     []data.Upgrade              `json:"upgrades"`
-	UpgradeLevel int                         `json:"upgradeLevel"`
+	Type          string                      `json:"type"`
+	Tick          int64                       `json:"tick"`
+	Width         int                         `json:"width"`
+	Height        int                         `json:"height"`
+	Terrain       []uint8                     `json:"terrain"`
+	TerrainTypes  []data.TerrainType          `json:"terrainTypes"`
+	Types         map[string]*data.EntityType `json:"types"`
+	Entities      []EntityView                `json:"entities"`
+	TimeScale     int                         `json:"timeScale"`
+	Gold          int                         `json:"gold"`
+	Mining        map[int]int                 `json:"mining,omitempty"`
+	Upgrades      []data.Upgrade              `json:"upgrades"`
+	Level         int                         `json:"level"`
+	GoldMined     int                         `json:"goldMined"`
+	PrevLevelGold int                         `json:"prevLevelGold"`
+	NextLevelGold int                         `json:"nextLevelGold"`
+	Pending       []string                    `json:"pending"`
+	Claims        map[string]int              `json:"claims"`
 }
 
 // TerrainDiff is one mutated cell in a tick message.
@@ -62,17 +67,22 @@ type TerrainDiff struct {
 }
 
 type TickMsg struct {
-	Type         string         `json:"type"`
-	Tick         int64          `json:"tick"`
-	TimeScale    int            `json:"timeScale"`
-	Changed      []EntityView   `json:"changed"`
-	Removed      []int          `json:"removed"`
-	Events       []sim.Event    `json:"events"`
-	Pops         map[string]int `json:"pops"`
-	Gold         int            `json:"gold"`
-	Mining       map[int]int    `json:"mining,omitempty"`
-	Terrain      []TerrainDiff  `json:"terrain,omitempty"`
-	UpgradeLevel int            `json:"upgradeLevel"`
+	Type          string         `json:"type"`
+	Tick          int64          `json:"tick"`
+	TimeScale     int            `json:"timeScale"`
+	Changed       []EntityView   `json:"changed"`
+	Removed       []int          `json:"removed"`
+	Events        []sim.Event    `json:"events"`
+	Pops          map[string]int `json:"pops"`
+	Gold          int            `json:"gold"`
+	Mining        map[int]int    `json:"mining,omitempty"`
+	Terrain       []TerrainDiff  `json:"terrain,omitempty"`
+	Level         int            `json:"level"`
+	GoldMined     int            `json:"goldMined"`
+	PrevLevelGold int            `json:"prevLevelGold"`
+	NextLevelGold int            `json:"nextLevelGold"`
+	Pending       []string       `json:"pending"`
+	Claims        map[string]int `json:"claims"`
 }
 
 type ClientMsg struct {
@@ -101,7 +111,13 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 		Terrain: terrain, TerrainTypes: w.Cfg().Terrain, Types: w.Cfg().Types,
 		Entities: ents, TimeScale: scale,
 		Gold: w.Gold, Mining: w.MineDamage,
-		Upgrades: w.Cfg().Upgrades, UpgradeLevel: w.UpgradeLevel,
+		Upgrades:      w.Cfg().Upgrades,
+		Level:         w.Level,
+		GoldMined:     w.GoldMined,
+		PrevLevelGold: w.PrevLevelGold(),
+		NextLevelGold: w.NextLevelGold(),
+		Pending:       w.Pending,
+		Claims:        w.Claims,
 	}
 }
 
@@ -146,6 +162,11 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 		Type: "tick", Tick: w.Tick, TimeScale: scale,
 		Changed: changed, Removed: removed, Events: events, Pops: pops,
 		Gold: w.Gold, Mining: w.MineDamage, Terrain: tdiffs,
-		UpgradeLevel: w.UpgradeLevel,
+		Level:         w.Level,
+		GoldMined:     w.GoldMined,
+		PrevLevelGold: w.PrevLevelGold(),
+		NextLevelGold: w.NextLevelGold(),
+		Pending:       w.Pending,
+		Claims:        w.Claims,
 	}
 }

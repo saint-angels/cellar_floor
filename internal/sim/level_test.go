@@ -33,6 +33,21 @@ func TestLevelTargetsEscalate(t *testing.T) {
 	}
 }
 
+func TestPrevLevelGold(t *testing.T) {
+	w := NewWorld(5, 5, 1, levelCfg())
+	if got := w.PrevLevelGold(); got != 0 {
+		t.Fatalf("level 0 prev = %d, want 0", got)
+	}
+	w.Level = 1
+	if got := w.PrevLevelGold(); got != 2 {
+		t.Fatalf("level 1 prev = %d, want 2", got)
+	}
+	w.Level = 2
+	if got := w.PrevLevelGold(); got != 6 { // 2 + 4
+		t.Fatalf("level 2 prev = %d, want 6", got)
+	}
+}
+
 func TestCrossingDrawsIntoPending(t *testing.T) {
 	w := NewWorld(5, 5, 1, levelCfg())
 	w.GoldMined = 7 // covers targets 2 and 6

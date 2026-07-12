@@ -232,9 +232,9 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
-			case m.Type == "upgrade" && m.Player != "":
+			case m.Type == "claim" && m.Player != "":
 				s.mu.Lock()
-				pm := s.buyUpgrade(m.Player)
+				pm := s.claimUpgrade(m.Player)
 				s.mu.Unlock()
 				if b, err := json.Marshal(pm); err == nil {
 					select {

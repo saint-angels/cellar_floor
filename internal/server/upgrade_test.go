@@ -2,38 +2,27 @@ package server
 
 import "testing"
 
-func TestBuyUpgrade(t *testing.T) {
+func TestClaimUpgrade(t *testing.T) {
 	s := newPlayerServer(t)
-	if res := s.buyUpgrade("ghost"); res.Error == "" {
+	if res := s.claimUpgrade("ghost"); res.Error == "" {
 		t.Fatal("no dwarf: must error")
 	}
 	s.spawnDwarf("tok", "Misha")
-	s.world.Gold = 2
-	if res := s.buyUpgrade("tok"); res.Error != "not enough gold" {
-		t.Fatalf("got %q, want not enough gold", res.Error)
+	if res := s.claimUpgrade("tok"); res.Error != "nothing to claim" {
+		t.Fatalf("got %q, want nothing to claim", res.Error)
 	}
-	s.world.Gold = 10
-	if res := s.buyUpgrade("tok"); res.Error != "" {
-		t.Fatalf("buy failed: %v", res.Error)
+	s.world.Pending = []string{"Sharper Picks", "Chisel"}
+	if res := s.claimUpgrade("tok"); res.Error != "" {
+		t.Fatalf("claim failed: %v", res.Error)
 	}
-	if s.world.UpgradeLevel != 1 {
-		t.Fatalf("level = %d, want 1", s.world.UpgradeLevel)
+	if s.world.Claims["Sharper Picks"] != 1 {
+		t.Fatalf("claims = %v", s.world.Claims)
 	}
-	if s.world.Gold != 10-s.cfg.Upgrades[0].Cost {
-		t.Fatalf("gold = %d after buying %+v", s.world.Gold, s.cfg.Upgrades[0])
+	if len(s.world.Pending) != 1 || s.world.Pending[0] != "Chisel" {
+		t.Fatalf("pending after claim = %v, want FIFO pop", s.world.Pending)
 	}
-	if len(s.pending) != 1 || s.pending[0].Type != "forged" {
-		t.Fatalf("pending = %+v, want one forged event", s.pending)
-	}
-	// exhaust the track
-	s.world.Gold = 100000
-	for s.world.UpgradeLevel < len(s.cfg.Upgrades) {
-		if res := s.buyUpgrade("tok"); res.Error != "" {
-			t.Fatalf("buy at level %d: %v", s.world.UpgradeLevel, res.Error)
-		}
-	}
-	if res := s.buyUpgrade("tok"); res.Error != "nothing left to forge" {
-		t.Fatalf("got %q, want nothing left to forge", res.Error)
+	if len(s.pending) != 1 || s.pending[0].Type != "claimed" {
+		t.Fatalf("events = %+v", s.pending)
 	}
 }
 

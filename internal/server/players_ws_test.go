@@ -133,7 +133,7 @@ func TestWSTorch(t *testing.T) {
 	}
 }
 
-func TestWSUpgrade(t *testing.T) {
+func TestWSClaim(t *testing.T) {
 	s, ts := newWSServer(t)
 	c := dialWS(t, ts)
 
@@ -143,25 +143,30 @@ func TestWSUpgrade(t *testing.T) {
 	}
 
 	s.mu.Lock()
-	s.world.Gold = 100
+	s.world.Pending = []string{"Sharper Picks", "Chisel"}
 	s.mu.Unlock()
 
-	send(t, c, map[string]any{"type": "upgrade", "player": "tok1"})
+	send(t, c, map[string]any{"type": "claim", "player": "tok1"})
 	if res := readPlayerMsg(t, c); res.Error != "" {
-		t.Fatalf("upgrade reply error: %q", res.Error)
+		t.Fatalf("claim reply error: %q", res.Error)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.world.UpgradeLevel != 1 {
-		t.Fatalf("upgrade level = %d, want 1", s.world.UpgradeLevel)
+	if s.world.Claims["Sharper Picks"] != 1 {
+		t.Fatalf("claims = %v", s.world.Claims)
+	}
+	if len(s.world.Pending) != 1 || s.world.Pending[0] != "Chisel" {
+		t.Fatalf("pending after claim = %v, want FIFO pop", s.world.Pending)
 	}
 }
 
 func TestWSSnapshotCarriesUpgrades(t *testing.T) {
 	s, ts := newWSServer(t)
 	s.mu.Lock()
-	s.world.UpgradeLevel = 2
+	s.world.Level = 2
+	s.world.Pending = []string{"Sharper Picks"}
+	s.world.Claims = map[string]int{"Chisel": 1}
 	s.mu.Unlock()
 	c := dialWS(t, ts)
 
@@ -178,8 +183,14 @@ func TestWSSnapshotCarriesUpgrades(t *testing.T) {
 		if len(snap.Upgrades) != len(s.cfg.Upgrades) {
 			t.Fatalf("snapshot upgrades = %d, want %d", len(snap.Upgrades), len(s.cfg.Upgrades))
 		}
-		if snap.UpgradeLevel != 2 {
-			t.Fatalf("snapshot upgradeLevel = %d, want 2", snap.UpgradeLevel)
+		if snap.Level != 2 {
+			t.Fatalf("snapshot level = %d, want 2", snap.Level)
+		}
+		if len(snap.Pending) != 1 || snap.Pending[0] != "Sharper Picks" {
+			t.Fatalf("snapshot pending = %v", snap.Pending)
+		}
+		if snap.Claims["Chisel"] != 1 {
+			t.Fatalf("snapshot claims = %v", snap.Claims)
 		}
 		break
 	}

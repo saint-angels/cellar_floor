@@ -257,6 +257,21 @@ func (w *World) NextLevelGold() int {
 	return int(math.Ceil(target))
 }
 
+// PrevLevelGold is the cumulative mined gold that reached the CURRENT level;
+// it is NextLevelGold summing one fewer term, so 0 when Level == 0.
+func (w *World) PrevLevelGold() int {
+	if len(w.cfg.Upgrades) == 0 || w.cfg.LevelBase <= 0 {
+		return 0
+	}
+	target := 0.0
+	step := w.cfg.LevelBase
+	for k := 0; k < w.Level; k++ {
+		target += step
+		step *= w.cfg.LevelGrowth
+	}
+	return int(math.Ceil(target))
+}
+
 func (w *World) rand() uint64 {
 	x := w.Rng
 	x ^= x << 13
