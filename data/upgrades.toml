@@ -1,0 +1,25 @@
+# colony pick tiers, bought in order with shared gold
+[[upgrade]]
+name = "Copper Picks"
+cost = 3
+damage = 1
+
+[[upgrade]]
+name = "Iron Picks"
+cost = 8
+damage = 1
+
+[[upgrade]]
+name = "Steel Picks"
+cost = 20
+damage = 2
+
+[[upgrade]]
+name = "Mithril Picks"
+cost = 50
+damage = 3
+
+[[upgrade]]
+name = "Adamant Picks"
+cost = 120
+damage = 5

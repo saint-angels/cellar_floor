@@ -128,11 +128,18 @@ type TerrainType struct {
 	SproutChance  float64 `toml:"-" json:"-"`
 }
 
+type Upgrade struct {
+	Name   string `toml:"name" json:"name"`
+	Cost   int    `toml:"cost" json:"cost"`
+	Damage int    `toml:"damage" json:"damage"`
+}
+
 type Config struct {
-	Sim     SimConfig
-	Gen     GenConfig
-	Terrain []TerrainType
-	Types   map[string]*EntityType
+	Sim      SimConfig
+	Gen      GenConfig
+	Terrain  []TerrainType
+	Types    map[string]*EntityType
+	Upgrades []Upgrade
 }
 
 // CanonicalTerrain returns the five pinned base types in wire order.
@@ -170,6 +177,13 @@ func Load(dir string) (*Config, error) {
 		return nil, fmt.Errorf("terrain.toml: %w", err)
 	}
 	cfg.Terrain = tt.Terrain
+	var up struct {
+		Upgrade []Upgrade `toml:"upgrade"`
+	}
+	if _, err := toml.DecodeFile(filepath.Join(dir, "upgrades.toml"), &up); err != nil {
+		return nil, fmt.Errorf("upgrades.toml: %w", err)
+	}
+	cfg.Upgrades = up.Upgrade
 	var et struct {
 		Types map[string]*EntityType `toml:"type"`
 	}
@@ -258,6 +272,22 @@ func Validate(cfg *Config) error {
 		}
 		if tt.SproutMinutes < 0 {
 			return fmt.Errorf("terrain %s: sprout_minutes must be non-negative", tt.ID)
+		}
+	}
+	upNames := map[string]bool{}
+	for i, u := range cfg.Upgrades {
+		if u.Name == "" {
+			return fmt.Errorf("upgrade[%d]: name is required", i)
+		}
+		if upNames[u.Name] {
+			return fmt.Errorf("upgrade: duplicate name %q", u.Name)
+		}
+		upNames[u.Name] = true
+		if u.Cost <= 0 {
+			return fmt.Errorf("upgrade %s: cost must be positive", u.Name)
+		}
+		if u.Damage <= 0 {
+			return fmt.Errorf("upgrade %s: damage must be positive", u.Name)
 		}
 	}
 	produced := map[string]bool{}

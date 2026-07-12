@@ -42,6 +42,7 @@ func TestMiningFieldsParse(t *testing.T) {
 	write("sim.toml", "tick_rate = 2.0\nautosave_minutes = 0\nsave_path = \"w.json\"\n")
 	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\nscatter = []\n")
 	write("terrain.toml", minimalTerrainTOML)
+	write("upgrades.toml", "")
 	write("entities.toml", `
 [type.shroom]
 name = "Shroom"
@@ -158,6 +159,7 @@ func TestUnitFieldsConvertToTicks(t *testing.T) {
 	write("sim.toml", "tick_rate = 2.0\nautosave_minutes = 0\nsave_path = \"w.json\"\n")
 	write("gen.toml", "width = 8\nheight = 8\nclearing_radius = 3\nscatter = []\n")
 	write("terrain.toml", minimalTerrainTOML)
+	write("upgrades.toml", "")
 	write("entities.toml", `
 [type.shroom]
 name = "Shroom"
@@ -502,5 +504,58 @@ func TestSproutValidation(t *testing.T) {
 	cfg.Terrain = append(CanonicalTerrain(), TerrainType{ID: "goo", Color: "#111", Mineable: true, HitPoints: 6, SproutMinutes: -1})
 	if err := Validate(cfg); err == nil {
 		t.Fatal("negative sprout_minutes must fail")
+	}
+}
+
+func TestUpgradesParse(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Upgrade{
+		{Name: "Copper Picks", Cost: 3, Damage: 1},
+		{Name: "Iron Picks", Cost: 8, Damage: 1},
+		{Name: "Steel Picks", Cost: 20, Damage: 2},
+		{Name: "Mithril Picks", Cost: 50, Damage: 3},
+		{Name: "Adamant Picks", Cost: 120, Damage: 5},
+	}
+	if len(cfg.Upgrades) != len(want) {
+		t.Fatalf("upgrades = %d, want %d", len(cfg.Upgrades), len(want))
+	}
+	for i, u := range want {
+		if cfg.Upgrades[i] != u {
+			t.Fatalf("upgrade[%d] = %+v, want %+v", i, cfg.Upgrades[i], u)
+		}
+	}
+}
+
+func TestUpgradeValidation(t *testing.T) {
+	base := func() *Config {
+		cfg := minimalConfig()
+		cfg.Upgrades = []Upgrade{{Name: "Copper", Cost: 3, Damage: 1}}
+		return cfg
+	}
+	if err := Validate(base()); err != nil {
+		t.Fatalf("valid upgrades rejected: %v", err)
+	}
+	cfg := base()
+	cfg.Upgrades = append(cfg.Upgrades, Upgrade{Name: "Copper", Cost: 5, Damage: 1})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("duplicate name must fail")
+	}
+	cfg = base()
+	cfg.Upgrades[0].Cost = 0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("non-positive cost must fail")
+	}
+	cfg = base()
+	cfg.Upgrades[0].Damage = 0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("non-positive damage must fail")
+	}
+	cfg = base()
+	cfg.Upgrades[0].Name = ""
+	if err := Validate(cfg); err == nil {
+		t.Fatal("empty name must fail")
 	}
 }
