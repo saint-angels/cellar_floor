@@ -18,3 +18,18 @@ func TestInteractionTargetTracksFood(t *testing.T) {
 		t.Fatalf("idle: TargetID = %d, want 0", r.TargetID)
 	}
 }
+
+func TestEatsToFullOnceStarted(t *testing.T) {
+	w := flatWorld(t, 8, 8, 1)
+	w.Spawn("bush", Point{2, 2})
+	r := w.Spawn("rabbit", Point{2, 3})
+	// hungry by half a point; the old behavior stopped one bite past the
+	// threshold, eating to full crosses it by several bites
+	r.Fullness = w.Cfg().Types["rabbit"].HungerThreshold - 0.5
+	for i := 0; i < 12; i++ {
+		w.Step()
+	}
+	if r.Fullness < w.Cfg().Types["rabbit"].StomachSize-0.5 {
+		t.Fatalf("fullness = %.2f, want near stomach %.1f", r.Fullness, w.Cfg().Types["rabbit"].StomachSize)
+	}
+}

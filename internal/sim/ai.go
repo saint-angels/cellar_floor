@@ -44,8 +44,11 @@ func (w *World) aiStep(e *Entity) []Event {
 		return evs
 	}
 
-	// 2. food
-	if e.Fullness < s.HungerThreshold {
+	// 2. food; once a meal starts, keep eating until the stomach is full
+	// (or nothing edible remains), not just past the hunger threshold
+	hungry := e.Fullness < s.HungerThreshold
+	topping := (e.Action == "eating" || e.Action == "seeking food") && e.Fullness < s.StomachSize
+	if hungry || topping {
 		food := w.findFood(e)
 		if food != nil {
 			w.setTarget(e, food.ID)
@@ -56,10 +59,13 @@ func (w *World) aiStep(e *Entity) []Event {
 			w.pathToward(e, food.Pos)
 			return nil
 		}
-		e.Action = "searching"
-		w.setTarget(e, 0)
-		w.wander(e)
-		return nil
+		if hungry {
+			e.Action = "searching"
+			w.setTarget(e, 0)
+			w.wander(e)
+			return nil
+		}
+		// stomach not full but no food left; fall through to other work
 	}
 
 	// 3. company
