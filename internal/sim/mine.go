@@ -3,6 +3,8 @@ package sim
 import (
 	"fmt"
 	"sort"
+
+	"cellarfloor/internal/data"
 )
 
 // mineStep runs the mining behavior for entity types with mine_damage > 0.
@@ -41,8 +43,12 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		var evs []Event
 		for _, i := range cells {
 			w.MineDamage[i] += s.MineDamage
+			var tt *data.TerrainType
+			if t := w.terrainAt(w.Terrain[i]); t != nil {
+				tt = t
+			}
 			hp := 0
-			if tt := w.terrainAt(w.Terrain[i]); tt != nil {
+			if tt != nil {
 				hp = tt.HitPoints
 			}
 			if w.MineDamage[i] < hp {
@@ -55,7 +61,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 				e.MineTarget = nil
 			}
 			sc := w.cfg.Sim
-			if sc.GoldChance > 0 && w.RandFloat() < sc.GoldChance {
+			if tt != nil && tt.GoldChance > 0 && w.RandFloat() < tt.GoldChance {
 				amt := sc.GoldMin
 				if sc.GoldMax > sc.GoldMin {
 					amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)

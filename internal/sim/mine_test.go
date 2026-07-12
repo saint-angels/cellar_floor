@@ -89,7 +89,7 @@ func idx(w *World, p Point) int { return p.Y*w.Width + p.X }
 func goldDropWorld(t *testing.T, chance float64, lo, hi int) *World {
 	t.Helper()
 	cfg := mineCfg()
-	cfg.Sim.GoldChance = chance
+	cfg.Terrain[3].GoldChance = chance
 	cfg.Sim.GoldMin = lo
 	cfg.Sim.GoldMax = hi
 	w := NewWorld(5, 5, 1, cfg)
@@ -103,6 +103,36 @@ func newMineWorld(t *testing.T) *World { return goldDropWorld(t, 1.0, 2, 2) }
 
 // newMineWorldNoGold is newMineWorld with the drop chance set to zero.
 func newMineWorldNoGold(t *testing.T) *World { return goldDropWorld(t, 0, 1, 3) }
+
+func TestGoldOddsArePerTerrain(t *testing.T) {
+	// rock at chance 1 drops, softish at chance 0 never does
+	cfg := mineCfg()
+	cfg.Terrain[3].GoldChance = 1
+	cfg.Sim.GoldMin, cfg.Sim.GoldMax = 2, 2
+	w := NewWorld(7, 7, 1, cfg)
+	w.Spawn("sunstone", Point{0, 0})
+	w.Terrain[idx(w, Point{3, 2})] = TerrainRock // chance 1
+	w.Terrain[idx(w, Point{1, 2})] = Terrain(5)  // softish, chance 0
+	d := w.Spawn("dwarf", Point{2, 2})
+	d.Fullness = 10
+	var gold, mined int
+	for i := 0; i < 40; i++ {
+		for _, ev := range w.Step() {
+			if ev.Type == "gold" {
+				gold++
+			}
+			if ev.Type == "mined" {
+				mined++
+			}
+		}
+	}
+	if gold != 1 || mined != 1 {
+		t.Fatalf("gold=%d mined=%d, want exactly one of each", gold, mined)
+	}
+	if w.Gold != 2 {
+		t.Fatalf("gold pot = %d, want 2", w.Gold)
+	}
+}
 
 func TestMinedRockRollsGoldDrop(t *testing.T) {
 	w := newMineWorld(t) // gold_chance 1.0, gold_min 2, gold_max 2 in this test's cfg
