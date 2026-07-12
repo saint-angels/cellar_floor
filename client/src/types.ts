@@ -41,6 +41,7 @@ export interface EntityView {
   res?: Record<string, number>;
   owner?: string;
   mt?: { x: number; y: number };
+  tid?: number;
   soc?: number;
   g24?: number;
   seenId?: number;

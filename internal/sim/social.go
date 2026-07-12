@@ -34,6 +34,7 @@ func (w *World) socialStep(e *Entity) bool {
 		wasSocial := e.Action == "socializing" || e.Action == "seeking company"
 		if e.Social < s.SocialSize && (wasSocial || e.Social < s.SocialThreshold) {
 			e.Action = "socializing"
+			w.setTarget(e, c.ID)
 			w.markDirty(e.ID)
 			return true
 		}
@@ -47,6 +48,7 @@ func (w *World) socialStep(e *Entity) bool {
 		return false
 	}
 	e.Action = "seeking company"
+	w.setTarget(e, target.ID)
 	w.pathToward(e, target.Pos)
 	return true
 }

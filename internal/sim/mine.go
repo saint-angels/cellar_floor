@@ -29,6 +29,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	target := *e.MineTarget
 
 	if adjacent(e.Pos, target) {
+		w.setTarget(e, 0) // the mined face rides MineTarget instead
 		e.Action = "mining"
 		w.markDirty(e.ID)
 		cells := make([]int, 0, 8)

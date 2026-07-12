@@ -40,6 +40,7 @@ func (w *World) aiStep(e *Entity) []Event {
 
 	// 1. danger (implemented in Task 5)
 	if evs, fled := w.fleeStep(e); fled {
+		w.setTarget(e, 0)
 		return evs
 	}
 
@@ -47,6 +48,7 @@ func (w *World) aiStep(e *Entity) []Event {
 	if e.Fullness < s.HungerThreshold {
 		food := w.findFood(e)
 		if food != nil {
+			w.setTarget(e, food.ID)
 			if adjacent(e.Pos, food.Pos) {
 				return w.eatFrom(e, food)
 			}
@@ -55,6 +57,7 @@ func (w *World) aiStep(e *Entity) []Event {
 			return nil
 		}
 		e.Action = "searching"
+		w.setTarget(e, 0)
 		w.wander(e)
 		return nil
 	}
@@ -75,6 +78,7 @@ func (w *World) aiStep(e *Entity) []Event {
 	}
 
 	// 6. wander
+	w.setTarget(e, 0)
 	e.Action = "idle"
 	if w.RandFloat() < s.WanderChance {
 		w.wander(e)

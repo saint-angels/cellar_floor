@@ -136,17 +136,26 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.strokeRect(x - 1, y - 1, TILE + 2, TILE + 2);
         }
       }
+      // highlight what YOUR dwarf is working on: the mined face as a box,
+      // or the food/companion it seeks as a ring
       if (world.playerDwarfId != null) {
         const me = world.entities.get(world.playerDwarfId);
         if (me && !me.dead) {
-          const mt = Math.min(1, (now - me.movedAt) / lerpMs);
-          const mx = (me.px + (me.x - me.px) * mt) * TILE + TILE / 2;
-          const my = (me.py + (me.y - me.py) * mt) * TILE + TILE / 2;
           ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
           ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(mx, my, TILE / 2 + 2.5, 0, Math.PI * 2);
-          ctx.stroke();
+          if (me.mt) {
+            ctx.strokeRect(me.mt.x * TILE + 1, me.mt.y * TILE + 1, TILE - 2, TILE - 2);
+          } else if (me.tid) {
+            const tgt = world.entities.get(me.tid);
+            if (tgt && !tgt.dead) {
+              const tt = Math.min(1, (now - tgt.movedAt) / lerpMs);
+              const tx2 = (tgt.px + (tgt.x - tgt.px) * tt) * TILE + TILE / 2;
+              const ty2 = (tgt.py + (tgt.y - tgt.py) * tt) * TILE + TILE / 2;
+              ctx.beginPath();
+              ctx.arc(tx2, ty2, TILE / 2 + 2.5, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
         }
       }
       ctx.font = "9px ui-monospace, monospace";

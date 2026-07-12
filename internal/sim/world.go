@@ -62,6 +62,7 @@ type Entity struct {
 	Action      string         `json:"action"`
 	MoveAcc     float64        `json:"moveAcc"`
 	MineTarget  *Point         `json:"mineTarget,omitempty"`
+	TargetID    int            `json:"targetId,omitempty"`
 	Social      float64        `json:"social,omitempty"`
 	SeenID      int            `json:"seenId,omitempty"`
 	SeenTick    int64          `json:"seenTick,omitempty"`
@@ -214,6 +215,15 @@ func (w *World) rebuildOcc() {
 		if s, ok := w.cfg.Types[e.Type]; ok && s.Kind == "fauna" {
 			w.occ[e.Pos] = id
 		}
+	}
+}
+
+// setTarget records which entity e is currently interacting with (food,
+// companion); zero means none. Dirty only on change.
+func (w *World) setTarget(e *Entity, id int) {
+	if e.TargetID != id {
+		e.TargetID = id
+		w.markDirty(e.ID)
 	}
 }
 
