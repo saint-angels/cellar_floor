@@ -2,6 +2,8 @@ width = 64
 height = 64
 clearing_radius = 6
 center = "campfire"
+crust = "mold"
+crust_chance = 1.0
 
 scatter = [
   { type = "mushroom", terrain = "dirt", chance = 0.15 },

@@ -21,6 +21,7 @@ id = "rock"
 color = "#3a3a3a"
 mineable = true
 hit_points = 172800  # 24h at 1 damage per tick, 2 ticks per second
+gold_chance = 0.9
 
 [[terrain]]
 id = "floor"
@@ -32,3 +33,12 @@ id = "soft_rock"
 color = "#575049"
 mineable = true
 hit_points = 43200   # 6h
+gold_chance = 0.9
+
+[[terrain]]
+id = "mold"
+color = "#7a8a4d"
+mineable = true
+hit_points = 6       # 3 seconds at 1 damage per tick
+gold_chance = 0.1
+spread_minutes = 20  # each block converts one dark neighbor per ~20 min

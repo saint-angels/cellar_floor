@@ -82,7 +82,6 @@ type SimConfig struct {
 	TickRate        float64 `toml:"tick_rate"`
 	AutosaveMinutes int     `toml:"autosave_minutes"`
 	SavePath        string  `toml:"save_path"`
-	GoldChance      float64 `toml:"gold_chance"`
 	GoldMin         int     `toml:"gold_min"`
 	GoldMax         int     `toml:"gold_max"`
 }
@@ -109,16 +108,21 @@ type GenConfig struct {
 	RockAbove      float64       `toml:"rock_above"`
 	ClearingRadius int           `toml:"clearing_radius"`
 	Center         string        `toml:"center"`
+	Crust          string        `toml:"crust"`
+	CrustChance    float64       `toml:"crust_chance"`
 	Scatter        []ScatterRule `toml:"scatter"`
 	Veins          []VeinRule    `toml:"veins"`
 }
 
 type TerrainType struct {
-	ID        string `toml:"id" json:"id"`
-	Color     string `toml:"color" json:"color"`
-	Passable  bool   `toml:"passable" json:"passable"`
-	Mineable  bool   `toml:"mineable" json:"mineable"`
-	HitPoints int    `toml:"hit_points" json:"hitPoints"`
+	ID            string  `toml:"id" json:"id"`
+	Color         string  `toml:"color" json:"color"`
+	Passable      bool    `toml:"passable" json:"passable"`
+	Mineable      bool    `toml:"mineable" json:"mineable"`
+	HitPoints     int     `toml:"hit_points" json:"hitPoints"`
+	GoldChance    float64 `toml:"gold_chance" json:"goldChance"`
+	SpreadMinutes float64 `toml:"spread_minutes" json:"-"`
+	SpreadChance  float64 `toml:"-" json:"-"`
 }
 
 type Config struct {
@@ -209,6 +213,12 @@ func (c *Config) resolveTimes() {
 			}
 		}
 	}
+	for i := range c.Terrain {
+		tt := &c.Terrain[i]
+		if tt.SpreadMinutes > 0 {
+			tt.SpreadChance = 1.0 / (tt.SpreadMinutes * 60 * tr)
+		}
+	}
 }
 
 func Validate(cfg *Config) error {
@@ -233,6 +243,12 @@ func Validate(cfg *Config) error {
 		}
 		if tt.Mineable && tt.Passable {
 			return fmt.Errorf("terrain %s: cannot be both passable and mineable", tt.ID)
+		}
+		if tt.GoldChance < 0 || tt.GoldChance > 1 {
+			return fmt.Errorf("terrain %s: gold_chance must be between 0 and 1", tt.ID)
+		}
+		if tt.SpreadMinutes < 0 {
+			return fmt.Errorf("terrain %s: spread_minutes must be non-negative", tt.ID)
 		}
 	}
 	produced := map[string]bool{}
@@ -306,10 +322,13 @@ func Validate(cfg *Config) error {
 	if cfg.Sim.TickRate <= 0 {
 		return fmt.Errorf("sim: tick_rate must be positive")
 	}
-	if cfg.Sim.GoldChance < 0 || cfg.Sim.GoldChance > 1 {
-		return fmt.Errorf("sim: gold_chance must be between 0 and 1")
+	anyGold := false
+	for _, tt := range cfg.Terrain {
+		if tt.GoldChance > 0 {
+			anyGold = true
+		}
 	}
-	if cfg.Sim.GoldChance > 0 && (cfg.Sim.GoldMin < 1 || cfg.Sim.GoldMax < cfg.Sim.GoldMin) {
+	if anyGold && (cfg.Sim.GoldMin < 1 || cfg.Sim.GoldMax < cfg.Sim.GoldMin) {
 		return fmt.Errorf("sim: gold drop needs 1 <= gold_min <= gold_max")
 	}
 	if cfg.Gen.Width <= 0 || cfg.Gen.Height <= 0 {
@@ -318,6 +337,18 @@ func Validate(cfg *Config) error {
 	if cfg.Gen.Center != "" {
 		if _, ok := cfg.Types[cfg.Gen.Center]; !ok {
 			return fmt.Errorf("gen: center references unknown type %q", cfg.Gen.Center)
+		}
+	}
+	if cfg.Gen.Crust != "" {
+		idx, ok := cfg.TerrainIndex(cfg.Gen.Crust)
+		if !ok {
+			return fmt.Errorf("gen: crust references unknown terrain %q", cfg.Gen.Crust)
+		}
+		if !cfg.Terrain[idx].Mineable {
+			return fmt.Errorf("gen: crust terrain %q must be mineable", cfg.Gen.Crust)
+		}
+		if cfg.Gen.CrustChance < 0 || cfg.Gen.CrustChance > 1 {
+			return fmt.Errorf("gen: crust_chance must be between 0 and 1")
 		}
 	}
 	for _, r := range cfg.Gen.Scatter {

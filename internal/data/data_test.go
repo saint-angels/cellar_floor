@@ -346,8 +346,8 @@ func TestTerrainTableParses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Terrain) != 6 {
-		t.Fatalf("terrain types = %d, want 6", len(cfg.Terrain))
+	if len(cfg.Terrain) != 7 {
+		t.Fatalf("terrain types = %d, want 7", len(cfg.Terrain))
 	}
 	want := []string{"grass", "dirt", "water", "rock", "floor", "soft_rock"}
 	for i, id := range want {
@@ -434,5 +434,48 @@ func TestTerrainTableValidation(t *testing.T) {
 	cfg.Gen.Veins = []VeinRule{{Terrain: "unobtanium", Seeds: 1, Size: 2}}
 	if err := Validate(cfg); err == nil {
 		t.Fatal("vein referencing unknown terrain must fail")
+	}
+}
+
+func TestMoldTerrainParses(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Terrain) != 7 || cfg.Terrain[6].ID != "mold" {
+		t.Fatalf("terrain[6] should be mold, got %+v", cfg.Terrain)
+	}
+	m := cfg.Terrain[6]
+	if !m.Mineable || m.HitPoints != 6 || m.GoldChance != 0.1 || m.SpreadMinutes != 20 {
+		t.Fatalf("mold wrong: %+v", m)
+	}
+	if want := 1.0 / (20 * 60 * 2); m.SpreadChance != want {
+		t.Fatalf("spread chance = %v, want %v", m.SpreadChance, want)
+	}
+	if cfg.Terrain[3].GoldChance != 0.9 || cfg.Terrain[5].GoldChance != 0.9 {
+		t.Fatalf("rock/soft gold_chance: %v %v", cfg.Terrain[3].GoldChance, cfg.Terrain[5].GoldChance)
+	}
+	if cfg.Gen.Crust != "mold" || cfg.Gen.CrustChance != 1.0 {
+		t.Fatalf("crust: %q %v", cfg.Gen.Crust, cfg.Gen.CrustChance)
+	}
+}
+
+func TestTerrainGoldAndSpreadValidation(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Terrain = CanonicalTerrain()
+	cfg.Terrain[3].GoldChance = 1.5
+	if err := Validate(cfg); err == nil {
+		t.Fatal("gold_chance above 1 must fail")
+	}
+	cfg = minimalConfig()
+	cfg.Terrain = append(CanonicalTerrain(), TerrainType{ID: "goo", Color: "#111", Mineable: true, HitPoints: 6, SpreadMinutes: -1})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("negative spread_minutes must fail")
+	}
+	cfg = minimalConfig()
+	cfg.Gen.Crust = "unobtanium"
+	cfg.Gen.CrustChance = 1
+	if err := Validate(cfg); err == nil {
+		t.Fatal("crust referencing unknown terrain must fail")
 	}
 }

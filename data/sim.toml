@@ -1,6 +1,5 @@
 tick_rate = 2.0
 autosave_minutes = 5
 save_path = "world.json"
-gold_chance = 0.9
 gold_min = 1
 gold_max = 3
