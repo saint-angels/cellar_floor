@@ -49,7 +49,7 @@ export function sendTorch(x: number, y: number) {
     ws.send(JSON.stringify({ type: "torch", player: playerToken(), x, y }));
 }
 
-export function sendUpgrade() {
+export function sendClaim() {
   ws?.readyState === WebSocket.OPEN &&
-    ws.send(JSON.stringify({ type: "upgrade", player: playerToken() }));
+    ws.send(JSON.stringify({ type: "claim", player: playerToken() }));
 }

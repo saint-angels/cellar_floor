@@ -16,10 +16,16 @@
     #timescale button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
     #timescale button.active { background: #4a7c3f; color: #fff; }
     #timescale button.reset { border-color: #6a3a32; color: #d9724a; margin-left: 8px; }
-    #torch-btn, #forge-btn { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; margin-top: 6px; }
+    #torch-btn { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; margin-top: 6px; }
     #torch-btn.armed { background: #7a5a1e; color: #fff; }
-    #torch-btn:disabled, #forge-btn:disabled { opacity: 0.4; cursor: default; }
+    #torch-btn:disabled { opacity: 0.4; cursor: default; }
     #torch-error { color: #d9724a; min-height: 1em; }
+    #levelbox { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    #levelbar { flex: 1; height: 10px; background: #1a1815; border: 1px solid #444; }
+    #levelfill { height: 100%; width: 0%; background: #4a7c3f; }
+    #claimcard { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); display: none; background: #1c1815; border: 1px solid #6a5a2e; padding: 12px 16px; text-align: center; }
+    #claimcard button { background: #7a5a1e; color: #fff; border: none; padding: 6px 14px; margin-top: 8px; cursor: pointer; font: inherit; }
+    #claimmore { color: #8d857a; margin-top: 4px; }
     #map.placing canvas { cursor: crosshair; }
     #mydwarf { white-space: pre-line; }
     #popup { position: absolute; display: none; background: rgba(20, 17, 15, 0.92); border: 1px solid #4a443c; padding: 6px 8px; white-space: pre; pointer-events: none; }
@@ -38,6 +44,7 @@
 </head>
 <body>
   <div id="map"><canvas id="canvas"></canvas><div id="popup"></div><div id="recap"></div>
+    <div id="claimcard"><div id="claimtext"></div><button id="claim-btn">Claim</button><div id="claimmore"></div></div>
     <div id="overlay">
       <div id="overlay-card">
         <h2 id="overlay-title">A dwarf awaits</h2>
@@ -54,7 +61,7 @@
     <div><h2>Populations</h2><div id="pops"></div></div>
     <div><h2>Gold</h2><div id="gold">0</div>
       <button id="torch-btn" disabled>torch (1 gold)</button>
-      <button id="forge-btn" disabled>forge</button>
+      <div id="levelbox"><span id="levellabel">Lv 0</span><div id="levelbar"><div id="levelfill"></div></div></div>
       <div id="torch-error"></div>
     </div>
     <div><h2>Your Dwarf</h2><div id="mydwarf">none</div></div>

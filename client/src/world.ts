@@ -15,7 +15,12 @@ export class WorldState {
   gold = 0;
   mining: Record<string, number> = {};
   upgrades: Upgrade[] = [];
-  upgradeLevel = 0;
+  level = 0;
+  goldMined = 0;
+  prevLevelGold = 0;
+  nextLevelGold = 1;
+  pending: string[] = [];
+  claims: Record<string, number> = {};
   recap: RecapMsg | null = null;
   terrainVersion = 0;
   snapshotVersion = 0;
@@ -45,7 +50,12 @@ export class WorldState {
     this.gold = m.gold ?? 0;
     this.mining = m.mining ?? {};
     this.upgrades = m.upgrades ?? [];
-    this.upgradeLevel = m.upgradeLevel ?? 0;
+    this.level = m.level ?? 0;
+    this.goldMined = m.goldMined ?? 0;
+    this.prevLevelGold = m.prevLevelGold ?? 0;
+    this.nextLevelGold = m.nextLevelGold ?? 1;
+    this.pending = m.pending ?? [];
+    this.claims = m.claims ?? {};
     this.types = m.types;
     this.tick = m.tick;
     this.timeScale = m.timeScale;
@@ -93,7 +103,12 @@ export class WorldState {
     if (lightTouched) this.recomputeLight();
     this.gold = m.gold ?? this.gold;
     this.mining = m.mining ?? {};
-    this.upgradeLevel = m.upgradeLevel ?? this.upgradeLevel;
+    this.level = m.level;
+    this.goldMined = m.goldMined;
+    this.prevLevelGold = m.prevLevelGold;
+    this.nextLevelGold = m.nextLevelGold;
+    this.pending = m.pending;
+    this.claims = m.claims;
     const diffs = m.terrain ?? [];
     if (diffs.length) {
       for (const d of diffs) this.terrain[d.i] = d.t;

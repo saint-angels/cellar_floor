@@ -137,6 +137,26 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
       }
     }
     toolCell.set(e.id, cell);
+
+    for (const u of world.upgrades) {
+      if (u.kind !== "weapon" || !(world.claims[u.name] > 0)) continue;
+      const wAngle = (fxClock / u.periodMs) * Math.PI * 2 + e.id * 2.4 + u.radius;
+      const wx = cx + Math.cos(wAngle) * u.radius;
+      const wy = cy + Math.sin(wAngle) * u.radius;
+      ctx.fillStyle = u.color;
+      ctx.fillRect(wx - TOOL_SIZE / 2, wy - TOOL_SIZE / 2, TOOL_SIZE, TOOL_SIZE);
+      const wcx = Math.floor(wx / TILE);
+      const wcy = Math.floor(wy / TILE);
+      const inW = wcx >= 0 && wcy >= 0 && wcx < world.width && wcy < world.height;
+      const wcell = inW ? wcy * world.width + wcx : -1;
+      const wprev = toolCell.get(e.id * 131 + u.radius) ?? -1;
+      const wmine = wcell >= 0 && (world.terrainTypes[world.terrain[wcell]]?.mineable ?? false);
+      if (wmine && wcell !== wprev && running) {
+        spawnDebris(wx, wy, cx, cy, DEBRIS_COLOR);
+        shakes.set(wcell, now);
+      }
+      toolCell.set(e.id * 131 + u.radius, wcell);
+    }
   }
 
   // completion sweep, once per frame: a tracked cell that left the mining map

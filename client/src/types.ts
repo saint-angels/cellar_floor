@@ -49,8 +49,12 @@ export interface EntityView {
 
 export interface Upgrade {
   name: string;
-  cost: number;
-  damage: number;
+  kind: string;
+  amount: number;
+  max: number;
+  color: string;
+  radius: number;
+  periodMs: number;
 }
 
 export interface RecapMsg {
@@ -97,7 +101,12 @@ export interface SnapshotMsg {
   gold: number;
   mining?: Record<string, number> | null;
   upgrades: Upgrade[];
-  upgradeLevel: number;
+  level: number;
+  goldMined: number;
+  prevLevelGold: number;
+  nextLevelGold: number;
+  pending: string[];
+  claims: Record<string, number>;
 }
 
 export interface TickMsg {
@@ -111,7 +120,12 @@ export interface TickMsg {
   gold: number;
   mining?: Record<string, number> | null;
   terrain?: TerrainDiff[] | null;
-  upgradeLevel: number;
+  level: number;
+  goldMined: number;
+  prevLevelGold: number;
+  nextLevelGold: number;
+  pending: string[];
+  claims: Record<string, number>;
 }
 
 export interface RenderEntity extends EntityView {

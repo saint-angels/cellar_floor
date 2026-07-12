@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendReset, sendSpawn, sendTimescale, sendTorch, sendUpgrade } from "./net";
+import { sendClaim, sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
 import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
@@ -12,7 +12,7 @@ export function initUI(
   initInspector(canvas, tileFromPixel);
   initOverlay();
   initTorch();
-  initForge();
+  initLevel();
   initRecap();
   world.onChange(renderPops);
   world.onChange(renderGold);
@@ -46,18 +46,28 @@ function initTorch() {
   });
 }
 
-function initForge() {
-  const btn = document.getElementById("forge-btn") as HTMLButtonElement;
-  btn.onclick = () => sendUpgrade();
+function initLevel() {
+  const label = document.getElementById("levellabel")!;
+  const fill = document.getElementById("levelfill")!;
+  const card = document.getElementById("claimcard")!;
+  const text = document.getElementById("claimtext")!;
+  const more = document.getElementById("claimmore")!;
+  const btn = document.getElementById("claim-btn") as HTMLButtonElement;
+  btn.onclick = () => sendClaim();
   world.onChange(() => {
-    const next = world.upgrades[world.upgradeLevel];
+    label.textContent = `Lv ${world.level}`;
+    const span = world.nextLevelGold - world.prevLevelGold;
+    const frac = span > 0 ? (world.goldMined - world.prevLevelGold) / span : 0;
+    fill.style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
+    const next = world.pending[0];
     if (!next) {
-      btn.textContent = "picks maxed";
-      btn.disabled = true;
+      card.style.display = "none";
       return;
     }
-    btn.textContent = `${next.name} (${next.cost}g)`;
-    btn.disabled = !(world.playerState === "alive" && world.gold >= next.cost);
+    text.textContent = `Level ${world.level - world.pending.length + 1} reached: ${next}`;
+    more.textContent = world.pending.length > 1 ? `+${world.pending.length - 1} more waiting` : "";
+    btn.disabled = world.playerState !== "alive";
+    card.style.display = "block";
   });
 }
 
@@ -86,7 +96,10 @@ function initRecap() {
     if (r.blocks) parts.push(`${r.blocks} blocks mined`);
     if (r.gold) parts.push(`${r.gold} gold mined`);
     if (r.mold) parts.push(`${r.mold} tunnels molded over`);
-    box.textContent = `While you were away (${dur}): ${parts.join(", ")}`;
+    const claimsLine = world.pending.length
+      ? ` ${world.pending.length} upgrade${world.pending.length > 1 ? "s" : ""} await your claim!`
+      : "";
+    box.textContent = `While you were away (${dur}): ${parts.join(", ")}.${claimsLine}`;
     box.style.display = "block";
     setTimeout(() => {
       if (world.recap === r) {
