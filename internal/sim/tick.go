@@ -141,24 +141,43 @@ func (w *World) Step() []Event {
 // spreadStep grows spreading terrain (SpreadChance > 0) into random
 // adjacent passable, unlit, unoccupied cells. Index order for determinism.
 func (w *World) spreadStep() {
+	var sprouters []Terrain
+	for i := range w.cfg.Terrain {
+		if w.cfg.Terrain[i].SproutChance > 0 {
+			sprouters = append(sprouters, Terrain(i))
+		}
+	}
 	for i, tr := range w.Terrain {
 		tt := w.terrainAt(tr)
-		if tt == nil || tt.SpreadChance <= 0 {
-			continue
-		}
-		if w.RandFloat() >= tt.SpreadChance {
+		if tt == nil {
 			continue
 		}
 		p := Point{X: i % w.Width, Y: i / w.Width}
-		start := w.RandN(len(neighbors))
-		for k := 0; k < len(neighbors); k++ {
-			n := neighbors[(start+k)%len(neighbors)]
-			q := Point{X: p.X + n.X, Y: p.Y + n.Y}
-			if !w.InBounds(q) || !w.Passable(w.At(q)) || w.Lit(q) || w.FaunaAt(q) != nil {
+		if tt.SpreadChance > 0 {
+			if w.RandFloat() >= tt.SpreadChance {
 				continue
 			}
-			w.SetTerrain(q, tr)
-			break
+			start := w.RandN(len(neighbors))
+			for k := 0; k < len(neighbors); k++ {
+				n := neighbors[(start+k)%len(neighbors)]
+				q := Point{X: p.X + n.X, Y: p.Y + n.Y}
+				if !w.InBounds(q) || !w.Passable(w.At(q)) || w.Lit(q) || w.FaunaAt(q) != nil {
+					continue
+				}
+				w.SetTerrain(q, tr)
+				break
+			}
+			continue
+		}
+		// sprouting: dark passable cells can grow a sprouter with no source
+		if len(sprouters) == 0 || !tt.Passable || w.Lit(p) || w.FaunaAt(p) != nil {
+			continue
+		}
+		for _, st := range sprouters {
+			if w.RandFloat() < w.cfg.Terrain[st].SproutChance {
+				w.SetTerrain(p, st)
+				break
+			}
 		}
 	}
 }

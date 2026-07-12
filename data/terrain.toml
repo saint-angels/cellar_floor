@@ -42,3 +42,4 @@ mineable = true
 hit_points = 6       # 3 seconds at 1 damage per tick
 gold_chance = 0.1
 spread_minutes = 20  # each block converts one dark neighbor per ~20 min
+sprout_minutes = 240 # a dark passable cell molds over by itself in ~4h

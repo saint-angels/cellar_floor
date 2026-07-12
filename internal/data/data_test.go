@@ -479,3 +479,28 @@ func TestTerrainGoldAndSpreadValidation(t *testing.T) {
 		t.Fatal("crust referencing unknown terrain must fail")
 	}
 }
+
+func TestSproutFieldParses(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := cfg.Terrain[6]
+	if m.SproutMinutes != 240 {
+		t.Fatalf("mold sprout_minutes = %v, want 240", m.SproutMinutes)
+	}
+	if want := 1.0 / (240 * 60 * 2); m.SproutChance != want {
+		t.Fatalf("sprout chance = %v, want %v", m.SproutChance, want)
+	}
+	if cfg.Terrain[3].SproutChance != 0 {
+		t.Fatal("rock must not sprout")
+	}
+}
+
+func TestSproutValidation(t *testing.T) {
+	cfg := minimalConfig()
+	cfg.Terrain = append(CanonicalTerrain(), TerrainType{ID: "goo", Color: "#111", Mineable: true, HitPoints: 6, SproutMinutes: -1})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("negative sprout_minutes must fail")
+	}
+}

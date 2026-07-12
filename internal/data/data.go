@@ -123,6 +123,8 @@ type TerrainType struct {
 	GoldChance    float64 `toml:"gold_chance" json:"goldChance"`
 	SpreadMinutes float64 `toml:"spread_minutes" json:"-"`
 	SpreadChance  float64 `toml:"-" json:"-"`
+	SproutMinutes float64 `toml:"sprout_minutes" json:"-"`
+	SproutChance  float64 `toml:"-" json:"-"`
 }
 
 type Config struct {
@@ -218,6 +220,9 @@ func (c *Config) resolveTimes() {
 		if tt.SpreadMinutes > 0 {
 			tt.SpreadChance = 1.0 / (tt.SpreadMinutes * 60 * tr)
 		}
+		if tt.SproutMinutes > 0 {
+			tt.SproutChance = 1.0 / (tt.SproutMinutes * 60 * tr)
+		}
 	}
 }
 
@@ -249,6 +254,9 @@ func Validate(cfg *Config) error {
 		}
 		if tt.SpreadMinutes < 0 {
 			return fmt.Errorf("terrain %s: spread_minutes must be non-negative", tt.ID)
+		}
+		if tt.SproutMinutes < 0 {
+			return fmt.Errorf("terrain %s: sprout_minutes must be non-negative", tt.ID)
 		}
 	}
 	produced := map[string]bool{}

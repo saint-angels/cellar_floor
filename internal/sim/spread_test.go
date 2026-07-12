@@ -79,3 +79,52 @@ func TestSpreadRespectsLightAndFauna(t *testing.T) {
 	}
 	_ = crit
 }
+
+// sproutCfg gives the goo terrain a certain per-tick sprout chance.
+func sproutCfg() *data.Config {
+	cfg := spreadCfg()
+	cfg.Terrain[5].SproutChance = 1
+	cfg.Terrain[5].SpreadChance = 0
+	return cfg
+}
+
+func TestDarkCellsSproutSpontaneously(t *testing.T) {
+	w := NewWorld(9, 9, 1, sproutCfg())
+	// all grass, fully dark, NO goo anywhere: sprouting needs no source
+	w.Step()
+	count := 0
+	for _, tr := range w.Terrain {
+		if tr == Terrain(5) {
+			count++
+		}
+	}
+	if count == 0 {
+		t.Fatal("dark passable cells must sprout at chance 1")
+	}
+	// determinism
+	w2 := NewWorld(9, 9, 1, sproutCfg())
+	w2.Step()
+	for i := range w.Terrain {
+		if w.Terrain[i] != w2.Terrain[i] {
+			t.Fatal("sprouting not deterministic")
+		}
+	}
+}
+
+func TestSproutRespectsLightAndFauna(t *testing.T) {
+	w := NewWorld(9, 9, 1, sproutCfg())
+	w.Spawn("campfire", Point{4, 4})
+	crit := w.Spawn("critter", Point{7, 7})
+	w.Step()
+	for y := 0; y < 9; y++ {
+		for x := 0; x < 9; x++ {
+			p := Point{x, y}
+			if w.Lit(p) && w.At(p) == Terrain(5) {
+				t.Fatalf("lit cell %v sprouted", p)
+			}
+		}
+	}
+	if w.At(crit.Pos) == Terrain(5) {
+		t.Fatal("occupied cell sprouted")
+	}
+}

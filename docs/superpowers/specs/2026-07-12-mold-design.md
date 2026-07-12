@@ -56,6 +56,19 @@ molded under; they decay anyway.
 
 `spread_minutes >= 0` validated; 0 means the terrain does not spread.
 
+## Sprouting (added after e2e)
+
+Spread alone cannot bootstrap: sources are finite and dwarves only dig
+lit tunnels, so dark floor rarely borders live mold, and old worlds
+have no mold at all. Terrain therefore also gains `sprout_minutes`
+(derived per-tick `SproutChance = 1 / (sprout_minutes * 60 *
+tick_rate)`; 0 = never): any passable, unlit, fauna-free cell rolls
+each sprouting terrain's chance per tick (same pass as spread, cell
+order then table order) and spontaneously becomes it. Mold sprouts at
+`sprout_minutes = 240`: a tunnel cell whose light dies molds over
+within about four hours on average, then normal spread takes over.
+Darkness itself is the enemy; torch upkeep is the counter.
+
 ## Crust generation
 
 `gen.toml` gains `crust = "mold"` and `crust_chance = 1.0`
@@ -84,8 +97,7 @@ existing mold blocks, so a world with no mold has no source and spread
 never starts there. (E2e also showed sources are scarce in practice:
 the crust sits inside the campfire's light and gets mined away early,
 and dwarves only dig lit tunnels, so dark floor bordering live mold is
-rare. A follow-up idea is spontaneous sprouting on dark floor; not in
-this feature.) sim.toml loses its gold_chance line in the same commit
+rare. Sprouting, above, is that follow-up, folded in.) sim.toml loses its gold_chance line in the same commit
 that adds the per-terrain ones.
 
 ## Out of scope
