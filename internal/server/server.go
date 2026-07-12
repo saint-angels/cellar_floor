@@ -208,9 +208,12 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			switch {
-			case m.Type == "timescale" && validScales[m.Scale] && s.adminOK(m.Admin):
+			// the debug menu (speed, gold, level, claims) is open to all;
+			// only reset and advance keep the admin gate, they can wipe or
+			// warp the whole colony
+			case m.Type == "timescale" && validScales[m.Scale]:
 				s.scale.Store(int64(m.Scale))
-			case m.Type == "debug" && s.adminOK(m.Admin):
+			case m.Type == "debug":
 				s.mu.Lock()
 				s.debugAction(m)
 				s.mu.Unlock()
