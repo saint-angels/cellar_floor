@@ -129,17 +129,23 @@ type TerrainType struct {
 }
 
 type Upgrade struct {
-	Name   string `toml:"name" json:"name"`
-	Cost   int    `toml:"cost" json:"cost"`
-	Damage int    `toml:"damage" json:"damage"`
+	Name     string `toml:"name" json:"name"`
+	Kind     string `toml:"kind" json:"kind"`
+	Amount   int    `toml:"amount" json:"amount"`
+	Max      int    `toml:"max" json:"max"`
+	Color    string `toml:"color" json:"color"`
+	Radius   int    `toml:"radius" json:"radius"`
+	PeriodMs int    `toml:"period_ms" json:"periodMs"`
 }
 
 type Config struct {
-	Sim      SimConfig
-	Gen      GenConfig
-	Terrain  []TerrainType
-	Types    map[string]*EntityType
-	Upgrades []Upgrade
+	Sim         SimConfig
+	Gen         GenConfig
+	Terrain     []TerrainType
+	Types       map[string]*EntityType
+	Upgrades    []Upgrade
+	LevelBase   float64
+	LevelGrowth float64
 }
 
 // CanonicalTerrain returns the five pinned base types in wire order.
@@ -178,12 +184,16 @@ func Load(dir string) (*Config, error) {
 	}
 	cfg.Terrain = tt.Terrain
 	var up struct {
-		Upgrade []Upgrade `toml:"upgrade"`
+		LevelBase   float64   `toml:"level_base"`
+		LevelGrowth float64   `toml:"level_growth"`
+		Upgrade     []Upgrade `toml:"upgrade"`
 	}
 	if _, err := toml.DecodeFile(filepath.Join(dir, "upgrades.toml"), &up); err != nil {
 		return nil, fmt.Errorf("upgrades.toml: %w", err)
 	}
 	cfg.Upgrades = up.Upgrade
+	cfg.LevelBase = up.LevelBase
+	cfg.LevelGrowth = up.LevelGrowth
 	var et struct {
 		Types map[string]*EntityType `toml:"type"`
 	}
@@ -274,7 +284,16 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("terrain %s: sprout_minutes must be non-negative", tt.ID)
 		}
 	}
+	if len(cfg.Upgrades) > 0 {
+		if cfg.LevelBase <= 0 {
+			return fmt.Errorf("upgrades: level_base must be positive")
+		}
+		if cfg.LevelGrowth <= 1 {
+			return fmt.Errorf("upgrades: level_growth must exceed 1")
+		}
+	}
 	upNames := map[string]bool{}
+	validKinds := map[string]bool{"damage": true, "luck": true, "weapon": true}
 	for i, u := range cfg.Upgrades {
 		if u.Name == "" {
 			return fmt.Errorf("upgrade[%d]: name is required", i)
@@ -283,11 +302,17 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("upgrade: duplicate name %q", u.Name)
 		}
 		upNames[u.Name] = true
-		if u.Cost <= 0 {
-			return fmt.Errorf("upgrade %s: cost must be positive", u.Name)
+		if !validKinds[u.Kind] {
+			return fmt.Errorf("upgrade %s: unknown kind %q", u.Name, u.Kind)
 		}
-		if u.Damage <= 0 {
-			return fmt.Errorf("upgrade %s: damage must be positive", u.Name)
+		if u.Amount <= 0 {
+			return fmt.Errorf("upgrade %s: amount must be positive", u.Name)
+		}
+		if u.Max < 0 {
+			return fmt.Errorf("upgrade %s: max must be non-negative", u.Name)
+		}
+		if u.Kind == "weapon" && (u.Color == "" || u.Radius <= 0 || u.PeriodMs <= 0) {
+			return fmt.Errorf("upgrade %s: weapons need color, radius, period_ms", u.Name)
 		}
 	}
 	produced := map[string]bool{}

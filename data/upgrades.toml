@@ -1,25 +1,35 @@
-# colony pick tiers, bought in order with shared gold
-[[upgrade]]
-name = "Copper Picks"
-cost = 3
-damage = 1
+# colony upgrades: a level curve plus a random draw pool.
+# level_base is the gold cost of the first level; each level costs
+# level_growth times the last, rounded up.
+level_base = 2.0
+level_growth = 1.6
 
 [[upgrade]]
-name = "Iron Picks"
-cost = 8
-damage = 1
+name = "Sharper Picks"
+kind = "damage"
+amount = 1
+max = 0
 
 [[upgrade]]
-name = "Steel Picks"
-cost = 20
-damage = 2
+name = "Lucky Veins"
+kind = "luck"
+amount = 1
+max = 2
 
 [[upgrade]]
-name = "Mithril Picks"
-cost = 50
-damage = 3
+name = "Chisel"
+kind = "weapon"
+amount = 1
+max = 1
+color = "#e8d44d"
+radius = 10
+period_ms = 1100
 
 [[upgrade]]
-name = "Adamant Picks"
-cost = 120
-damage = 5
+name = "Hammer"
+kind = "weapon"
+amount = 2
+max = 1
+color = "#b87333"
+radius = 18
+period_ms = 2300

@@ -507,55 +507,65 @@ func TestSproutValidation(t *testing.T) {
 	}
 }
 
-func TestUpgradesParse(t *testing.T) {
+func TestUpgradePoolParses(t *testing.T) {
 	cfg, err := Load(dataDir(t))
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []Upgrade{
-		{Name: "Copper Picks", Cost: 3, Damage: 1},
-		{Name: "Iron Picks", Cost: 8, Damage: 1},
-		{Name: "Steel Picks", Cost: 20, Damage: 2},
-		{Name: "Mithril Picks", Cost: 50, Damage: 3},
-		{Name: "Adamant Picks", Cost: 120, Damage: 5},
+	if cfg.LevelBase != 2.0 || cfg.LevelGrowth != 1.6 {
+		t.Fatalf("curve = %v %v, want 2.0 1.6", cfg.LevelBase, cfg.LevelGrowth)
 	}
-	if len(cfg.Upgrades) != len(want) {
-		t.Fatalf("upgrades = %d, want %d", len(cfg.Upgrades), len(want))
+	if len(cfg.Upgrades) != 4 {
+		t.Fatalf("pool = %d entries, want 4", len(cfg.Upgrades))
 	}
-	for i, u := range want {
-		if cfg.Upgrades[i] != u {
-			t.Fatalf("upgrade[%d] = %+v, want %+v", i, cfg.Upgrades[i], u)
-		}
+	sharper := cfg.Upgrades[0]
+	if sharper.Name != "Sharper Picks" || sharper.Kind != "damage" || sharper.Amount != 1 || sharper.Max != 0 {
+		t.Fatalf("sharper = %+v", sharper)
+	}
+	chisel := cfg.Upgrades[2]
+	if chisel.Kind != "weapon" || chisel.Color != "#e8d44d" || chisel.Radius != 10 || chisel.PeriodMs != 1100 {
+		t.Fatalf("chisel = %+v", chisel)
 	}
 }
 
-func TestUpgradeValidation(t *testing.T) {
+func TestUpgradePoolValidation(t *testing.T) {
 	base := func() *Config {
 		cfg := minimalConfig()
-		cfg.Upgrades = []Upgrade{{Name: "Copper", Cost: 3, Damage: 1}}
+		cfg.LevelBase, cfg.LevelGrowth = 2, 1.6
+		cfg.Upgrades = []Upgrade{{Name: "Picks", Kind: "damage", Amount: 1}}
 		return cfg
 	}
 	if err := Validate(base()); err != nil {
-		t.Fatalf("valid upgrades rejected: %v", err)
+		t.Fatalf("valid pool rejected: %v", err)
 	}
 	cfg := base()
-	cfg.Upgrades = append(cfg.Upgrades, Upgrade{Name: "Copper", Cost: 5, Damage: 1})
+	cfg.Upgrades[0].Kind = "haste"
+	if err := Validate(cfg); err == nil {
+		t.Fatal("unknown kind must fail")
+	}
+	cfg = base()
+	cfg.Upgrades[0].Amount = 0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("non-positive amount must fail")
+	}
+	cfg = base()
+	cfg.Upgrades = append(cfg.Upgrades, Upgrade{Name: "Chisel", Kind: "weapon", Amount: 1, Max: 1})
+	if err := Validate(cfg); err == nil {
+		t.Fatal("weapon without color radius period must fail")
+	}
+	cfg = base()
+	cfg.LevelGrowth = 1.0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("level_growth must exceed 1")
+	}
+	cfg = base()
+	cfg.LevelBase = 0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("level_base must be positive")
+	}
+	cfg = base()
+	cfg.Upgrades = append(cfg.Upgrades, Upgrade{Name: "Picks", Kind: "damage", Amount: 1})
 	if err := Validate(cfg); err == nil {
 		t.Fatal("duplicate name must fail")
-	}
-	cfg = base()
-	cfg.Upgrades[0].Cost = 0
-	if err := Validate(cfg); err == nil {
-		t.Fatal("non-positive cost must fail")
-	}
-	cfg = base()
-	cfg.Upgrades[0].Damage = 0
-	if err := Validate(cfg); err == nil {
-		t.Fatal("non-positive damage must fail")
-	}
-	cfg = base()
-	cfg.Upgrades[0].Name = ""
-	if err := Validate(cfg); err == nil {
-		t.Fatal("empty name must fail")
 	}
 }
