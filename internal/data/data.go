@@ -54,6 +54,7 @@ type EntityType struct {
 	FearRadius        int       `toml:"fear_radius" json:"fearRadius"`
 	Speed             float64   `toml:"-" json:"speed"`
 	CellsPerSecond    float64   `toml:"cells_per_second" json:"-"`
+	WanderChance      float64   `toml:"wander_chance" json:"-"`
 	HomeRange         int       `toml:"home_range" json:"homeRange"`
 	Lifespan          int       `toml:"-" json:"lifespan"`
 	LifespanDays      float64   `toml:"lifespan_days" json:"-"`
@@ -279,6 +280,9 @@ func Validate(cfg *Config) error {
 			s.LifespanDays < 0 || s.MatureDays < 0 || s.StomachDrainHours < 0 ||
 			s.CellsPerSecond < 0 {
 			return fmt.Errorf("type %s: time fields must be non-negative", id)
+		}
+		if s.WanderChance < 0 || s.WanderChance > 1 {
+			return fmt.Errorf("type %s: wander_chance must be between 0 and 1", id)
 		}
 		if s.SocialSize < 0 || s.SocialThreshold < 0 || s.SocialRadius < 0 ||
 			s.SocialDrainDays < 0 || s.SocialRefillHours < 0 {

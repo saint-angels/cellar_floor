@@ -51,3 +51,32 @@ func TestDwarfInLightDoesNotPanic(t *testing.T) {
 		t.Fatal("a lit dwarf must not flee")
 	}
 }
+
+func TestWanderChanceControlsIdleMovement(t *testing.T) {
+	cfg := darkCfg()
+	cfg.Types["miner"].WanderChance = 1
+	w := NewWorld(20, 20, 1, cfg)
+	w.Spawn("campfire", Point{10, 10}) // keep the wanderer lit and fearless
+	e := w.Spawn("miner", Point{10, 10})
+	start := e.Pos
+	moved := false
+	for i := 0; i < 10 && !moved; i++ {
+		w.Step()
+		moved = e.Pos != start
+	}
+	if !moved {
+		t.Fatal("wander_chance 1 idle fauna must move within a few ticks")
+	}
+
+	cfg2 := darkCfg() // WanderChance zero value
+	w2 := NewWorld(20, 20, 1, cfg2)
+	w2.Spawn("campfire", Point{10, 10})
+	e2 := w2.Spawn("miner", Point{10, 10})
+	start2 := e2.Pos
+	for i := 0; i < 30; i++ {
+		w2.Step()
+	}
+	if e2.Pos != start2 {
+		t.Fatal("wander_chance 0 idle fauna must stay put")
+	}
+}

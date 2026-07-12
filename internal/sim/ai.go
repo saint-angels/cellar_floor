@@ -76,7 +76,7 @@ func (w *World) aiStep(e *Entity) []Event {
 
 	// 6. wander
 	e.Action = "idle"
-	if w.RandFloat() < 0.15 {
+	if w.RandFloat() < s.WanderChance {
 		w.wander(e)
 	}
 	return nil
