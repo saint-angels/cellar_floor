@@ -163,15 +163,15 @@ func TestFirstSpawnGrantsOneGold(t *testing.T) {
 	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
 		t.Fatalf("spawn: %v", pm.Error)
 	}
-	if s.world.Gold != start+1 {
-		t.Fatalf("gold = %d, want %d after a new player's first spawn", s.world.Gold, start+1)
+	if s.world.Gold != start+firstSpawnGold {
+		t.Fatalf("gold = %d, want %d after a new player's first spawn", s.world.Gold, start+firstSpawnGold)
 	}
-	// a second new player brings another coin
+	// a second new player brings another purse
 	if pm := s.spawnDwarf("tok2", "Sasha"); pm.Error != "" {
 		t.Fatalf("spawn: %v", pm.Error)
 	}
-	if s.world.Gold != start+2 {
-		t.Fatalf("gold = %d, want %d after a second new player", s.world.Gold, start+2)
+	if s.world.Gold != start+2*firstSpawnGold {
+		t.Fatalf("gold = %d, want %d after a second new player", s.world.Gold, start+2*firstSpawnGold)
 	}
 	// mark tok1's dwarf dead; the respawn must not grant again
 	// (flipping Dead is enough for spawnDwarf's alive check; pop cap is far off)
@@ -179,7 +179,7 @@ func TestFirstSpawnGrantsOneGold(t *testing.T) {
 	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
 		t.Fatalf("respawn: %v", pm.Error)
 	}
-	if s.world.Gold != start+2 {
-		t.Fatalf("gold = %d, want %d; respawn must not farm gold", s.world.Gold, start+2)
+	if s.world.Gold != start+2*firstSpawnGold {
+		t.Fatalf("gold = %d, want %d; respawn must not farm gold", s.world.Gold, start+2*firstSpawnGold)
 	}
 }

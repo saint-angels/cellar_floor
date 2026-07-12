@@ -108,3 +108,19 @@ func TestGenerateLegacyNoise(t *testing.T) {
 		t.Error("noise path lost grass or water")
 	}
 }
+
+// The intended opening: the clearing is bigger than the campfire's light,
+// so every mineable face starts dark and dwarves cannot mine until a
+// player places a torch to direct them.
+func TestFreshWorldStartsWithAllFacesDark(t *testing.T) {
+	c := cfg(t)
+	w := Generate(123, c)
+	for y := 0; y < c.Gen.Height; y++ {
+		for x := 0; x < c.Gen.Width; x++ {
+			p := sim.Point{X: x, Y: y}
+			if w.Mineable(w.At(p)) && w.Lit(p) {
+				t.Fatalf("mineable cell %v starts lit; the opening should be fully dark", p)
+			}
+		}
+	}
+}

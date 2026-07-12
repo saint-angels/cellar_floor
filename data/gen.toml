@@ -1,6 +1,6 @@
 width = 64
 height = 64
-clearing_radius = 6
+clearing_radius = 12
 center = "campfire"
 crust = "mold"
 crust_chance = 1.0

@@ -9,6 +9,10 @@ import (
 	"cellarfloor/internal/sim"
 )
 
+// firstSpawnGold is the colony gold a brand-new player brings along,
+// enough for a few torches to direct their dwarf from the start.
+const firstSpawnGold = 5
+
 // Player ties an anonymous browser token to a dwarf. Ownership is a server
 // concern; the sim engine knows nothing about players.
 type Player struct {
@@ -68,9 +72,9 @@ func (s *Server) spawnDwarf(token, name string) PlayerMsg {
 	e := s.world.Spawn("dwarf", pos)
 	s.players[token] = &Player{Name: name, DwarfID: e.ID}
 	if !returning {
-		// a brand-new player brings one coin to the colony pot; respawns
+		// a brand-new player brings coins for starting torches; respawns
 		// bring nothing, so cycling dwarves cannot farm gold
-		s.world.Gold++
+		s.world.Gold += firstSpawnGold
 	}
 	return PlayerMsg{Type: "player", State: "alive", DwarfID: e.ID, Name: name}
 }

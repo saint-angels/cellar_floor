@@ -29,7 +29,10 @@ is a deliberate decision, not a side effect.
 - **Creatures are autonomous.** Nobody takes orders; behavior emerges from
   needs and simple priorities (danger, food, work, rest).
 - **The player influences, never commands.** Player tools shape the
-  environment (torches) and the creatures respond to it.
+  environment (torches) and the creatures respond to it. The opening
+  states this: every rock face starts beyond the campfire's light, so
+  the first torch is the first decision, and an undirected dwarf stays
+  in the clearing, afraid of the dark.
 - **The events feed is the narrator.** Anything notable that happens should
   emit a small human-readable event ("Dwarf struck gold").
 
