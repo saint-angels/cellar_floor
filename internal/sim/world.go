@@ -230,6 +230,18 @@ func (w *World) MineBonus() int {
 	return bonus
 }
 
+// BeamBonus is the summed damage of claimed beam upgrades; unlike the AOE
+// MineBonus it lands only on the miner's chosen target face.
+func (w *World) BeamBonus() int {
+	bonus := 0
+	for _, u := range w.cfg.Upgrades {
+		if u.Kind == "beam" {
+			bonus += u.Amount * w.Claims[u.Name]
+		}
+	}
+	return bonus
+}
+
 // LuckBonus widens gold drops from claimed luck upgrades.
 func (w *World) LuckBonus() int {
 	bonus := 0

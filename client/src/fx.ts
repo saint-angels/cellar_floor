@@ -41,6 +41,7 @@ const shownDamage = new Map<number, { shown: number; hp: number }>();
 let fxClock = 0;
 let lastNow = 0;
 const toolCell = new Map<number, number>();
+const beamCycle = new Map<number, number>(); // per dwarf+beam: last fired cycle
 // snapshots replace the world wholesale; local fx tracking would pop phantom
 // remainder numbers at stale cells, so drop it when a new snapshot lands
 let seenSnapshot = -1;
@@ -139,6 +140,40 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     toolCell.set(e.id, cell);
 
     for (const u of world.upgrades) {
+      // beam weapons: a thin line aims from behind the dwarf's back at the
+      // chosen face, shoots through it once per period, then vanishes
+      if (u.kind === "beam" && world.claims[u.name] > 0) {
+        const tgx = e.mt.x * TILE + TILE / 2;
+        const tgy = e.mt.y * TILE + TILE / 2;
+        let bdx = tgx - cx, bdy = tgy - cy;
+        const dist = Math.hypot(bdx, bdy) || 1;
+        bdx /= dist;
+        bdy /= dist;
+        const p = (fxClock % u.periodMs) / u.periodMs;
+        const cycle = Math.floor(fxClock / u.periodMs);
+        const key = e.id * 131 + u.radius;
+        // head position along the aim line: parked behind the back while
+        // aiming, then flying through the target; null after the shot
+        let head: number | null = null;
+        if (p < 0.55) head = -4;
+        else if (p < 0.8) head = -4 + ((p - 0.55) / 0.25) * (dist + 8);
+        if (head != null) {
+          ctx.strokeStyle = u.color;
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = p < 0.55 ? 0.35 + p : 0.9;
+          ctx.beginPath();
+          ctx.moveTo(cx + bdx * (head - u.radius), cy + bdy * (head - u.radius));
+          ctx.lineTo(cx + bdx * head, cy + bdy * head);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        if (p >= 0.8 && running && beamCycle.get(key) !== cycle) {
+          beamCycle.set(key, cycle);
+          spawnDebris(tgx, tgy, cx, cy, DEBRIS_COLOR);
+          shakes.set(e.mt.y * world.width + e.mt.x, now);
+        }
+        continue;
+      }
       if (u.kind !== "weapon" || !(world.claims[u.name] > 0)) continue;
       const wAngle = (fxClock / u.periodMs) * Math.PI * 2 + e.id * 2.4 + u.radius;
       const wx = cx + Math.cos(wAngle) * u.radius;

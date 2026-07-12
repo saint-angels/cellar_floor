@@ -33,3 +33,12 @@ max = 1
 color = "#b87333"
 radius = 18
 period_ms = 2300
+
+[[upgrade]]
+name = "Lance"
+kind = "beam"
+amount = 3
+max = 1
+color = "#ffffff"
+radius = 24
+period_ms = 1200

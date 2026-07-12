@@ -40,9 +40,15 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			cells = append(cells, p.Y*w.Width+p.X)
 		}
 		sortInts(cells)
-		dmg := s.MineDamage + w.MineBonus()
+		base := s.MineDamage + w.MineBonus()
+		beam := w.BeamBonus()
+		ti := target.Y*w.Width + target.X
 		var evs []Event
 		for _, i := range cells {
+			dmg := base
+			if i == ti {
+				dmg += beam // beam weapons concentrate on the chosen face
+			}
 			w.MineDamage[i] += dmg
 			var tt *data.TerrainType
 			if t := w.terrainAt(w.Terrain[i]); t != nil {
