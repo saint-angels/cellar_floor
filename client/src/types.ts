@@ -47,6 +47,20 @@ export interface EntityView {
   seenTick?: number;
 }
 
+export interface Upgrade {
+  name: string;
+  cost: number;
+  damage: number;
+}
+
+export interface RecapMsg {
+  type: "recap";
+  ticks: number;
+  blocks: number;
+  gold: number;
+  mold: number;
+}
+
 export interface PlayerMsg {
   type: "player";
   state: "none" | "alive" | "dead";
@@ -82,6 +96,8 @@ export interface SnapshotMsg {
   timeScale: number;
   gold: number;
   mining?: Record<string, number> | null;
+  upgrades: Upgrade[];
+  upgradeLevel: number;
 }
 
 export interface TickMsg {
@@ -95,6 +111,7 @@ export interface TickMsg {
   gold: number;
   mining?: Record<string, number> | null;
   terrain?: TerrainDiff[] | null;
+  upgradeLevel: number;
 }
 
 export interface RenderEntity extends EntityView {

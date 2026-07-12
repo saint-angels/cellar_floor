@@ -1,4 +1,4 @@
-import type { EntityView, PlayerMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, EntityType, TerrainType } from "./types";
+import type { EntityView, PlayerMsg, RecapMsg, RenderEntity, SimEvent, SnapshotMsg, TickMsg, EntityType, TerrainType, Upgrade } from "./types";
 
 type Cb = () => void;
 
@@ -14,6 +14,9 @@ export class WorldState {
   tickIntervalMs = 500;
   gold = 0;
   mining: Record<string, number> = {};
+  upgrades: Upgrade[] = [];
+  upgradeLevel = 0;
+  recap: RecapMsg | null = null;
   terrainVersion = 0;
   snapshotVersion = 0;
   lit: boolean[] = [];
@@ -41,6 +44,8 @@ export class WorldState {
     this.terrainVersion++;
     this.gold = m.gold ?? 0;
     this.mining = m.mining ?? {};
+    this.upgrades = m.upgrades ?? [];
+    this.upgradeLevel = m.upgradeLevel ?? 0;
     this.types = m.types;
     this.tick = m.tick;
     this.timeScale = m.timeScale;
@@ -88,6 +93,7 @@ export class WorldState {
     if (lightTouched) this.recomputeLight();
     this.gold = m.gold ?? this.gold;
     this.mining = m.mining ?? {};
+    this.upgradeLevel = m.upgradeLevel ?? this.upgradeLevel;
     const diffs = m.terrain ?? [];
     if (diffs.length) {
       for (const d of diffs) this.terrain[d.i] = d.t;
@@ -108,6 +114,13 @@ export class WorldState {
   setTimescaleOptimistic(scale: number) {
     this.timeScale = scale;
     this.fireChange();
+  }
+
+  applyRecap(m: RecapMsg) {
+    if (m.ticks >= 120 && (m.blocks || m.gold || m.mold)) {
+      this.recap = m;
+      this.fireChange();
+    }
   }
 
   applyPlayer(m: PlayerMsg) {

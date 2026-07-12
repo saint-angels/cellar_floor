@@ -16,13 +16,14 @@
     #timescale button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
     #timescale button.active { background: #4a7c3f; color: #fff; }
     #timescale button.reset { border-color: #6a3a32; color: #d9724a; margin-left: 8px; }
-    #torch-btn { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; margin-top: 6px; }
+    #torch-btn, #forge-btn { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; margin-top: 6px; }
     #torch-btn.armed { background: #7a5a1e; color: #fff; }
-    #torch-btn:disabled { opacity: 0.4; cursor: default; }
+    #torch-btn:disabled, #forge-btn:disabled { opacity: 0.4; cursor: default; }
     #torch-error { color: #d9724a; min-height: 1em; }
     #map.placing canvas { cursor: crosshair; }
     #mydwarf { white-space: pre-line; }
     #popup { position: absolute; display: none; background: rgba(20, 17, 15, 0.92); border: 1px solid #4a443c; padding: 6px 8px; white-space: pre; pointer-events: none; }
+    #recap { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: none; background: rgba(20, 17, 15, 0.94); border: 1px solid #4a443c; padding: 10px 16px; cursor: pointer; max-width: 80%; }
     #overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10, 8, 7, 0.72); }
     #overlay-card { background: #1c1815; border: 1px solid #4a443c; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; width: 260px; }
     #overlay-card input { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 6px 8px; font: inherit; }
@@ -36,7 +37,7 @@
   </style>
 </head>
 <body>
-  <div id="map"><canvas id="canvas"></canvas><div id="popup"></div>
+  <div id="map"><canvas id="canvas"></canvas><div id="popup"></div><div id="recap"></div>
     <div id="overlay">
       <div id="overlay-card">
         <h2 id="overlay-title">A dwarf awaits</h2>
@@ -53,6 +54,7 @@
     <div><h2>Populations</h2><div id="pops"></div></div>
     <div><h2>Gold</h2><div id="gold">0</div>
       <button id="torch-btn" disabled>torch (1 gold)</button>
+      <button id="forge-btn" disabled>forge</button>
       <div id="torch-error"></div>
     </div>
     <div><h2>Your Dwarf</h2><div id="mydwarf">none</div></div>

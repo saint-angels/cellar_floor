@@ -1,5 +1,5 @@
 import { world } from "./world";
-import type { PlayerMsg, SnapshotMsg, TickMsg } from "./types";
+import type { PlayerMsg, RecapMsg, SnapshotMsg, TickMsg } from "./types";
 
 let ws: WebSocket | null = null;
 
@@ -19,10 +19,11 @@ export function connect() {
   ws = new WebSocket(`${proto}://${location.host}/ws`);
   ws.onopen = () => ws?.send(JSON.stringify({ type: "hello", player: playerToken() }));
   ws.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data) as SnapshotMsg | TickMsg | PlayerMsg;
+    const msg = JSON.parse(ev.data) as SnapshotMsg | TickMsg | PlayerMsg | RecapMsg;
     if (msg.type === "snapshot") world.applySnapshot(msg);
     else if (msg.type === "tick") world.applyTick(msg);
     else if (msg.type === "player") world.applyPlayer(msg);
+    else if (msg.type === "recap") world.applyRecap(msg);
   };
   ws.onclose = () => setTimeout(connect, 1000);
 }
@@ -46,4 +47,9 @@ export function sendSpawn(name: string) {
 export function sendTorch(x: number, y: number) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "torch", player: playerToken(), x, y }));
+}
+
+export function sendUpgrade() {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "upgrade", player: playerToken() }));
 }

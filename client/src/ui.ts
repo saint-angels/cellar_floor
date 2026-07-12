@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
+import { sendReset, sendSpawn, sendTimescale, sendTorch, sendUpgrade } from "./net";
 import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
@@ -12,6 +12,8 @@ export function initUI(
   initInspector(canvas, tileFromPixel);
   initOverlay();
   initTorch();
+  initForge();
+  initRecap();
   world.onChange(renderPops);
   world.onChange(renderGold);
   world.onChange(renderInspector);
@@ -41,6 +43,54 @@ function initTorch() {
     if (btn.disabled && torchArmed) setTorchArmed(false);
     const err = document.getElementById("torch-error")!;
     err.textContent = world.playerState === "alive" ? world.playerError : "";
+  });
+}
+
+function initForge() {
+  const btn = document.getElementById("forge-btn") as HTMLButtonElement;
+  btn.onclick = () => sendUpgrade();
+  world.onChange(() => {
+    const next = world.upgrades[world.upgradeLevel];
+    if (!next) {
+      btn.textContent = "picks maxed";
+      btn.disabled = true;
+      return;
+    }
+    btn.textContent = `${next.name} (${next.cost}g)`;
+    btn.disabled = !(world.playerState === "alive" && world.gold >= next.cost);
+  });
+}
+
+function initRecap() {
+  const box = document.getElementById("recap")!;
+  let hideAt = 0;
+  box.onclick = () => {
+    world.recap = null;
+    box.style.display = "none";
+  };
+  world.onChange(() => {
+    const r = world.recap;
+    if (!r) {
+      box.style.display = "none";
+      return;
+    }
+    const secs = r.ticks / 2;
+    const dur = secs >= 3600
+      ? `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`
+      : `${Math.max(1, Math.floor(secs / 60))}m`;
+    const parts = [];
+    if (r.blocks) parts.push(`${r.blocks} blocks mined`);
+    if (r.gold) parts.push(`${r.gold} gold mined`);
+    if (r.mold) parts.push(`${r.mold} tunnels molded over`);
+    box.textContent = `While you were away (${dur}): ${parts.join(", ")}`;
+    box.style.display = "block";
+    hideAt = Date.now() + 12000;
+    setTimeout(() => {
+      if (Date.now() >= hideAt) {
+        world.recap = null;
+        box.style.display = "none";
+      }
+    }, 12100);
   });
 }
 
