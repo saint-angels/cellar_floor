@@ -51,7 +51,7 @@ func (w *World) aiStep(e *Entity) []Event {
 				return w.eatFrom(e, food)
 			}
 			e.Action = "seeking food"
-			w.moveToward(e, food.Pos)
+			w.pathToward(e, food.Pos)
 			return nil
 		}
 		e.Action = "searching"
@@ -87,7 +87,8 @@ func (w *World) findFood(e *Entity) *Entity {
 	for _, r := range w.cfg.Types[e.Type].Eats {
 		eats[r] = true
 	}
-	var best *Entity
+	var edibles []*Entity
+	var nearest *Entity
 	bestD := 1 << 30
 	for _, id := range w.SortedIDs() {
 		c := w.Entities[id]
@@ -104,8 +105,30 @@ func (w *World) findFood(e *Entity) *Entity {
 		if !edible {
 			continue
 		}
+		edibles = append(edibles, c)
 		if d := Dist(e.Pos, c.Pos); d < bestD {
-			best, bestD = c, d
+			nearest, bestD = c, d
+		}
+	}
+	if nearest == nil {
+		return nil
+	}
+	// fast path: the straight-line nearest is usually reachable; the BFS
+	// probe exits early on success, so this stays cheap
+	if adjacent(e.Pos, nearest.Pos) {
+		return nearest
+	}
+	if _, ok := w.nextStepToward(e.Pos, nearest.Pos); ok {
+		return nearest
+	}
+	// nearest is walled off (mold pockets): flood once and take the
+	// closest actually reachable meal
+	dist := w.reachableDist(e.Pos)
+	var best *Entity
+	bestC := 1 << 30
+	for _, c := range edibles {
+		if d := w.reachCost(dist, c.Pos); d >= 0 && d < bestC {
+			best, bestC = c, d
 		}
 	}
 	return best
@@ -153,6 +176,78 @@ func (w *World) eatFrom(e *Entity, food *Entity) []Event {
 
 func (w *World) moveToward(e *Entity, target Point) { w.move(e, target, false) }
 func (w *World) moveAway(e *Entity, from Point)     { w.move(e, from, true) }
+
+// reachableDist floods passable cells from start and returns BFS
+// distances per cell index, -1 for unreachable. Array-based for speed:
+// hungry fauna flood every tick.
+func (w *World) reachableDist(start Point) []int32 {
+	dist := make([]int32, w.Width*w.Height)
+	for i := range dist {
+		dist[i] = -1
+	}
+	s0 := int32(start.Y*w.Width + start.X)
+	dist[s0] = 0
+	queue := make([]int32, 0, 256)
+	queue = append(queue, s0)
+	for qi := 0; qi < len(queue); qi++ {
+		p := queue[qi]
+		px, py := int(p)%w.Width, int(p)/w.Width
+		for _, n := range neighbors {
+			x, y := px+n.X, py+n.Y
+			if x < 0 || y < 0 || x >= w.Width || y >= w.Height {
+				continue
+			}
+			i := y*w.Width + x
+			if dist[i] >= 0 {
+				continue
+			}
+			if !w.Passable(w.Terrain[i]) {
+				continue
+			}
+			dist[i] = dist[p] + 1
+			queue = append(queue, int32(i))
+		}
+	}
+	return dist
+}
+
+// reachCost is the BFS cost to stand next to p (or on it), or -1 when
+// no adjacent cell is reachable. Works even when p itself is impassable,
+// like a mushroom molded under.
+func (w *World) reachCost(dist []int32, p Point) int {
+	best := int32(-1)
+	if w.InBounds(p) {
+		best = dist[p.Y*w.Width+p.X]
+	}
+	for _, n := range neighbors {
+		q := Point{p.X + n.X, p.Y + n.Y}
+		if !w.InBounds(q) {
+			continue
+		}
+		if d := dist[q.Y*w.Width+q.X]; d >= 0 && (best < 0 || d < best) {
+			best = d
+		}
+	}
+	return int(best)
+}
+
+// pathToward walks the entity along BFS shortest paths, stopping when
+// adjacent to the target. Unlike the greedy move it routes around
+// obstacles such as mold pockets.
+func (w *World) pathToward(e *Entity, target Point) {
+	e.MoveAcc += w.cfg.Types[e.Type].Speed
+	for e.MoveAcc >= 1 && !adjacent(e.Pos, target) {
+		e.MoveAcc--
+		next, ok := w.nextStepToward(e.Pos, target)
+		if !ok || w.FaunaAt(next) != nil {
+			return
+		}
+		delete(w.occ, e.Pos)
+		e.Pos = next
+		w.occ[e.Pos] = e.ID
+		w.markDirty(e.ID)
+	}
+}
 
 func (w *World) move(e *Entity, ref Point, away bool) {
 	e.MoveAcc += w.cfg.Types[e.Type].Speed
@@ -220,7 +315,7 @@ func (w *World) darkStep(e *Entity) bool {
 		return false
 	}
 	e.Action = "fleeing the dark"
-	w.moveToward(e, light.Pos)
+	w.pathToward(e, light.Pos)
 	return true
 }
 

@@ -172,43 +172,50 @@ func (w *World) pickMineTarget(e *Entity) (Point, bool) {
 	return best, true
 }
 
-// nextStepToward BFSes over passable terrain and returns the first step of
-// the shortest path from start to any cell adjacent to target.
+// nextStepToward BFSes over passable terrain and returns the first step
+// of the shortest path from start to any cell adjacent to target. Array
+// based: every walking miner and seeker calls it each step.
 func (w *World) nextStepToward(start, target Point) (Point, bool) {
-	prev := map[Point]Point{start: start}
-	queue := []Point{start}
-	var goal *Point
-	for len(queue) > 0 && goal == nil {
-		p := queue[0]
-		queue = queue[1:]
-		for _, n := range neighbors {
-			q := Point{p.X + n.X, p.Y + n.Y}
-			if !w.InBounds(q) {
+	prev := make([]int32, w.Width*w.Height)
+	for i := range prev {
+		prev[i] = -1
+	}
+	s0 := int32(start.Y*w.Width + start.X)
+	prev[s0] = s0
+	queue := make([]int32, 0, 256)
+	queue = append(queue, s0)
+	goal := int32(-1)
+	for qi := 0; qi < len(queue) && goal < 0; qi++ {
+		p := queue[qi]
+		px, py := int(p)%w.Width, int(p)/w.Width
+		for _, nb := range neighbors {
+			x, y := px+nb.X, py+nb.Y
+			if x < 0 || y < 0 || x >= w.Width || y >= w.Height {
 				continue
 			}
-			if _, seen := prev[q]; seen {
+			i := int32(y*w.Width + x)
+			if prev[i] >= 0 {
 				continue
 			}
-			if !w.Passable(w.At(q)) {
+			if !w.Passable(w.Terrain[i]) {
 				continue
 			}
-			prev[q] = p
-			if adjacent(q, target) {
-				g := q
-				goal = &g
+			prev[i] = p
+			if adjacent(Point{X: x, Y: y}, target) {
+				goal = i
 				break
 			}
-			queue = append(queue, q)
+			queue = append(queue, i)
 		}
 	}
-	if goal == nil {
+	if goal < 0 {
 		return Point{}, false
 	}
-	p := *goal
-	for prev[p] != start {
+	p := goal
+	for prev[p] != s0 {
 		p = prev[p]
 	}
-	return p, true
+	return Point{X: int(p) % w.Width, Y: int(p) / w.Width}, true
 }
 
 func minInt(a, b int) int {

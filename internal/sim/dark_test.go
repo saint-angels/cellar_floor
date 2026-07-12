@@ -80,3 +80,36 @@ func TestWanderChanceControlsIdleMovement(t *testing.T) {
 		t.Fatal("wander_chance 0 idle fauna must stay put")
 	}
 }
+
+// A mold-style maze: the nearest mushroom by straight-line distance is
+// fully walled off, a farther one is reachable around a wall. Greedy
+// movement starves here; BFS seeking must route and eat.
+func TestHungrySeekerRoutesAroundWalls(t *testing.T) {
+	cfg := darkCfg()
+	cfg.Types["miner"].HungerThreshold = 9
+	cfg.Types["shroomy"] = &data.EntityType{ID: "shroomy", Name: "Shroomy", Kind: "flora", Color: "#fff",
+		Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6}}}
+	cfg.Types["miner"].Eats = []string{"shroom"}
+	w := NewWorld(11, 11, 1, cfg)
+	w.Spawn("campfire", Point{5, 5}) // small light; irrelevant, keep dwarf calm
+	cfg.Types["campfire"].LightRadius = 20
+	w.RecomputeLight()
+
+	// walled pocket around the near mushroom at {7,5}: dwarf at {5,5}
+	near := w.Spawn("shroomy", Point{7, 5})
+	for _, p := range []Point{{6, 4}, {7, 4}, {8, 4}, {6, 5}, {8, 5}, {6, 6}, {7, 6}, {8, 6}} {
+		w.Terrain[idx(w, p)] = TerrainWater
+	}
+	_ = near
+	far := w.Spawn("shroomy", Point{5, 9}) // open path straight south
+	_ = far
+	d := w.Spawn("miner", Point{5, 5})
+	d.Fullness = 1
+
+	for i := 0; i < 40 && d.Fullness < 3; i++ {
+		w.Step()
+	}
+	if d.Fullness < 3 {
+		t.Fatalf("dwarf never ate: fullness %v at %v; seeker must pick reachable food and route to it", d.Fullness, d.Pos)
+	}
+}

@@ -47,6 +47,6 @@ func (w *World) socialStep(e *Entity) bool {
 		return false
 	}
 	e.Action = "seeking company"
-	w.moveToward(e, target.Pos)
+	w.pathToward(e, target.Pos)
 	return true
 }
