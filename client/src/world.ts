@@ -107,8 +107,8 @@ export class WorldState {
     this.goldMined = m.goldMined;
     this.prevLevelGold = m.prevLevelGold;
     this.nextLevelGold = m.nextLevelGold;
-    this.pending = m.pending;
-    this.claims = m.claims;
+    this.pending = m.pending ?? [];
+    this.claims = m.claims ?? {};
     const diffs = m.terrain ?? [];
     if (diffs.length) {
       for (const d of diffs) this.terrain[d.i] = d.t;
