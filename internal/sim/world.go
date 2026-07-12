@@ -98,8 +98,12 @@ type World struct {
 	Rng      uint64          `json:"rng"`
 	Removed  []int           `json:"-"`
 
-	Gold       int         `json:"gold"`
-	MineDamage map[int]int `json:"mineDamage,omitempty"`
+	Gold         int         `json:"gold"`
+	UpgradeLevel int         `json:"upgradeLevel"`
+	BlocksMined  int         `json:"blocksMined"`
+	GoldMined    int         `json:"goldMined"`
+	MoldGrown    int         `json:"moldGrown"`
+	MineDamage   map[int]int `json:"mineDamage,omitempty"`
 
 	cfg          *data.Config
 	dirty        map[int]bool
@@ -207,6 +211,19 @@ func (w *World) rebuildOcc() {
 }
 
 func (w *World) Cfg() *data.Config { return w.cfg }
+
+// MineBonus is the summed damage of purchased pick tiers.
+func (w *World) MineBonus() int {
+	lvl := w.UpgradeLevel
+	if lvl > len(w.cfg.Upgrades) {
+		lvl = len(w.cfg.Upgrades)
+	}
+	bonus := 0
+	for _, u := range w.cfg.Upgrades[:lvl] {
+		bonus += u.Damage
+	}
+	return bonus
+}
 
 func (w *World) rand() uint64 {
 	x := w.Rng

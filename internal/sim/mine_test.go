@@ -454,3 +454,41 @@ func TestAOESkipsUnlitFaces(t *testing.T) {
 		t.Fatalf("unlit face took %d damage; must take zero", got)
 	}
 }
+
+func TestMineBonusSpeedsMining(t *testing.T) {
+	cfg := mineCfg()
+	cfg.Upgrades = []data.Upgrade{{Name: "Copper", Cost: 3, Damage: 1}, {Name: "Iron", Cost: 8, Damage: 1}}
+	w := NewWorld(5, 5, 1, cfg)
+	w.Spawn("sunstone", Point{0, 0})
+	w.UpgradeLevel = 1 // Copper only: damage 1+1=2 against the 10 hp rock
+	face := Point{3, 2}
+	w.Terrain[idx(w, face)] = TerrainRock
+	d := w.Spawn("dwarf", Point{2, 2})
+	d.Fullness = 10
+	w.Step()
+	if got := w.MineDamage[idx(w, face)]; got != 2 {
+		t.Fatalf("damage per tick = %d, want 2 at upgrade level 1", got)
+	}
+	if w.MineBonus() != 1 {
+		t.Fatalf("MineBonus = %d, want 1", w.MineBonus())
+	}
+	w.UpgradeLevel = 99 // clamped to the table
+	if w.MineBonus() != 2 {
+		t.Fatalf("MineBonus clamped = %d, want 2", w.MineBonus())
+	}
+}
+
+func TestRecapCountersTrack(t *testing.T) {
+	w := newMineWorld(t) // chance 1.0, drop exactly 2
+	e := w.Spawn("miner", Point{2, 2})
+	_ = e
+	for i := 0; i < 30; i++ {
+		w.Step()
+	}
+	if w.BlocksMined != 1 {
+		t.Fatalf("BlocksMined = %d, want 1", w.BlocksMined)
+	}
+	if w.GoldMined != 2 {
+		t.Fatalf("GoldMined = %d, want 2", w.GoldMined)
+	}
+}

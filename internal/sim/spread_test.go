@@ -128,3 +128,17 @@ func TestSproutRespectsLightAndFauna(t *testing.T) {
 		t.Fatal("occupied cell sprouted")
 	}
 }
+
+func TestMoldGrownCounter(t *testing.T) {
+	w := NewWorld(9, 9, 1, spreadCfg())
+	w.Terrain[idx(w, Point{4, 4})] = Terrain(5) // goo spreads at chance 1
+	w.Step()
+	if w.MoldGrown == 0 {
+		t.Fatal("spread conversions must count")
+	}
+	w2 := NewWorld(9, 9, 1, sproutCfg())
+	w2.Step()
+	if w2.MoldGrown == 0 {
+		t.Fatal("sprouts must count")
+	}
+}

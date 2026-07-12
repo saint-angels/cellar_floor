@@ -165,6 +165,7 @@ func (w *World) spreadStep() {
 					continue
 				}
 				w.SetTerrain(q, tr)
+				w.MoldGrown++
 				break
 			}
 			continue
@@ -176,6 +177,7 @@ func (w *World) spreadStep() {
 		for _, st := range sprouters {
 			if w.RandFloat() < w.cfg.Terrain[st].SproutChance {
 				w.SetTerrain(p, st)
+				w.MoldGrown++
 				break
 			}
 		}

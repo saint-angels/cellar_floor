@@ -40,9 +40,10 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			cells = append(cells, p.Y*w.Width+p.X)
 		}
 		sortInts(cells)
+		dmg := s.MineDamage + w.MineBonus()
 		var evs []Event
 		for _, i := range cells {
-			w.MineDamage[i] += s.MineDamage
+			w.MineDamage[i] += dmg
 			var tt *data.TerrainType
 			if t := w.terrainAt(w.Terrain[i]); t != nil {
 				tt = t
@@ -57,6 +58,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			p := Point{X: i % w.Width, Y: i / w.Width}
 			delete(w.MineDamage, i)
 			w.SetTerrain(p, TerrainFloor)
+			w.BlocksMined++
 			if p == target {
 				e.MineTarget = nil
 			}
@@ -67,6 +69,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 					amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)
 				}
 				w.Gold += amt
+				w.GoldMined += amt
 				e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
 				w.GoldLast24h(e)
 				evs = append(evs, Event{
