@@ -63,17 +63,21 @@ function initForge() {
 
 function initRecap() {
   const box = document.getElementById("recap")!;
-  let hideAt = 0;
+  let shown: import("./types").RecapMsg | null = null;
   box.onclick = () => {
     world.recap = null;
+    shown = null;
     box.style.display = "none";
   };
   world.onChange(() => {
     const r = world.recap;
     if (!r) {
+      shown = null;
       box.style.display = "none";
       return;
     }
+    if (r === shown) return; // already rendered; ticks must not reset the fade
+    shown = r;
     const secs = r.ticks / 2;
     const dur = secs >= 3600
       ? `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`
@@ -84,13 +88,13 @@ function initRecap() {
     if (r.mold) parts.push(`${r.mold} tunnels molded over`);
     box.textContent = `While you were away (${dur}): ${parts.join(", ")}`;
     box.style.display = "block";
-    hideAt = Date.now() + 12000;
     setTimeout(() => {
-      if (Date.now() >= hideAt) {
+      if (world.recap === r) {
         world.recap = null;
+        shown = null;
         box.style.display = "none";
       }
-    }, 12100);
+    }, 12000);
   });
 }
 
