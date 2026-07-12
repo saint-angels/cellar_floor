@@ -166,7 +166,14 @@ func (w *World) eatFrom(e *Entity, food *Entity) []Event {
 		if room := s.StomachSize - e.Fullness; room < bite {
 			bite = room
 		}
-		if bite <= 0 {
+		// an effectively full stomach ends the meal; without this the tick
+		// drain reopens a sliver of room and pins the eater to the food in
+		// an endless nibble loop
+		if bite < s.BiteSize*0.5 {
+			if e.Action == "eating" {
+				e.Action = "idle"
+				w.markDirty(e.ID)
+			}
 			return nil
 		}
 		p.Amount -= bite

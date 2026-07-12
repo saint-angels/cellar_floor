@@ -33,3 +33,17 @@ func TestEatsToFullOnceStarted(t *testing.T) {
 		t.Fatalf("fullness = %.2f, want near stomach %.1f", r.Fullness, w.Cfg().Types["rabbit"].StomachSize)
 	}
 }
+
+func TestMealEndsWhenFull(t *testing.T) {
+	w := flatWorld(t, 8, 8, 1)
+	w.Spawn("bush", Point{2, 2})
+	r := w.Spawn("rabbit", Point{2, 3})
+	r.Fullness = w.Cfg().Types["rabbit"].HungerThreshold - 0.5
+	for i := 0; i < 30; i++ {
+		w.Step()
+	}
+	// filled up long ago; the tick drain must not pin it to the bush
+	if r.Action == "eating" || r.Action == "seeking food" {
+		t.Fatalf("action = %q, the meal must end once full", r.Action)
+	}
+}
