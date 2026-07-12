@@ -42,6 +42,7 @@ thoughts = [
   { when = "lonely",        text = "feeling lonely" },
   { when = "struck_gold",   text = "struck {gold} gold today!" },
   { when = "seen_recently", text = "seen {name} recently!" },
+  { when = "hauling",       text = "off to market with my haul" },
   { when = "always",        text = "content" },
 ]
 

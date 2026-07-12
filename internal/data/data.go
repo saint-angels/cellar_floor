@@ -32,7 +32,7 @@ type Thought struct {
 
 var validThoughtConditions = map[string]bool{
 	"starving": true, "hungry": true, "lonely": true,
-	"struck_gold": true, "seen_recently": true, "always": true,
+	"struck_gold": true, "seen_recently": true, "hauling": true, "always": true,
 }
 
 type EntityType struct {

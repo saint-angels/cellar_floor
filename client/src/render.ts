@@ -1,6 +1,6 @@
 import { world } from "./world";
 import { drawEffects, drawShakes } from "./fx";
-import { atlas, atlasReady, DWARF_H, DWARF_ROWS, DWARF_W, FLOOR_Y, floorVariant } from "./sprites";
+import { atlas, atlasReady, CHEST_H, CHEST_W, CHEST_X, CHEST_Y, DWARF_H, DWARF_ROWS, DWARF_W, FLOOR_Y, floorVariant } from "./sprites";
 
 const TILE = 12;
 
@@ -63,6 +63,7 @@ export function composeThought(e: import("./types").RenderEntity): string | null
       case "hungry": match = e.full < sp.hungerThreshold; break;
       case "lonely": match = sp.socialSize > 0 && (e.soc ?? 0) < sp.socialThreshold; break;
       case "struck_gold": match = (e.g24 ?? 0) > 0; break;
+      case "hauling": match = (e.ore ?? 0) > 0; break;
       case "seen_recently": match = !!e.seenTick && world.tick - e.seenTick <= dayTicks; break;
       case "always": match = true; break;
     }
@@ -111,7 +112,11 @@ export function startRender(canvas: HTMLCanvasElement) {
         if (sp.kind === "flora") {
           ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
         } else if (sp.kind === "structure") {
-          ctx.fillRect(x + 4, y + 4, 4, 4); // flame pixel; dead stubs use the shared dead color
+          if (sp.market && atlasReady && !e.dead) {
+            ctx.drawImage(atlas, CHEST_X, CHEST_Y, CHEST_W, CHEST_H, x, y, TILE, TILE);
+          } else {
+            ctx.fillRect(x + 4, y + 4, 4, 4); // flame pixel; dead stubs use the shared dead color
+          }
         } else if (e.s === "dwarf" && !e.dead && atlasReady) {
           const dx = e.x - e.px;
           if (dx !== 0) facing.set(e.id, dx > 0 ? 1 : -1);
@@ -125,6 +130,10 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.scale(dir, 1);
           ctx.drawImage(atlas, frame * 16, DWARF_ROWS[e.id % 2], DWARF_W, DWARF_H, -w / 2, 0, w, h);
           ctx.restore();
+          if ((e.ore ?? 0) > 0) {
+            ctx.fillStyle = "#d9c14a"; // an ore nugget marks a loaded hauler
+            ctx.fillRect(x, y + TILE - 3, 3, 3);
+          }
         } else {
           ctx.beginPath();
           ctx.arc(x + TILE / 2, y + TILE / 2, TILE / 2 - 1, 0, Math.PI * 2);

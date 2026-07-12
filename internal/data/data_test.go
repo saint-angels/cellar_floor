@@ -316,11 +316,11 @@ func TestThoughtsParseAndValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 	d := cfg.Types["dwarf"]
-	if len(d.Thoughts) != 6 {
-		t.Fatalf("dwarf thoughts = %d, want 6", len(d.Thoughts))
+	if len(d.Thoughts) != 7 {
+		t.Fatalf("dwarf thoughts = %d, want 7", len(d.Thoughts))
 	}
-	if d.Thoughts[0].When != "starving" || d.Thoughts[5].When != "always" {
-		t.Fatalf("thought order wrong: first %q last %q", d.Thoughts[0].When, d.Thoughts[5].When)
+	if d.Thoughts[0].When != "starving" || d.Thoughts[6].When != "always" {
+		t.Fatalf("thought order wrong: first %q last %q", d.Thoughts[0].When, d.Thoughts[6].When)
 	}
 	if m := cfg.Types["mushroom"]; len(m.Thoughts) != 0 {
 		t.Fatal("mushroom should have no thoughts")

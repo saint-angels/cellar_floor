@@ -57,6 +57,7 @@ function upgradeDesc(name: string): string {
     case "weapon": return `an orbiting weapon, +${u.amount} damage`;
     case "beam": return `a lance shot at the target, +${u.amount} damage`;
     case "missile": return `a homing missile, +${u.amount} damage on the target`;
+    case "speed": return `+${u.amount}% move speed`;
     default: return "";
   }
 }
@@ -195,6 +196,9 @@ function renderMyDwarf() {
       ];
       if ((sp?.socialSize ?? 0) > 0) {
         lines.push(`social ${(e.soc ?? 0).toFixed(1)} / ${sp!.socialSize}`);
+      }
+      if ((sp?.carryCapacity ?? 0) > 0) {
+        lines.push(`carrying ${e.ore ?? 0}/${sp!.carryCapacity} ore`);
       }
       box.textContent = lines.join("\n");
       return;
@@ -389,6 +393,9 @@ function renderInspector() {
     lines.push(`fullness ${e.full.toFixed(1)} / ${sp.stomachSize}`);
     if (sp.socialSize > 0) {
       lines.push(`social ${(e.soc ?? 0).toFixed(1)} / ${sp.socialSize}`);
+    }
+    if ((sp.carryCapacity ?? 0) > 0) {
+      lines.push(`carrying ${e.ore ?? 0}/${sp.carryCapacity} ore`);
     }
     lines.push(`gold today: ${e.g24 ?? 0}`);
     lines.push(`doing: ${e.action || "idle"}`);

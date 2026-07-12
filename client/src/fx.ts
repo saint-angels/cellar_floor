@@ -31,6 +31,7 @@ interface FloatText {
   x: number; y: number;
   text: string;
   age: number;
+  color: string;
 }
 
 let particles: Particle[] = [];
@@ -67,14 +68,20 @@ function popDamage(cell: number, tileX: number, tileY: number) {
   }
 }
 
-function spawnFloat(cellX: number, cellY: number, text: string) {
+function spawnFloat(cellX: number, cellY: number, text: string, color: string = FLOAT_COLOR) {
   if (floats.length >= MAX_FLOATS) floats.shift();
-  floats.push({ x: cellX * TILE + TILE / 2, y: cellY * TILE - 2, text, age: 0 });
+  floats.push({ x: cellX * TILE + TILE / 2, y: cellY * TILE - 2, text, age: 0, color });
 }
 
 export function initFx() {
   world.onEvents((evs) => {
     for (const ev of evs) {
+      if (ev.type === "sold" && ev.amount) {
+        // a gold "+N" pops over the seller at the market on deposit
+        const seller = world.entities.get(ev.actor);
+        if (seller) spawnFloat(seller.x, seller.y, `+${ev.amount}`, "#ffd75e");
+        continue;
+      }
       if (ev.type !== "gold") continue;
       const e = world.entities.get(ev.actor);
       if (!e) continue;
@@ -274,7 +281,6 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
   floats = floats.filter((f) => f.age < FLOAT_RISE_MS + FLOAT_FADE_MS);
   ctx.font = "9px ui-monospace, monospace";
   ctx.textAlign = "center";
-  ctx.fillStyle = FLOAT_COLOR;
   for (const f of floats) {
     let alpha: number;
     let y = f.y;
@@ -287,6 +293,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
       y = f.y - FLOAT_RISE_PX;
     }
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.fillStyle = f.color;
     ctx.fillText(f.text, f.x, y);
   }
   ctx.globalAlpha = 1;

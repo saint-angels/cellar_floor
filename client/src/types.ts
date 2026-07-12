@@ -19,6 +19,8 @@ export interface EntityType {
   eats: string[] | null;
   shelters: string[] | null;
   thoughts?: Thought[];
+  market?: boolean;
+  carryCapacity?: number;
 }
 
 export interface TerrainType {
@@ -46,6 +48,7 @@ export interface EntityView {
   g24?: number;
   seenId?: number;
   seenTick?: number;
+  ore?: number;
 }
 
 export interface Upgrade {
@@ -82,6 +85,7 @@ export interface SimEvent {
   target?: number;
   targetType?: string;
   msg: string;
+  amount?: number;
 }
 
 export interface TerrainDiff {
