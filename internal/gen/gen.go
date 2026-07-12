@@ -83,6 +83,30 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 				w.Terrain[y*g.Width+x] = t
 			}
 		}
+		if g.Crust != "" && g.CrustChance > 0 {
+			if idx, ok := cfg.TerrainIndex(g.Crust); ok {
+				ct := sim.Terrain(idx)
+				for y := 0; y < g.Height; y++ {
+					for x := 0; x < g.Width; x++ {
+						p := sim.Point{X: x, Y: y}
+						if w.At(p) != sim.TerrainRock {
+							continue
+						}
+						touchesDirt := false
+						for _, d := range [8][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}} {
+							q := sim.Point{X: x + d[0], Y: y + d[1]}
+							if w.InBounds(q) && w.At(q) == sim.TerrainDirt {
+								touchesDirt = true
+								break
+							}
+						}
+						if touchesDirt && w.RandFloat() < g.CrustChance {
+							w.Terrain[y*g.Width+x] = ct
+						}
+					}
+				}
+			}
+		}
 		for _, vein := range g.Veins {
 			idx, ok := cfg.TerrainIndex(vein.Terrain)
 			if !ok {

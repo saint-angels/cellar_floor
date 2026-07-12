@@ -9,8 +9,10 @@ import (
 
 func undergroundCfg() *data.Config {
 	return &data.Config{
-		Sim:     data.SimConfig{TickRate: 2},
-		Terrain: append(data.CanonicalTerrain(), data.TerrainType{ID: "soft_rock", Color: "#575049", Mineable: true, HitPoints: 43200}),
+		Sim: data.SimConfig{TickRate: 2},
+		Terrain: append(data.CanonicalTerrain(),
+			data.TerrainType{ID: "soft_rock", Color: "#575049", Mineable: true, HitPoints: 43200},
+			data.TerrainType{ID: "mold", Color: "#7a8a4d", Mineable: true, HitPoints: 6}),
 		Gen: data.GenConfig{
 			Width: 32, Height: 32,
 			ClearingRadius: 4,
@@ -84,6 +86,44 @@ func TestUndergroundGeneration(t *testing.T) {
 		if w.Terrain[i] != b.Terrain[i] {
 			t.Fatal("underground gen not deterministic")
 		}
+	}
+}
+
+func TestCrustFullyRingsTheClearing(t *testing.T) {
+	cfg := undergroundCfg()
+	cfg.Gen.Crust = "mold"
+	cfg.Gen.CrustChance = 1
+	w := Generate(5, cfg)
+	mold := sim.Terrain(6)
+	dirtAdjacentRocks, crusted := 0, 0
+	for y := 0; y < cfg.Gen.Height; y++ {
+		for x := 0; x < cfg.Gen.Width; x++ {
+			p := sim.Point{X: x, Y: y}
+			if w.At(p) != mold && w.At(p) != sim.TerrainRock {
+				continue
+			}
+			touchesDirt := false
+			for dy := -1; dy <= 1; dy++ {
+				for dx := -1; dx <= 1; dx++ {
+					q := sim.Point{X: x + dx, Y: y + dy}
+					if (dx != 0 || dy != 0) && w.InBounds(q) && w.At(q) == sim.TerrainDirt {
+						touchesDirt = true
+					}
+				}
+			}
+			if touchesDirt {
+				dirtAdjacentRocks++
+				if w.At(p) == mold {
+					crusted++
+				}
+			}
+		}
+	}
+	if dirtAdjacentRocks == 0 {
+		t.Fatal("test world has no ring cells")
+	}
+	if crusted != dirtAdjacentRocks {
+		t.Fatalf("crust incomplete: %d of %d ring cells molded", crusted, dirtAdjacentRocks)
 	}
 }
 
