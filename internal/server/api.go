@@ -49,6 +49,10 @@ func (s *Server) handleState(rw http.ResponseWriter, r *http.Request) {
 // handleAdvance is a dev tool: it fast-forwards the world so slow
 // hours-scale behavior can be tested without waiting.
 func (s *Server) handleAdvance(rw http.ResponseWriter, r *http.Request) {
+	if !s.adminOK(r.URL.Query().Get("admin")) && !s.adminOK(r.Header.Get("X-Admin-Token")) {
+		writeJSON(rw, http.StatusForbidden, map[string]string{"error": "admin token required"})
+		return
+	}
 	n, err := strconv.Atoi(r.URL.Query().Get("ticks"))
 	if err != nil || n < 1 {
 		writeJSON(rw, http.StatusBadRequest, map[string]string{"error": "ticks must be a positive integer"})

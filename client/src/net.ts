@@ -28,15 +28,21 @@ export function connect() {
   ws.onclose = () => setTimeout(connect, 1000);
 }
 
+// world-level controls carry the admin token; public servers ignore
+// these intents without it (set via localStorage.setItem("admin", ...))
+function adminToken(): string {
+  return localStorage.getItem("admin") ?? "";
+}
+
 export function sendTimescale(scale: number) {
   if (ws?.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: "timescale", scale }));
+  ws.send(JSON.stringify({ type: "timescale", scale, admin: adminToken() }));
   world.setTimescaleOptimistic(scale);
 }
 
 export function sendReset() {
   ws?.readyState === WebSocket.OPEN &&
-    ws.send(JSON.stringify({ type: "reset" }));
+    ws.send(JSON.stringify({ type: "reset", admin: adminToken() }));
 }
 
 export function sendSpawn(name: string) {

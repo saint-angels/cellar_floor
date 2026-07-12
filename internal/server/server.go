@@ -33,10 +33,18 @@ type Server struct {
 
 	players map[string]*Player // guarded by mu
 	pending []sim.Event        // guarded by mu; drained into the next tick
+
+	admin string // when set, reset/timescale/advance require this token
+}
+
+// adminOK allows world-level controls: open when no token is configured
+// (local play), token-gated on public deployments.
+func (s *Server) adminOK(token string) bool {
+	return s.admin == "" || token == s.admin
 }
 
 func Run(cfg *data.Config, w *sim.World, addr, staticDir string) error {
-	s := &Server{cfg: cfg, world: w, hub: NewHub()}
+	s := &Server{cfg: cfg, world: w, hub: NewHub(), admin: os.Getenv("CELLAR_ADMIN_TOKEN")}
 	s.scale.Store(1)
 	players, err := LoadPlayers(playersPath(cfg.Sim.SavePath))
 	if err != nil {
@@ -200,9 +208,9 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			switch {
-			case m.Type == "timescale" && validScales[m.Scale]:
+			case m.Type == "timescale" && validScales[m.Scale] && s.adminOK(m.Admin):
 				s.scale.Store(int64(m.Scale))
-			case m.Type == "reset":
+			case m.Type == "reset" && s.adminOK(m.Admin):
 				if b := s.resetWorld(); b != nil {
 					s.hub.Broadcast(b)
 				}

@@ -6,5 +6,15 @@ services:
     restart: unless-stopped
     ports:
       - "8090:8080" # host 8080 is taken by amnezia-vpn on the NAS
+    environment:
+      CELLAR_ADMIN_TOKEN: ${CELLAR_ADMIN_TOKEN:-} # from .env next to this file; empty = open
     volumes:
       - ./save:/data # world.json and players.json survive redeploys here
+    networks:
+      - default
+      - edge
+
+networks:
+  edge: # the cloudflared tunnel network, so cellar-door.zettelwerk.app reaches us
+    external: true
+    name: notes-stack_default
