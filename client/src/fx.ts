@@ -49,6 +49,24 @@ const shakes = new Map<number, number>(); // cell index -> strike time
 
 const easeInQuad = (t: number) => t * t;
 
+// pop the damage accrued on a cell since its last pop. Only tracks cells
+// the sim is actually damaging; a swept face with no mining entry (unlit,
+// or damage not yet on the wire) would otherwise be baselined at 0 and
+// the completion sweep would pop its full hp.
+function popDamage(cell: number, tileX: number, tileY: number) {
+  const dealt = world.mining[cell];
+  if (dealt == null) return;
+  const rec = shownDamage.get(cell);
+  if (rec == null) {
+    // baseline silently on first sight (fresh page load mid-mine)
+    const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
+    shownDamage.set(cell, { shown: dealt, hp });
+  } else if (dealt > rec.shown) {
+    spawnFloat(tileX, tileY, String(dealt - rec.shown));
+    rec.shown = dealt;
+  }
+}
+
 function spawnFloat(cellX: number, cellY: number, text: string) {
   if (floats.length >= MAX_FLOATS) floats.shift();
   floats.push({ x: cellX * TILE + TILE / 2, y: cellY * TILE - 2, text, age: 0 });
@@ -121,21 +139,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     if (mineable && cell !== prev && running) {
       spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
       shakes.set(cell, now);
-      // only track cells the sim is actually damaging; a swept face with no
-      // mining entry (unlit, or damage not yet on the wire) would otherwise
-      // be baselined at 0 and the completion sweep would pop its full hp
-      const dealt = world.mining[cell];
-      if (dealt != null) {
-        const rec = shownDamage.get(cell);
-        if (rec == null) {
-          // baseline silently on first sight (fresh page load mid-mine)
-          const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
-          shownDamage.set(cell, { shown: dealt, hp });
-        } else if (dealt > rec.shown) {
-          spawnFloat(cx2, cy2, String(dealt - rec.shown));
-          rec.shown = dealt;
-        }
-      }
+      popDamage(cell, cx2, cy2);
     }
     toolCell.set(e.id, cell);
 
@@ -170,7 +174,9 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         if (p >= 0.8 && running && beamCycle.get(key) !== cycle) {
           beamCycle.set(key, cycle);
           spawnDebris(tgx, tgy, cx, cy, DEBRIS_COLOR);
-          shakes.set(e.mt.y * world.width + e.mt.x, now);
+          const tcell = e.mt.y * world.width + e.mt.x;
+          shakes.set(tcell, now);
+          popDamage(tcell, e.mt.x, e.mt.y);
         }
         continue;
       }
@@ -213,7 +219,9 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         } else if (running && beamCycle.get(key) !== cycle) {
           beamCycle.set(key, cycle);
           spawnDebris(tgx, tgy, cx, cy, DEBRIS_COLOR);
-          shakes.set(e.mt.y * world.width + e.mt.x, now);
+          const tcell = e.mt.y * world.width + e.mt.x;
+          shakes.set(tcell, now);
+          popDamage(tcell, e.mt.x, e.mt.y);
         }
         continue;
       }
