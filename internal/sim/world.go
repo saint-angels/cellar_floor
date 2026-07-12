@@ -240,12 +240,13 @@ func (w *World) MineBonus() int {
 	return bonus
 }
 
-// BeamBonus is the summed damage of claimed beam upgrades; unlike the AOE
-// MineBonus it lands only on the miner's chosen target face.
+// BeamBonus is the summed damage of claimed target-focused weapons (beams
+// and missiles); unlike the AOE MineBonus it lands only on the miner's
+// chosen target face.
 func (w *World) BeamBonus() int {
 	bonus := 0
 	for _, u := range w.cfg.Upgrades {
-		if u.Kind == "beam" {
+		if u.Kind == "beam" || u.Kind == "missile" {
 			bonus += u.Amount * w.Claims[u.Name]
 		}
 	}

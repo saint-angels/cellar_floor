@@ -19,6 +19,13 @@ func TestBeamHitsOnlyTheTarget(t *testing.T) {
 	if got := w.BeamBonus(); got != 3 {
 		t.Fatalf("BeamBonus = %d, want 3", got)
 	}
+	w.Cfg().Upgrades = append(w.Cfg().Upgrades,
+		data.Upgrade{Name: "Seeker", Kind: "missile", Amount: 2, Max: 1, Color: "#8fd3ff", Radius: 14, PeriodMs: 1500})
+	w.Claims["Seeker"] = 1
+	if got := w.BeamBonus(); got != 5 {
+		t.Fatalf("BeamBonus with missile = %d, want 5", got)
+	}
+	w.Claims["Seeker"] = 0
 
 	// two lit faces adjacent to the miner; the beam lands on the chosen one
 	w.Terrain[idx(w, Point{4, 2})] = Terrain(3)

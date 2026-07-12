@@ -293,7 +293,7 @@ func Validate(cfg *Config) error {
 		}
 	}
 	upNames := map[string]bool{}
-	validKinds := map[string]bool{"damage": true, "luck": true, "weapon": true, "beam": true}
+	validKinds := map[string]bool{"damage": true, "luck": true, "weapon": true, "beam": true, "missile": true}
 	for i, u := range cfg.Upgrades {
 		if u.Name == "" {
 			return fmt.Errorf("upgrade[%d]: name is required", i)
@@ -311,8 +311,8 @@ func Validate(cfg *Config) error {
 		if u.Max < 0 {
 			return fmt.Errorf("upgrade %s: max must be non-negative", u.Name)
 		}
-		if (u.Kind == "weapon" || u.Kind == "beam") && (u.Color == "" || u.Radius <= 0 || u.PeriodMs <= 0) {
-			return fmt.Errorf("upgrade %s: weapons and beams need color, radius, period_ms", u.Name)
+		if (u.Kind == "weapon" || u.Kind == "beam" || u.Kind == "missile") && (u.Color == "" || u.Radius <= 0 || u.PeriodMs <= 0) {
+			return fmt.Errorf("upgrade %s: weapons, beams and missiles need color, radius, period_ms", u.Name)
 		}
 	}
 	produced := map[string]bool{}

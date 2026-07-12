@@ -515,8 +515,8 @@ func TestUpgradePoolParses(t *testing.T) {
 	if cfg.LevelBase != 2.0 || cfg.LevelGrowth != 1.6 {
 		t.Fatalf("curve = %v %v, want 2.0 1.6", cfg.LevelBase, cfg.LevelGrowth)
 	}
-	if len(cfg.Upgrades) != 5 {
-		t.Fatalf("pool = %d entries, want 5", len(cfg.Upgrades))
+	if len(cfg.Upgrades) != 6 {
+		t.Fatalf("pool = %d entries, want 6", len(cfg.Upgrades))
 	}
 	sharper := cfg.Upgrades[0]
 	if sharper.Name != "Sharper Picks" || sharper.Kind != "damage" || sharper.Amount != 1 || sharper.Max != 0 {
@@ -529,6 +529,10 @@ func TestUpgradePoolParses(t *testing.T) {
 	lance := cfg.Upgrades[4]
 	if lance.Kind != "beam" || lance.Color != "#ffffff" || lance.Radius != 24 || lance.PeriodMs != 1200 || lance.Amount != 3 || lance.Max != 1 {
 		t.Fatalf("lance = %+v", lance)
+	}
+	seeker := cfg.Upgrades[5]
+	if seeker.Kind != "missile" || seeker.Color != "#8fd3ff" || seeker.Radius != 14 || seeker.PeriodMs != 1500 || seeker.Amount != 2 || seeker.Max != 1 {
+		t.Fatalf("seeker = %+v", seeker)
 	}
 }
 

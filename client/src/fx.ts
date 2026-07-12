@@ -174,6 +174,49 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         }
         continue;
       }
+      // missiles: a dot leaves the dwarf's back and homes in on the target
+      // along a side curve, its trail elongating behind it as it flies
+      if (u.kind === "missile" && world.claims[u.name] > 0) {
+        const tgx = e.mt.x * TILE + TILE / 2;
+        const tgy = e.mt.y * TILE + TILE / 2;
+        let mdx = tgx - cx, mdy = tgy - cy;
+        const mdl = Math.hypot(mdx, mdy) || 1;
+        mdx /= mdl;
+        mdy /= mdl;
+        const p = (fxClock % u.periodMs) / u.periodMs;
+        const cycle = Math.floor(fxClock / u.periodMs);
+        const key = e.id * 131 + u.radius;
+        const FLY = 0.5; // first half of the period is flight, then silence
+        if (p < FLY) {
+          const f = p / FLY;
+          const side = (cycle + e.id) % 2 === 0 ? 1 : -1;
+          const sx0 = cx - mdx * 10, sy0 = cy - mdy * 10; // launch behind the back
+          const mx = (sx0 + tgx) / 2 - mdy * side * u.radius; // swing around the side
+          const my = (sy0 + tgy) / 2 + mdx * side * u.radius;
+          const q = (t: number): [number, number] => {
+            const a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, c2 = t * t;
+            return [a * sx0 + b * mx + c2 * tgx, a * sy0 + b * my + c2 * tgy];
+          };
+          ctx.strokeStyle = u.color;
+          ctx.lineWidth = 0.75;
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          for (let i = 0; i <= 14; i++) {
+            const [qx, qy] = q((f * i) / 14);
+            i === 0 ? ctx.moveTo(qx, qy) : ctx.lineTo(qx, qy);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          const [hx, hy] = q(f);
+          ctx.fillStyle = u.color;
+          ctx.fillRect(hx - 1, hy - 1, 2, 2);
+        } else if (running && beamCycle.get(key) !== cycle) {
+          beamCycle.set(key, cycle);
+          spawnDebris(tgx, tgy, cx, cy, DEBRIS_COLOR);
+          shakes.set(e.mt.y * world.width + e.mt.x, now);
+        }
+        continue;
+      }
       if (u.kind !== "weapon" || !(world.claims[u.name] > 0)) continue;
       const wAngle = (fxClock / u.periodMs) * Math.PI * 2 + e.id * 2.4 + u.radius;
       const wx = cx + Math.cos(wAngle) * u.radius;
