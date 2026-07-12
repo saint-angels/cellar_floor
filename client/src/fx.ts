@@ -11,6 +11,9 @@ const DEBRIS_PER_HIT = 6;
 const MAX_PARTICLES = 300;
 const DEBRIS_COLOR = "#8a8a8a";
 
+const SHAKE_MS = 200;
+const SHAKE_AMP = 1; // px, a very tiny rattle
+
 const FLOAT_RISE_MS = 400;
 const FLOAT_FADE_MS = 600;
 const FLOAT_RISE_PX = 8;
@@ -41,6 +44,7 @@ const toolCell = new Map<number, number>();
 // snapshots replace the world wholesale; local fx tracking would pop phantom
 // remainder numbers at stale cells, so drop it when a new snapshot lands
 let seenSnapshot = -1;
+const shakes = new Map<number, number>(); // cell index -> strike time
 
 const easeInQuad = (t: number) => t * t;
 
@@ -73,6 +77,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     shownDamage.clear();
     floats = [];
     toolCell.clear();
+    shakes.clear();
   }
   const dt = lastNow ? Math.min(now - lastNow, 100) : 16;
   lastNow = now;
@@ -114,6 +119,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     const mineable = cell >= 0 && (world.terrainTypes[world.terrain[cell]]?.mineable ?? false);
     if (mineable && cell !== prev && running) {
       spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
+      shakes.set(cell, now);
       // only track cells the sim is actually damaging; a swept face with no
       // mining entry (unlit, or damage not yet on the wire) would otherwise
       // be baselined at 0 and the completion sweep would pop its full hp
@@ -179,6 +185,31 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = "start";
+}
+
+// drawShakes redraws recently struck tiles with a tiny decaying jitter.
+// Called from the render loop between the veil and the entities so bars
+// and creatures still draw on top.
+export function drawShakes(ctx: CanvasRenderingContext2D, now: number) {
+  for (const [cell, t0] of shakes) {
+    const age = now - t0;
+    if (age > SHAKE_MS) {
+      shakes.delete(cell);
+      continue;
+    }
+    const color = world.terrainTypes[world.terrain[cell]]?.color;
+    if (!color) {
+      shakes.delete(cell);
+      continue;
+    }
+    const decay = 1 - age / SHAKE_MS;
+    const dx = Math.round(Math.sin(age / 14 + cell) * SHAKE_AMP * decay * 1.99);
+    const dy = Math.round(Math.cos(age / 11 + cell) * SHAKE_AMP * decay * 1.99);
+    const x = (cell % world.width) * TILE;
+    const y = Math.floor(cell / world.width) * TILE;
+    ctx.fillStyle = color;
+    ctx.fillRect(x + dx, y + dy, TILE, TILE);
+  }
 }
 
 // debris flies back away from the struck face, toward open ground

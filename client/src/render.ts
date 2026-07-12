@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { drawEffects } from "./fx";
+import { drawEffects, drawShakes } from "./fx";
 
 const TILE = 12;
 
@@ -92,6 +92,7 @@ export function startRender(canvas: HTMLCanvasElement) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(terrainCanvas, 0, 0);
       if (veilCanvas) ctx.drawImage(veilCanvas, 0, 0);
+      drawShakes(ctx, now);
       const lerpMs = world.tickIntervalMs / Math.max(world.timeScale, 1);
       for (const e of world.entities.values()) {
         const sp = world.types[e.s];
