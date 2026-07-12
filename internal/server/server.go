@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -152,7 +153,7 @@ func (s *Server) resetWorld() []byte {
 
 func (s *Server) saveOnInterrupt() {
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
 	<-ch
 	s.save()
 	os.Exit(0)
