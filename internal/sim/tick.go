@@ -3,6 +3,8 @@ package sim
 import (
 	"fmt"
 	"sort"
+
+	"cellarfloor/internal/data"
 )
 
 // Step advances the simulation by one tick and returns the events it produced.
@@ -135,7 +137,38 @@ func (w *World) Step() []Event {
 	// 6. spreading terrain claims dark passable neighbors
 	w.spreadStep()
 
+	// 7. level ups: mined gold fills the bar; each crossing draws a
+	// pending upgrade that stays inert until a player claims it
+	events = append(events, w.levelStep()...)
+
 	return events
+}
+
+func (w *World) levelStep() []Event {
+	var evs []Event
+	for len(w.cfg.Upgrades) > 0 && w.GoldMined >= w.NextLevelGold() {
+		w.Level++
+		pendingCount := map[string]int{}
+		for _, name := range w.Pending {
+			pendingCount[name]++
+		}
+		var eligible []data.Upgrade
+		for _, u := range w.cfg.Upgrades {
+			if u.Max == 0 || w.Claims[u.Name]+pendingCount[u.Name] < u.Max {
+				eligible = append(eligible, u)
+			}
+		}
+		if len(eligible) == 0 {
+			evs = append(evs, Event{Tick: w.Tick, Type: "level",
+				Msg: fmt.Sprintf("the colony reached level %d", w.Level)})
+			continue
+		}
+		pick := eligible[w.RandN(len(eligible))]
+		w.Pending = append(w.Pending, pick.Name)
+		evs = append(evs, Event{Tick: w.Tick, Type: "level",
+			Msg: fmt.Sprintf("the colony reached level %d: %s awaits", w.Level, pick.Name)})
+	}
+	return evs
 }
 
 // spreadStep grows spreading terrain (SpreadChance > 0) into random

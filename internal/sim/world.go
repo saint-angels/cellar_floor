@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"math"
 	"sort"
 
 	"cellarfloor/internal/data"
@@ -98,12 +99,14 @@ type World struct {
 	Rng      uint64          `json:"rng"`
 	Removed  []int           `json:"-"`
 
-	Gold         int         `json:"gold"`
-	UpgradeLevel int         `json:"upgradeLevel"`
-	BlocksMined  int         `json:"blocksMined"`
-	GoldMined    int         `json:"goldMined"`
-	MoldGrown    int         `json:"moldGrown"`
-	MineDamage   map[int]int `json:"mineDamage,omitempty"`
+	Gold        int            `json:"gold"`
+	Level       int            `json:"level"`
+	Pending     []string       `json:"pending,omitempty"`
+	Claims      map[string]int `json:"claims,omitempty"`
+	BlocksMined int            `json:"blocksMined"`
+	GoldMined   int            `json:"goldMined"`
+	MoldGrown   int            `json:"moldGrown"`
+	MineDamage  map[int]int    `json:"mineDamage,omitempty"`
 
 	cfg          *data.Config
 	dirty        map[int]bool
@@ -127,6 +130,7 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 		NextID:     1,
 		Rng:        seed,
 		MineDamage: map[int]int{},
+		Claims:     map[string]int{},
 		cfg:        cfg,
 		dirty:      map[int]bool{},
 		occ:        map[Point]int{},
@@ -141,6 +145,9 @@ func (w *World) SetConfig(cfg *data.Config) {
 	}
 	if w.MineDamage == nil {
 		w.MineDamage = map[int]int{}
+	}
+	if w.Claims == nil {
+		w.Claims = map[string]int{}
 	}
 	// older saves predate the social meter; wake up half-full, like Spawn
 	for _, e := range w.Entities {
@@ -212,17 +219,42 @@ func (w *World) rebuildOcc() {
 
 func (w *World) Cfg() *data.Config { return w.cfg }
 
-// MineBonus is the summed damage of purchased pick tiers.
+// MineBonus is the summed damage of CLAIMED upgrades; pending draws are inert.
 func (w *World) MineBonus() int {
-	lvl := w.UpgradeLevel
-	if lvl > len(w.cfg.Upgrades) {
-		lvl = len(w.cfg.Upgrades)
-	}
 	bonus := 0
-	for _, u := range w.cfg.Upgrades[:lvl] {
-		bonus += u.Damage
+	for _, u := range w.cfg.Upgrades {
+		if u.Kind == "damage" || u.Kind == "weapon" {
+			bonus += u.Amount * w.Claims[u.Name]
+		}
 	}
 	return bonus
+}
+
+// LuckBonus widens gold drops from claimed luck upgrades.
+func (w *World) LuckBonus() int {
+	bonus := 0
+	for _, u := range w.cfg.Upgrades {
+		if u.Kind == "luck" {
+			bonus += u.Amount * w.Claims[u.Name]
+		}
+	}
+	return bonus
+}
+
+// NextLevelGold is the cumulative mined gold required for the next level.
+// A missing pool or a non-progressing LevelBase yields a huge sentinel so
+// levelStep stays a no-op instead of looping on a zero target.
+func (w *World) NextLevelGold() int {
+	if len(w.cfg.Upgrades) == 0 || w.cfg.LevelBase <= 0 {
+		return 1 << 30
+	}
+	target := 0.0
+	step := w.cfg.LevelBase
+	for k := 0; k <= w.Level; k++ {
+		target += step
+		step *= w.cfg.LevelGrowth
+	}
+	return int(math.Ceil(target))
 }
 
 func (w *World) rand() uint64 {

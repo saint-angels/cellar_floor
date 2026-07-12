@@ -64,9 +64,11 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			}
 			sc := w.cfg.Sim
 			if tt != nil && tt.GoldChance > 0 && w.RandFloat() < tt.GoldChance {
-				amt := sc.GoldMin
-				if sc.GoldMax > sc.GoldMin {
-					amt += w.RandN(sc.GoldMax - sc.GoldMin + 1)
+				lo := sc.GoldMin + w.LuckBonus()
+				hi := sc.GoldMax + w.LuckBonus()
+				amt := lo
+				if hi > lo {
+					amt += w.RandN(hi - lo + 1)
 				}
 				w.Gold += amt
 				w.GoldMined += amt

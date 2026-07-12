@@ -457,24 +457,20 @@ func TestAOESkipsUnlitFaces(t *testing.T) {
 
 func TestMineBonusSpeedsMining(t *testing.T) {
 	cfg := mineCfg()
-	cfg.Upgrades = []data.Upgrade{{Name: "Copper", Cost: 3, Damage: 1}, {Name: "Iron", Cost: 8, Damage: 1}}
+	cfg.Upgrades = []data.Upgrade{{Name: "Sharper", Kind: "damage", Amount: 1, Max: 0}}
 	w := NewWorld(5, 5, 1, cfg)
 	w.Spawn("sunstone", Point{0, 0})
-	w.UpgradeLevel = 1 // Copper only: damage 1+1=2 against the 10 hp rock
+	w.Claims = map[string]int{"Sharper": 1} // damage 1+1=2 against the 10 hp rock
 	face := Point{3, 2}
 	w.Terrain[idx(w, face)] = TerrainRock
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
 	w.Step()
 	if got := w.MineDamage[idx(w, face)]; got != 2 {
-		t.Fatalf("damage per tick = %d, want 2 at upgrade level 1", got)
+		t.Fatalf("damage per tick = %d, want 2 with a claimed damage upgrade", got)
 	}
 	if w.MineBonus() != 1 {
 		t.Fatalf("MineBonus = %d, want 1", w.MineBonus())
-	}
-	w.UpgradeLevel = 99 // clamped to the table
-	if w.MineBonus() != 2 {
-		t.Fatalf("MineBonus clamped = %d, want 2", w.MineBonus())
 	}
 }
 
