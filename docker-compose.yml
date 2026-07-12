@@ -1,0 +1,10 @@
+services:
+  cellar-floor:
+    build: .
+    image: cellar-floor:latest
+    container_name: cellar-floor
+    restart: unless-stopped
+    ports:
+      - "8090:8080" # host 8080 is taken by amnezia-vpn on the NAS
+    volumes:
+      - ./save:/data # world.json and players.json survive redeploys here
