@@ -24,6 +24,7 @@ type EntityView struct {
 	G24      int                `json:"g24,omitempty"`
 	SeenID   int                `json:"seenId,omitempty"`
 	SeenTick int64              `json:"seenTick,omitempty"`
+	Ore      int                `json:"ore,omitempty"`
 }
 
 func ViewOf(w *sim.World, e *sim.Entity) EntityView {
@@ -37,6 +38,7 @@ func ViewOf(w *sim.World, e *sim.Entity) EntityView {
 		MT: e.MineTarget, TID: e.TargetID,
 		Soc: e.Social, G24: w.GoldLast24h(e),
 		SeenID: e.SeenID, SeenTick: e.SeenTick,
+		Ore: e.Ore,
 	}
 }
 

@@ -67,6 +67,7 @@ type Entity struct {
 	SeenID      int            `json:"seenId,omitempty"`
 	SeenTick    int64          `json:"seenTick,omitempty"`
 	GoldStrikes []GoldStrike   `json:"goldStrikes,omitempty"`
+	Ore         int            `json:"ore,omitempty"`
 }
 
 // GoldStrike records one gold drop for the rolling last-24h count.
@@ -172,6 +173,76 @@ func (w *World) SetConfig(cfg *data.Config) {
 	w.rebuildOcc()
 	w.rebuildCounts()
 	w.RecomputeLight()
+	// older saves predate the market; give them one by the campfire so the
+	// ore economy works without a world reset. Runs after the rebuilds so
+	// Spawn's counts/occ maps are live. Never duplicated.
+	w.ensureMarket()
+}
+
+// ensureMarket spawns a single market entity next to the world center when
+// the config defines a Market type but no living market exists yet. It is a
+// no-op when a market already lives or the config has none, so it stays safe
+// to run on every load without duplicating.
+func (w *World) ensureMarket() {
+	marketType := ""
+	for _, id := range w.sortedTypeIDs() {
+		if w.cfg.Types[id].Market {
+			marketType = id
+			break
+		}
+	}
+	if marketType == "" {
+		return
+	}
+	for _, e := range w.Entities {
+		if e.Dead {
+			continue
+		}
+		if s, ok := w.cfg.Types[e.Type]; ok && s.Market {
+			return
+		}
+	}
+	if p, ok := w.marketRingTile(w.Width/2, w.Height/2); ok {
+		w.Spawn(marketType, p)
+	}
+}
+
+// sortedTypeIDs lists the config's type ids in deterministic order.
+func (w *World) sortedTypeIDs() []string {
+	ids := make([]string, 0, len(w.cfg.Types))
+	for id := range w.cfg.Types {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// marketRingTile scans Chebyshev rings outward from (ox, oy) and returns the
+// first passable tile, visiting each ring in ascending cell-index order for
+// determinism. Mirrors gen.marketTile, which sim cannot import.
+func (w *World) marketRingTile(ox, oy int) (Point, bool) {
+	origin := Point{X: ox, Y: oy}
+	for r := 1; r <= w.Width+w.Height; r++ {
+		var ring []Point
+		for y := oy - r; y <= oy+r; y++ {
+			for x := ox - r; x <= ox+r; x++ {
+				p := Point{X: x, Y: y}
+				if Dist(p, origin) != r || !w.InBounds(p) {
+					continue
+				}
+				ring = append(ring, p)
+			}
+		}
+		sort.Slice(ring, func(i, j int) bool {
+			return ring[i].Y*w.Width+ring[i].X < ring[j].Y*w.Width+ring[j].X
+		})
+		for _, p := range ring {
+			if w.Passable(w.At(p)) {
+				return p, true
+			}
+		}
+	}
+	return Point{}, false
 }
 
 // rollOffer draws up to three distinct eligible upgrades for the current
@@ -324,6 +395,26 @@ func (w *World) LuckBonus() int {
 		}
 	}
 	return bonus
+}
+
+// SpeedFactor is the movement multiplier from claimed speed upgrades:
+// 1 + sum(amount*claims)/100. No speed claims yields 1.0, so every walk
+// is unchanged until Swift Boots is claimed.
+func (w *World) SpeedFactor() float64 {
+	sum := 0
+	for _, u := range w.cfg.Upgrades {
+		if u.Kind == "speed" {
+			sum += u.Amount * w.Claims[u.Name]
+		}
+	}
+	return 1 + float64(sum)/100
+}
+
+// moveSpeed is a type's base speed scaled by the colony speed factor; the
+// per-tick MoveAcc increment for every walk so speed upgrades apply
+// everywhere a creature moves.
+func (w *World) moveSpeed(e *Entity) float64 {
+	return w.cfg.Types[e.Type].Speed * w.SpeedFactor()
 }
 
 // NextLevelGold is the cumulative mined gold required for the next level.

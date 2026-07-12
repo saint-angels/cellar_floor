@@ -77,14 +77,26 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 				if hi > lo {
 					amt += w.RandN(hi - lo + 1)
 				}
-				w.Gold += amt
-				w.GoldMined += amt
-				e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
-				w.GoldLast24h(e)
-				evs = append(evs, Event{
-					Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
-					Msg: fmt.Sprintf("%s struck gold", s.Name),
-				})
+				if s.CarryCapacity > 0 {
+					// bagged miners carry ore home; the gold is paid at the
+					// market on deposit, not here at the rock face
+					e.Ore += amt
+					w.markDirty(e.ID)
+					evs = append(evs, Event{
+						Tick: w.Tick, Type: "ore", Actor: e.ID, ActorType: e.Type,
+						Amount: amt,
+						Msg:    fmt.Sprintf("%s struck ore", s.Name),
+					})
+				} else {
+					w.Gold += amt
+					w.GoldMined += amt
+					e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
+					w.GoldLast24h(e)
+					evs = append(evs, Event{
+						Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
+						Msg: fmt.Sprintf("%s struck gold", s.Name),
+					})
+				}
 			} else {
 				evs = append(evs, Event{
 					Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
@@ -103,7 +115,7 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		return nil, false
 	}
 	e.Action = "heading to mine"
-	e.MoveAcc += s.Speed
+	e.MoveAcc += w.moveSpeed(e)
 	for e.MoveAcc >= 1 && !adjacent(e.Pos, target) {
 		e.MoveAcc--
 		if w.FaunaAt(next) != nil {

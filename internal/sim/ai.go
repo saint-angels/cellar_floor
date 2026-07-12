@@ -76,17 +76,27 @@ func (w *World) aiStep(e *Entity) []Event {
 		return nil
 	}
 
-	// 4. mining
+	// 4. a full bag heads to the market before mining more
+	if evs, hauled := w.haulStep(e, true); hauled {
+		return evs
+	}
+
+	// 5. mining
 	if evs, mined := w.mineStep(e); mined {
 		return evs
 	}
 
-	// 5. shelter
+	// 6. nothing left to mine but ore in the bag: sell the rest
+	if evs, hauled := w.haulStep(e, false); hauled {
+		return evs
+	}
+
+	// 7. shelter
 	if w.shelterStep(e) {
 		return nil
 	}
 
-	// 6. wander
+	// 8. wander
 	w.setTarget(e, 0)
 	e.Action = "idle"
 	if w.RandFloat() < s.WanderChance {
@@ -255,7 +265,7 @@ func (w *World) reachCost(dist []int32, p Point) int {
 // adjacent to the target. Unlike the greedy move it routes around
 // obstacles such as mold pockets.
 func (w *World) pathToward(e *Entity, target Point) {
-	e.MoveAcc += w.cfg.Types[e.Type].Speed
+	e.MoveAcc += w.moveSpeed(e)
 	for e.MoveAcc >= 1 && !adjacent(e.Pos, target) {
 		e.MoveAcc--
 		next, ok := w.nextStepToward(e.Pos, target)
@@ -270,7 +280,7 @@ func (w *World) pathToward(e *Entity, target Point) {
 }
 
 func (w *World) move(e *Entity, ref Point, away bool) {
-	e.MoveAcc += w.cfg.Types[e.Type].Speed
+	e.MoveAcc += w.moveSpeed(e)
 	for e.MoveAcc >= 1 {
 		e.MoveAcc--
 		best := e.Pos
@@ -296,7 +306,7 @@ func (w *World) move(e *Entity, ref Point, away bool) {
 }
 
 func (w *World) wander(e *Entity) {
-	e.MoveAcc += w.cfg.Types[e.Type].Speed
+	e.MoveAcc += w.moveSpeed(e)
 	for e.MoveAcc >= 1 {
 		e.MoveAcc--
 		n := neighbors[w.RandN(len(neighbors))]
@@ -436,4 +446,57 @@ func (w *World) shelterStep(e *Entity) bool {
 		return true
 	}
 	return false
+}
+
+// haulStep carries mined ore to the nearest living market and sells it for
+// colony gold. With fullOnly the dwarf only sets out once the bag is full;
+// otherwise it dumps whatever it has left. Returns (events, true) when the
+// tick was spent hauling or depositing. A missing market returns false so
+// the dwarf keeps mining and its ore simply accumulates harmlessly.
+func (w *World) haulStep(e *Entity, fullOnly bool) ([]Event, bool) {
+	s := w.cfg.Types[e.Type]
+	if s.CarryCapacity <= 0 || e.Ore <= 0 {
+		return nil, false
+	}
+	if fullOnly && e.Ore < s.CarryCapacity {
+		return nil, false
+	}
+	var market *Entity
+	bestD := 1 << 30
+	for _, id := range w.SortedIDs() {
+		c := w.Entities[id]
+		if c.Dead {
+			continue
+		}
+		cs, ok := w.cfg.Types[c.Type]
+		if !ok || !cs.Market {
+			continue
+		}
+		if d := Dist(e.Pos, c.Pos); d < bestD {
+			market, bestD = c, d
+		}
+	}
+	if market == nil {
+		return nil, false
+	}
+	if adjacent(e.Pos, market.Pos) {
+		n := e.Ore
+		w.Gold += n
+		w.GoldMined += n // the level bar moves at the market, not the rock
+		e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: n})
+		w.GoldLast24h(e)
+		e.Ore = 0
+		e.Action = "selling"
+		w.setTarget(e, 0)
+		w.markDirty(e.ID)
+		return []Event{{
+			Tick: w.Tick, Type: "sold", Actor: e.ID, ActorType: e.Type,
+			Amount: n,
+			Msg:    fmt.Sprintf("%s sold %d ore", s.Name, n),
+		}}, true
+	}
+	w.setTarget(e, market.ID) // the client ring shows where the haul is headed
+	e.Action = "hauling ore"
+	w.pathToward(e, market.Pos)
+	return nil, true
 }

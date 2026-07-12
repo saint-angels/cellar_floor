@@ -7,5 +7,6 @@ type Event struct {
 	ActorType  string `json:"actorType"`
 	Target     int    `json:"target,omitempty"`
 	TargetType string `json:"targetType,omitempty"`
+	Amount     int    `json:"amount,omitempty"`
 	Msg        string `json:"msg"`
 }
