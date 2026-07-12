@@ -38,7 +38,7 @@ func TestDebugActions(t *testing.T) {
 	if s.world.Level != before+1 {
 		t.Fatalf("level = %d, want %d after debug level", s.world.Level, before+1)
 	}
-	if len(s.world.Pending) == 0 {
-		t.Fatal("completing a level must draw into pending")
+	if s.world.PendingLevels == 0 || len(s.world.Offer) == 0 {
+		t.Fatal("completing a level must queue a choice and roll an offer")
 	}
 }

@@ -19,7 +19,8 @@ export class WorldState {
   goldMined = 0;
   prevLevelGold = 0;
   nextLevelGold = 1;
-  pending: string[] = [];
+  pendingLevels = 0;
+  offer: string[] = [];
   claims: Record<string, number> = {};
   recap: RecapMsg | null = null;
   terrainVersion = 0;
@@ -54,7 +55,8 @@ export class WorldState {
     this.goldMined = m.goldMined ?? 0;
     this.prevLevelGold = m.prevLevelGold ?? 0;
     this.nextLevelGold = m.nextLevelGold ?? 1;
-    this.pending = m.pending ?? [];
+    this.pendingLevels = m.pendingLevels ?? 0;
+    this.offer = m.offer ?? [];
     this.claims = m.claims ?? {};
     this.types = m.types;
     this.tick = m.tick;
@@ -107,7 +109,8 @@ export class WorldState {
     this.goldMined = m.goldMined;
     this.prevLevelGold = m.prevLevelGold;
     this.nextLevelGold = m.nextLevelGold;
-    this.pending = m.pending ?? [];
+    this.pendingLevels = m.pendingLevels ?? 0;
+    this.offer = m.offer ?? [];
     this.claims = m.claims ?? {};
     const diffs = m.terrain ?? [];
     if (diffs.length) {

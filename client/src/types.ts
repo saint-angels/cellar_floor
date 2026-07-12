@@ -106,7 +106,8 @@ export interface SnapshotMsg {
   goldMined: number;
   prevLevelGold: number;
   nextLevelGold: number;
-  pending: string[];
+  pendingLevels: number;
+  offer: string[];
   claims: Record<string, number>;
 }
 
@@ -125,7 +126,8 @@ export interface TickMsg {
   goldMined: number;
   prevLevelGold: number;
   nextLevelGold: number;
-  pending: string[];
+  pendingLevels: number;
+  offer: string[];
   claims: Record<string, number>;
 }
 

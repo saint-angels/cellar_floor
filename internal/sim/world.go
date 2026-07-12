@@ -100,14 +100,16 @@ type World struct {
 	Rng      uint64          `json:"rng"`
 	Removed  []int           `json:"-"`
 
-	Gold        int            `json:"gold"`
-	Level       int            `json:"level"`
-	Pending     []string       `json:"pending,omitempty"`
-	Claims      map[string]int `json:"claims,omitempty"`
-	BlocksMined int            `json:"blocksMined"`
-	GoldMined   int            `json:"goldMined"`
-	MoldGrown   int            `json:"moldGrown"`
-	MineDamage  map[int]int    `json:"mineDamage,omitempty"`
+	Gold          int            `json:"gold"`
+	Level         int            `json:"level"`
+	Pending       []string       `json:"pending,omitempty"` // legacy queue, migrated in SetConfig
+	PendingLevels int            `json:"pendingLevels,omitempty"`
+	Offer         []string       `json:"offer,omitempty"`
+	Claims        map[string]int `json:"claims,omitempty"`
+	BlocksMined   int            `json:"blocksMined"`
+	GoldMined     int            `json:"goldMined"`
+	MoldGrown     int            `json:"moldGrown"`
+	MineDamage    map[int]int    `json:"mineDamage,omitempty"`
 
 	cfg          *data.Config
 	dirty        map[int]bool
@@ -159,9 +161,69 @@ func (w *World) SetConfig(cfg *data.Config) {
 			e.Social = s.SocialSize / 2
 		}
 	}
+	// legacy saves queued drawn NAMES; each becomes a level worth of choice
+	if len(w.Pending) > 0 {
+		w.PendingLevels += len(w.Pending)
+		w.Pending = nil
+	}
+	if w.PendingLevels > 0 && len(w.Offer) == 0 {
+		w.rollOffer()
+	}
 	w.rebuildOcc()
 	w.rebuildCounts()
 	w.RecomputeLight()
+}
+
+// rollOffer draws up to three distinct eligible upgrades for the current
+// pending level. When nothing is eligible the queued levels are dropped;
+// claims only grow, so eligibility never comes back.
+func (w *World) rollOffer() {
+	w.Offer = nil
+	if w.PendingLevels <= 0 {
+		return
+	}
+	var eligible []string
+	for _, u := range w.cfg.Upgrades {
+		if u.Max == 0 || w.Claims[u.Name] < u.Max {
+			eligible = append(eligible, u.Name)
+		}
+	}
+	if len(eligible) == 0 {
+		w.PendingLevels = 0
+		return
+	}
+	for i := 0; i < len(eligible)-1 && i < 3; i++ {
+		j := i + w.RandN(len(eligible)-i)
+		eligible[i], eligible[j] = eligible[j], eligible[i]
+	}
+	if len(eligible) > 3 {
+		eligible = eligible[:3]
+	}
+	w.Offer = eligible
+}
+
+// ClaimOffer applies one upgrade from the current offer, consumes the
+// level, and rolls the next offer. False when the name is not on offer.
+func (w *World) ClaimOffer(name string) bool {
+	if w.PendingLevels <= 0 {
+		return false
+	}
+	ok := false
+	for _, n := range w.Offer {
+		if n == name {
+			ok = true
+		}
+	}
+	if !ok {
+		return false
+	}
+	if w.Claims == nil {
+		w.Claims = map[string]int{}
+	}
+	w.Claims[name]++
+	w.PendingLevels--
+	w.rollOffer()
+	return true
 }
 
 // RecomputeLight rebuilds the derived lit bitfield from living light

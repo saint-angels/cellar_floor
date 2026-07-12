@@ -47,27 +47,61 @@ function initTorch() {
   });
 }
 
+// a one-line effect description per upgrade kind for the offer buttons
+function upgradeDesc(name: string): string {
+  const u = world.upgrades.find((x) => x.name === name);
+  if (!u) return "";
+  switch (u.kind) {
+    case "damage": return `+${u.amount} mining damage for every dwarf`;
+    case "luck": return `+${u.amount} gold from every drop`;
+    case "weapon": return `an orbiting weapon, +${u.amount} damage`;
+    case "beam": return `a lance shot at the target, +${u.amount} damage`;
+    case "missile": return `a homing missile, +${u.amount} damage on the target`;
+    default: return "";
+  }
+}
+
 function initLevel() {
   const label = document.getElementById("levellabel")!;
   const fill = document.getElementById("levelfill")!;
   const card = document.getElementById("claimcard")!;
   const text = document.getElementById("claimtext")!;
+  const box = document.getElementById("offerbox")!;
   const more = document.getElementById("claimmore")!;
-  const btn = document.getElementById("claim-btn") as HTMLButtonElement;
-  btn.onclick = () => sendClaim();
+  let shownOffer = "";
   world.onChange(() => {
     const span = world.nextLevelGold - world.prevLevelGold;
     const into = Math.max(0, Math.min(span, world.goldMined - world.prevLevelGold));
     label.textContent = span > 0 ? `Lv ${world.level} ${into}/${span}` : `Lv ${world.level}`;
     fill.style.width = `${span > 0 ? (into / span) * 100 : 0}%`;
-    const next = world.pending[0];
-    if (!next) {
+    if (world.offer.length === 0 || world.pendingLevels === 0) {
       card.style.display = "none";
+      shownOffer = "";
       return;
     }
-    text.textContent = `Level ${world.level - world.pending.length + 1} reached: ${next}`;
-    more.textContent = world.pending.length > 1 ? `+${world.pending.length - 1} more waiting` : "";
-    btn.disabled = world.playerState !== "alive";
+    text.textContent = `Level ${world.level - world.pendingLevels + 1} reached: choose an upgrade`;
+    more.textContent = world.pendingLevels > 1 ? `+${world.pendingLevels - 1} more levels waiting` : "";
+    // rebuild the buttons only when the offer itself changes, so a click
+    // never lands on a row that was just re-created under the finger
+    const key = world.offer.join("|");
+    if (key !== shownOffer) {
+      shownOffer = key;
+      box.textContent = "";
+      for (const name of world.offer) {
+        const b = document.createElement("button");
+        const title = document.createElement("span");
+        title.textContent = name;
+        const kind = document.createElement("span");
+        kind.className = "kind";
+        kind.textContent = upgradeDesc(name);
+        b.append(title, kind);
+        b.onclick = () => sendClaim(name);
+        box.appendChild(b);
+      }
+    }
+    for (const b of Array.from(box.querySelectorAll("button"))) {
+      b.disabled = world.playerState !== "alive";
+    }
     card.style.display = "block";
   });
 }
@@ -97,8 +131,8 @@ function initRecap() {
     if (r.blocks) parts.push(`${r.blocks} blocks mined`);
     if (r.gold) parts.push(`${r.gold} gold mined`);
     if (r.mold) parts.push(`${r.mold} tunnels molded over`);
-    const claimsLine = world.pending.length
-      ? ` ${world.pending.length} upgrade${world.pending.length > 1 ? "s" : ""} await your claim!`
+    const claimsLine = world.pendingLevels
+      ? ` ${world.pendingLevels} level${world.pendingLevels > 1 ? "s" : ""} await your choice!`
       : "";
     box.textContent = `While you were away (${dur}): ${parts.join(", ")}.${claimsLine}`;
     box.style.display = "block";

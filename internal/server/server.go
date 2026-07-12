@@ -247,7 +247,7 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 				}
 			case m.Type == "claim" && m.Player != "":
 				s.mu.Lock()
-				pm := s.claimUpgrade(m.Player)
+				pm := s.claimUpgrade(m.Player, m.Name)
 				s.mu.Unlock()
 				if b, err := json.Marshal(pm); err == nil {
 					select {

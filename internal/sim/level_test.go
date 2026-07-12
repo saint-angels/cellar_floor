@@ -48,15 +48,19 @@ func TestPrevLevelGold(t *testing.T) {
 	}
 }
 
-func TestCrossingDrawsIntoPending(t *testing.T) {
+func TestCrossingRollsAnOffer(t *testing.T) {
 	w := NewWorld(5, 5, 1, levelCfg())
 	w.GoldMined = 7 // covers targets 2 and 6
 	evs := w.Step()
 	if w.Level != 2 {
 		t.Fatalf("level = %d, want 2", w.Level)
 	}
-	if len(w.Pending) != 2 {
-		t.Fatalf("pending = %v, want two draws", w.Pending)
+	if w.PendingLevels != 2 {
+		t.Fatalf("pendingLevels = %d, want 2", w.PendingLevels)
+	}
+	// the pool has two entries, so the offer holds both, distinct
+	if len(w.Offer) != 2 || w.Offer[0] == w.Offer[1] {
+		t.Fatalf("offer = %v, want two distinct choices", w.Offer)
 	}
 	named := 0
 	for _, ev := range evs {
@@ -71,18 +75,53 @@ func TestCrossingDrawsIntoPending(t *testing.T) {
 	w2 := NewWorld(5, 5, 1, levelCfg())
 	w2.GoldMined = 7
 	w2.Step()
-	for i := range w.Pending {
-		if w.Pending[i] != w2.Pending[i] {
-			t.Fatal("draws not deterministic")
+	for i := range w.Offer {
+		if w.Offer[i] != w2.Offer[i] {
+			t.Fatal("offers not deterministic")
 		}
+	}
+}
+
+func TestClaimOfferConsumesALevelAndRollsNext(t *testing.T) {
+	w := NewWorld(5, 5, 1, levelCfg())
+	w.GoldMined = 7
+	w.Step() // level 2, pendingLevels 2, offer rolled
+	if w.ClaimOffer("Nonsense") {
+		t.Fatal("claiming an unoffered name must fail")
+	}
+	pick := w.Offer[0]
+	if !w.ClaimOffer(pick) {
+		t.Fatalf("claiming %q failed", pick)
+	}
+	if w.Claims[pick] != 1 || w.PendingLevels != 1 {
+		t.Fatalf("claims %v pendingLevels %d after claim", w.Claims, w.PendingLevels)
+	}
+	if len(w.Offer) == 0 {
+		t.Fatal("a stacked level must roll the next offer")
+	}
+	if !w.ClaimOffer(w.Offer[0]) {
+		t.Fatal("second claim failed")
+	}
+	if w.PendingLevels != 0 || len(w.Offer) != 0 {
+		t.Fatalf("queue must drain: pendingLevels %d offer %v", w.PendingLevels, w.Offer)
+	}
+}
+
+func TestLegacyPendingMigratesToLevels(t *testing.T) {
+	w := NewWorld(5, 5, 1, levelCfg())
+	w.Pending = []string{"Sharper", "Lucky"}
+	w.SetConfig(levelCfg())
+	if len(w.Pending) != 0 || w.PendingLevels != 2 || len(w.Offer) == 0 {
+		t.Fatalf("migration: pending %v pendingLevels %d offer %v", w.Pending, w.PendingLevels, w.Offer)
 	}
 }
 
 func TestPendingIsInertUntilClaimed(t *testing.T) {
 	w := NewWorld(5, 5, 1, levelCfg())
-	w.Pending = []string{"Sharper", "Sharper"}
+	w.PendingLevels = 2
+	w.Offer = []string{"Sharper", "Lucky"}
 	if w.MineBonus() != 0 {
-		t.Fatal("pending upgrades must not add damage")
+		t.Fatal("offered upgrades must not add damage")
 	}
 	w.Claims = map[string]int{"Sharper": 3}
 	if w.MineBonus() != 3 {
@@ -97,13 +136,13 @@ func TestCappedEntriesLeaveTheDrawPool(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		w.Step()
 	}
-	for _, name := range w.Pending {
+	for _, name := range w.Offer {
 		if name == "Lucky" {
-			t.Fatal("capped entry drawn")
+			t.Fatal("capped entry offered")
 		}
 	}
-	if w.Level == 0 || len(w.Pending) == 0 {
-		t.Fatalf("levels should still accrue: level %d pending %d", w.Level, len(w.Pending))
+	if w.Level == 0 || w.PendingLevels == 0 {
+		t.Fatalf("levels should still accrue: level %d pendingLevels %d", w.Level, w.PendingLevels)
 	}
 }
 
@@ -124,7 +163,8 @@ func TestLuckRaisesDropBounds(t *testing.T) {
 func TestLevelStateSurvivesSaveLoad(t *testing.T) {
 	w := NewWorld(5, 5, 1, levelCfg())
 	w.Level = 3
-	w.Pending = []string{"Sharper"}
+	w.PendingLevels = 1
+	w.Offer = []string{"Sharper"}
 	w.Claims = map[string]int{"Lucky": 1}
 	b, err := json.Marshal(w)
 	if err != nil {
@@ -135,7 +175,7 @@ func TestLevelStateSurvivesSaveLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	w2.SetConfig(levelCfg())
-	if w2.Level != 3 || len(w2.Pending) != 1 || w2.Claims["Lucky"] != 1 {
-		t.Fatalf("state lost: %d %v %v", w2.Level, w2.Pending, w2.Claims)
+	if w2.Level != 3 || w2.PendingLevels != 1 || len(w2.Offer) != 1 || w2.Claims["Lucky"] != 1 {
+		t.Fatalf("state lost: %d %d %v %v", w2.Level, w2.PendingLevels, w2.Offer, w2.Claims)
 	}
 }

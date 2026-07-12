@@ -57,7 +57,8 @@ type SnapshotMsg struct {
 	GoldMined     int                         `json:"goldMined"`
 	PrevLevelGold int                         `json:"prevLevelGold"`
 	NextLevelGold int                         `json:"nextLevelGold"`
-	Pending       []string                    `json:"pending"`
+	PendingLevels int                         `json:"pendingLevels"`
+	Offer         []string                    `json:"offer"`
 	Claims        map[string]int              `json:"claims"`
 }
 
@@ -82,7 +83,8 @@ type TickMsg struct {
 	GoldMined     int            `json:"goldMined"`
 	PrevLevelGold int            `json:"prevLevelGold"`
 	NextLevelGold int            `json:"nextLevelGold"`
-	Pending       []string       `json:"pending"`
+	PendingLevels int            `json:"pendingLevels"`
+	Offer         []string       `json:"offer"`
 	Claims        map[string]int `json:"claims"`
 }
 
@@ -120,7 +122,8 @@ func BuildSnapshot(w *sim.World, scale int, owners map[int]string) SnapshotMsg {
 		GoldMined:     w.GoldMined,
 		PrevLevelGold: w.PrevLevelGold(),
 		NextLevelGold: w.NextLevelGold(),
-		Pending:       w.Pending,
+		PendingLevels: w.PendingLevels,
+		Offer:         w.Offer,
 		Claims:        w.Claims,
 	}
 }
@@ -170,7 +173,8 @@ func BuildTick(w *sim.World, events []sim.Event, scale int, owners map[int]strin
 		GoldMined:     w.GoldMined,
 		PrevLevelGold: w.PrevLevelGold(),
 		NextLevelGold: w.NextLevelGold(),
-		Pending:       w.Pending,
+		PendingLevels: w.PendingLevels,
+		Offer:         w.Offer,
 		Claims:        w.Claims,
 	}
 }

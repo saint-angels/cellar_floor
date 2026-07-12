@@ -4,22 +4,26 @@ import "testing"
 
 func TestClaimUpgrade(t *testing.T) {
 	s := newPlayerServer(t)
-	if res := s.claimUpgrade("ghost"); res.Error == "" {
+	if res := s.claimUpgrade("ghost", "Sharper Picks"); res.Error == "" {
 		t.Fatal("no dwarf: must error")
 	}
 	s.spawnDwarf("tok", "Misha")
-	if res := s.claimUpgrade("tok"); res.Error != "nothing to claim" {
+	if res := s.claimUpgrade("tok", "Sharper Picks"); res.Error != "nothing to claim" {
 		t.Fatalf("got %q, want nothing to claim", res.Error)
 	}
-	s.world.Pending = []string{"Sharper Picks", "Chisel"}
-	if res := s.claimUpgrade("tok"); res.Error != "" {
+	s.world.PendingLevels = 2
+	s.world.Offer = []string{"Sharper Picks", "Chisel"}
+	if res := s.claimUpgrade("tok", "Hammer"); res.Error != "not on offer" {
+		t.Fatalf("got %q, want not on offer", res.Error)
+	}
+	if res := s.claimUpgrade("tok", "Sharper Picks"); res.Error != "" {
 		t.Fatalf("claim failed: %v", res.Error)
 	}
 	if s.world.Claims["Sharper Picks"] != 1 {
 		t.Fatalf("claims = %v", s.world.Claims)
 	}
-	if len(s.world.Pending) != 1 || s.world.Pending[0] != "Chisel" {
-		t.Fatalf("pending after claim = %v, want FIFO pop", s.world.Pending)
+	if s.world.PendingLevels != 1 || len(s.world.Offer) == 0 {
+		t.Fatalf("pendingLevels %d offer %v, want next offer rolled", s.world.PendingLevels, s.world.Offer)
 	}
 	if len(s.pending) != 1 || s.pending[0].Type != "claimed" {
 		t.Fatalf("events = %+v", s.pending)

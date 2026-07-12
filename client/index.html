@@ -32,8 +32,11 @@
     #levelbox { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
     #levelbar { flex: 1; height: 10px; background: #1a1815; border: 1px solid #444; }
     #levelfill { height: 100%; width: 0%; background: #4a7c3f; }
-    #claimcard { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); display: none; background: #1c1815; border: 1px solid #6a5a2e; padding: 12px 16px; text-align: center; }
-    #claimcard button { background: #7a5a1e; color: #fff; border: none; padding: 6px 14px; margin-top: 8px; cursor: pointer; font: inherit; }
+    #claimcard { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); display: none; background: #1c1815; border: 1px solid #6a5a2e; padding: 12px 16px; text-align: center; max-width: min(340px, 92%); z-index: 4; }
+    #offerbox button { display: block; width: 100%; box-sizing: border-box; background: #262220; color: #e8e2d8; border: 1px solid #6a5a2e; padding: 8px 14px; margin-top: 8px; cursor: pointer; font: inherit; text-align: left; }
+    #offerbox button:hover { background: #33291c; }
+    #offerbox button:disabled { opacity: 0.4; cursor: default; }
+    #offerbox .kind { display: block; color: #8d857a; font-size: 0.85em; }
     #claimmore { color: #8d857a; margin-top: 4px; }
     #map.placing canvas { cursor: crosshair; }
     #mydwarf { white-space: pre-line; }
@@ -72,7 +75,7 @@
       <div><h2>Level</h2><button id="debug-level">complete level</button></div>
       <div><h2>Claims</h2><div id="debug-claims"></div></div>
     </div>
-    <div id="claimcard"><div id="claimtext"></div><button id="claim-btn">Claim</button><div id="claimmore"></div></div>
+    <div id="claimcard"><div id="claimtext"></div><div id="offerbox"></div><div id="claimmore"></div></div>
     <div id="overlay">
       <div id="overlay-card">
         <h2 id="overlay-title">A dwarf awaits</h2>

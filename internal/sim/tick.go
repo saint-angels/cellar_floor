@@ -3,8 +3,6 @@ package sim
 import (
 	"fmt"
 	"sort"
-
-	"cellarfloor/internal/data"
 )
 
 // Step advances the simulation by one tick and returns the events it produced.
@@ -148,25 +146,24 @@ func (w *World) levelStep() []Event {
 	var evs []Event
 	for len(w.cfg.Upgrades) > 0 && w.GoldMined >= w.NextLevelGold() {
 		w.Level++
-		pendingCount := map[string]int{}
-		for _, name := range w.Pending {
-			pendingCount[name]++
-		}
-		var eligible []data.Upgrade
+		anyEligible := false
 		for _, u := range w.cfg.Upgrades {
-			if u.Max == 0 || w.Claims[u.Name]+pendingCount[u.Name] < u.Max {
-				eligible = append(eligible, u)
+			if u.Max == 0 || w.Claims[u.Name] < u.Max {
+				anyEligible = true
+				break
 			}
 		}
-		if len(eligible) == 0 {
+		if !anyEligible {
 			evs = append(evs, Event{Tick: w.Tick, Type: "level",
 				Msg: fmt.Sprintf("the colony reached level %d", w.Level)})
 			continue
 		}
-		pick := eligible[w.RandN(len(eligible))]
-		w.Pending = append(w.Pending, pick.Name)
+		w.PendingLevels++
 		evs = append(evs, Event{Tick: w.Tick, Type: "level",
-			Msg: fmt.Sprintf("the colony reached level %d: %s awaits", w.Level, pick.Name)})
+			Msg: fmt.Sprintf("the colony reached level %d: choose an upgrade", w.Level)})
+	}
+	if w.PendingLevels > 0 && len(w.Offer) == 0 {
+		w.rollOffer()
 	}
 	return evs
 }
