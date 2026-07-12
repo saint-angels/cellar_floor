@@ -143,7 +143,7 @@ export function startRender(canvas: HTMLCanvasElement) {
         if (me && !me.dead) {
           ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
           ctx.lineWidth = 0.75;
-          if (me.mt) {
+          if (me.mt && (me.action === "mining" || me.action === "heading to mine")) {
             ctx.save();
             ctx.translate(me.mt.x * TILE + TILE / 2, me.mt.y * TILE + TILE / 2);
             ctx.rotate(((now % 3000) / 3000) * Math.PI * 2);

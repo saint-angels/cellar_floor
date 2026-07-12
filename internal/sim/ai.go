@@ -45,9 +45,12 @@ func (w *World) aiStep(e *Entity) []Event {
 	}
 
 	// 2. food; once a meal starts, keep eating until the stomach is full
-	// (or nothing edible remains), not just past the hunger threshold
+	// (or nothing edible remains), not just past the hunger threshold. Under
+	// half a bite of room the meal is over; without that cutoff a dwarf
+	// whose mushroom ran dry would trek to another for a sliver of food
 	hungry := e.Fullness < s.HungerThreshold
-	topping := (e.Action == "eating" || e.Action == "seeking food") && e.Fullness < s.StomachSize
+	topping := (e.Action == "eating" || e.Action == "seeking food") &&
+		s.StomachSize-e.Fullness > s.BiteSize*0.5
 	if hungry || topping {
 		food := w.findFood(e)
 		if food != nil {

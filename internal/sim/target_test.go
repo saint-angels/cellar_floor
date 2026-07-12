@@ -47,3 +47,16 @@ func TestMealEndsWhenFull(t *testing.T) {
 		t.Fatalf("action = %q, the meal must end once full", r.Action)
 	}
 }
+
+func TestNoFoodTrekForASliver(t *testing.T) {
+	w := flatWorld(t, 16, 16, 1)
+	far := w.Spawn("bush", Point{14, 14})
+	r := w.Spawn("rabbit", Point{2, 2})
+	// nearly full and mid-meal by action; the far bush must not tempt it
+	r.Fullness = w.Cfg().Types["rabbit"].StomachSize - 0.3
+	r.Action = "eating"
+	w.Step()
+	if r.Action == "seeking food" || r.TargetID == far.ID {
+		t.Fatalf("action = %q target %d, a sliver of room must not start a trek", r.Action, r.TargetID)
+	}
+}
