@@ -283,10 +283,10 @@ func TestSocialFieldsConvert(t *testing.T) {
 	if d.SocialSize != 10 || d.SocialThreshold != 4 || d.SocialRadius != 3 {
 		t.Fatalf("social basics: %v %v %d", d.SocialSize, d.SocialThreshold, d.SocialRadius)
 	}
-	if want := 10.0 / (2 * 86400 * 2); d.SocialDrain != want {
+	if want := 10.0 / (d.SocialDrainDays * 86400 * 2); d.SocialDrain != want {
 		t.Errorf("drain = %v, want %v", d.SocialDrain, want)
 	}
-	if want := 10.0 / (1 * 3600 * 2); d.SocialRefill != want {
+	if want := 10.0 / (d.SocialRefillHours * 3600 * 2); d.SocialRefill != want {
 		t.Errorf("refill = %v, want %v", d.SocialRefill, want)
 	}
 	if m := cfg.Types["mushroom"]; m.SocialSize != 0 || m.SocialDrain != 0 {

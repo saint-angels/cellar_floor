@@ -2,7 +2,7 @@
 name = "Mushroom"
 kind = "flora"
 color = "#c4b5d9"
-produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 1.75 }]
+produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 0.01 }]
 
 [type.dwarf]
 name = "Dwarf"
@@ -12,7 +12,7 @@ eats = ["mushroom"]
 bite_size = 2.0
 stomach_size = 10.0
 hunger_threshold = 4.0
-stomach_drain_hours = 24
+stomach_drain_hours = 0.16666666666666666
 starve_hours = 48
 fear_radius = 0
 cells_per_second = 1.0
@@ -29,8 +29,8 @@ mine_damage = 1
 social_size = 10
 social_threshold = 4
 social_radius = 3
-social_drain_days = 2
-social_refill_hours = 1
+social_drain_days = 0.013888888888888888
+social_refill_hours = 0.05
 # thought bubbles: first matching rule wins, order is priority
 # conditions: starving, hungry, lonely, struck_gold, seen_recently, always
 # placeholders in text: {gold} = gold in last 24h, {name} = last seen dwarf

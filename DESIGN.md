@@ -5,9 +5,10 @@ is a deliberate decision, not a side effect.
 
 ## Pace
 
-- **Activities generally take awhile.** Hours to real days: a rock cell takes
-  about a day to mine, a stomach drains over a day, crossing the map is an
-  outing. The payoff of the game is checking back later, not watching.
+- **Work takes awhile; needs are lively.** Mining and the economy run on
+  hours to real days: a rock cell takes about a day to mine, and the payoff
+  of the game is checking back later. Bodily needs (hunger, company) cycle
+  in minutes so the colony visibly moves while you watch.
 - **The canonical world runs at 1x wall-clock.** The 8x/64x buttons are dev
   and observation tools, not gameplay.
 
