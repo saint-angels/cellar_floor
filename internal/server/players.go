@@ -68,12 +68,13 @@ func (s *Server) spawnDwarf(token, name string) PlayerMsg {
 		pm.Error = "no room in the clearing"
 		return pm
 	}
-	_, returning := s.players[token]
+	prev, returning := s.players[token]
 	e := s.world.Spawn("dwarf", pos)
 	s.players[token] = &Player{Name: name, DwarfID: e.ID}
-	if !returning {
-		// a brand-new player brings coins for starting torches; respawns
-		// bring nothing, so cycling dwarves cannot farm gold
+	// the purse arrives with a player's first spawn in each world: brand
+	// new tokens, and returning players after a reset (which zeroes their
+	// DwarfID). Death respawns keep the old id, so dying farms nothing.
+	if !returning || prev.DwarfID == 0 {
 		s.world.Gold += firstSpawnGold
 	}
 	return PlayerMsg{Type: "player", State: "alive", DwarfID: e.ID, Name: name}

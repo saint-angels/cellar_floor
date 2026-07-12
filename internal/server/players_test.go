@@ -183,3 +183,31 @@ func TestFirstSpawnGrantsOneGold(t *testing.T) {
 		t.Fatalf("gold = %d, want %d; respawn must not farm gold", s.world.Gold, start+2*firstSpawnGold)
 	}
 }
+
+func TestResetRestoresTheSpawnPurse(t *testing.T) {
+	s := newPlayerServer(t)
+	s.cfg.Sim.SavePath = filepath.Join(t.TempDir(), "world.json")
+	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
+		t.Fatalf("spawn: %v", pm.Error)
+	}
+	s.resetWorld() // zeroes gold and every DwarfID
+	if s.world.Gold != 0 {
+		t.Fatalf("reset should zero gold, got %d", s.world.Gold)
+	}
+	// the first spawn in the NEW world brings the purse again, else a
+	// reset world has no gold, no lit faces, and no way to ever mine
+	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
+		t.Fatalf("respawn: %v", pm.Error)
+	}
+	if s.world.Gold != firstSpawnGold {
+		t.Fatalf("gold after post-reset spawn = %d, want %d", s.world.Gold, firstSpawnGold)
+	}
+	// but dying inside the same world still grants nothing
+	s.world.Entities[s.players["tok1"].DwarfID].Dead = true
+	if pm := s.spawnDwarf("tok1", "Misha"); pm.Error != "" {
+		t.Fatalf("death respawn: %v", pm.Error)
+	}
+	if s.world.Gold != firstSpawnGold {
+		t.Fatalf("death respawn must not grant, gold = %d", s.world.Gold)
+	}
+}
