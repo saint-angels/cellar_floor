@@ -20,6 +20,7 @@
     #torch-btn.armed { background: #7a5a1e; color: #fff; }
     #torch-btn:disabled { opacity: 0.4; cursor: default; }
     #torch-error { color: #d9724a; min-height: 1em; }
+    #goldicon { width: 12px; height: 14px; image-rendering: pixelated; vertical-align: -2px; }
     #levelbox { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
     #levelbar { flex: 1; height: 10px; background: #1a1815; border: 1px solid #444; }
     #levelfill { height: 100%; width: 0%; background: #4a7c3f; }
@@ -59,7 +60,7 @@
   <div id="side">
     <div id="timescale"><h2>Speed</h2></div>
     <div><h2>Populations</h2><div id="pops"></div></div>
-    <div><h2>Gold</h2><div id="gold">0</div>
+    <div><h2>Gold</h2><div id="gold"><img id="goldicon" src="/coin.png" alt=""> <span id="goldnum">0</span></div>
       <button id="torch-btn" disabled>torch (1 gold)</button>
       <div id="levelbox"><span id="levellabel">Lv 0</span><div id="levelbar"><div id="levelfill"></div></div></div>
       <div id="torch-error"></div>

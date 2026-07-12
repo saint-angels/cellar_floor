@@ -29,3 +29,8 @@ run once with -fresh (or delete world.json).
 
 All entity types and balance live in data/*.toml. The engine knows nothing
 about rabbits.
+
+## Art
+
+Sprites in client/public (floor tiles, dwarves, coin) come from 0x72's
+Dungeon Tileset II v1.7 (https://0x72.itch.io/dungeontileset-ii), CC0.

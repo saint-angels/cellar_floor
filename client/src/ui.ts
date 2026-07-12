@@ -169,7 +169,7 @@ function renderMyDwarf() {
 }
 
 function renderGold() {
-  const el = document.getElementById("gold")!;
+  const el = document.getElementById("goldnum")!;
   el.textContent = String(world.gold);
 }
 

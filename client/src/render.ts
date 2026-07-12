@@ -1,20 +1,27 @@
 import { world } from "./world";
 import { drawEffects, drawShakes } from "./fx";
+import { atlas, atlasReady, DWARF_H, DWARF_ROWS, DWARF_W, FLOOR_Y, floorVariant } from "./sprites";
 
 const TILE = 12;
 
 let terrainCanvas: HTMLCanvasElement | null = null;
 let veilCanvas: HTMLCanvasElement | null = null;
+const facing = new Map<number, number>(); // last horizontal direction per dwarf
 
 function renderTerrain() {
   terrainCanvas = document.createElement("canvas");
   terrainCanvas.width = world.width * TILE;
   terrainCanvas.height = world.height * TILE;
   const g = terrainCanvas.getContext("2d")!;
+  g.imageSmoothingEnabled = false;
   for (let y = 0; y < world.height; y++) {
     for (let x = 0; x < world.width; x++) {
-      g.fillStyle = world.terrainTypes[world.terrain[y * world.width + x]]?.color ?? "#000";
+      const tt = world.terrainTypes[world.terrain[y * world.width + x]];
+      g.fillStyle = tt?.color ?? "#000";
       g.fillRect(x * TILE, y * TILE, TILE, TILE);
+      if (tt?.id === "floor" && atlasReady) {
+        g.drawImage(atlas, floorVariant(x, y) * 16, FLOOR_Y, 16, 16, x * TILE, y * TILE, TILE, TILE);
+      }
     }
   }
 }
@@ -105,6 +112,19 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
         } else if (sp.kind === "structure") {
           ctx.fillRect(x + 4, y + 4, 4, 4); // flame pixel; dead stubs use the shared dead color
+        } else if (e.s === "dwarf" && !e.dead && atlasReady) {
+          const dx = e.x - e.px;
+          if (dx !== 0) facing.set(e.id, dx > 0 ? 1 : -1);
+          const dir = facing.get(e.id) ?? 1;
+          const moving = (e.px !== e.x || e.py !== e.y) && now - e.movedAt < lerpMs * 1.5;
+          const frame = (Math.floor(now / 140) + e.id) % 4 + (moving ? 4 : 0);
+          const w = DWARF_W * (TILE / 16);
+          const h = DWARF_H * (TILE / 16);
+          ctx.save();
+          ctx.translate(x + TILE / 2, y + TILE - h);
+          ctx.scale(dir, 1);
+          ctx.drawImage(atlas, frame * 16, DWARF_ROWS[e.id % 2], DWARF_W, DWARF_H, -w / 2, 0, w, h);
+          ctx.restore();
         } else {
           ctx.beginPath();
           ctx.arc(x + TILE / 2, y + TILE / 2, TILE / 2 - 1, 0, Math.PI * 2);
