@@ -159,7 +159,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         else if (p < 0.8) head = -4 + ((p - 0.55) / 0.25) * (dist + 8);
         if (head != null) {
           ctx.strokeStyle = u.color;
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 0.5;
           ctx.globalAlpha = p < 0.55 ? 0.35 + p : 0.9;
           ctx.beginPath();
           ctx.moveTo(cx + bdx * (head - u.radius), cy + bdy * (head - u.radius));
