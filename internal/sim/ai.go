@@ -111,7 +111,13 @@ func (w *World) findFood(e *Entity) *Entity {
 	// Eats holds a couple of entries, so a linear scan beats building a set:
 	// this runs for every hungry creature every tick and the map cost it
 	// replaces (alloc plus a string hash per produce) dominated the profile.
-	eats := w.spec(e).Eats
+	s := w.spec(e)
+	eats := s.Eats
+	// Only count food we would actually take a bite from: eatFrom refuses a
+	// bite below BiteSize/2, so a source with less left than that is a stub.
+	// Selecting it anyway pins a hungry eater to a near-empty tile while a full
+	// source sits one step away, and it slowly starves in place.
+	minBite := s.BiteSize * 0.5
 	var edibles []*Entity
 	var nearest *Entity
 	bestD := 1 << 30
@@ -121,7 +127,7 @@ func (w *World) findFood(e *Entity) *Entity {
 		}
 		edible := false
 		for _, p := range c.Produces {
-			if p.Amount < 0.5 {
+			if p.Amount < minBite {
 				continue
 			}
 			for _, r := range eats {
