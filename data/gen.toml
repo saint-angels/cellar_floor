@@ -7,7 +7,7 @@ crust = "mold"
 crust_chance = 1.0
 
 scatter = [
-  { type = "mushroom", terrain = "dirt", chance = 0.15 },
+  { type = "mushroom", terrain = "dirt", chance = 0.03 },
 ]
 
 veins = [{ terrain = "soft_rock", seeds = 10, size = 14 }]
