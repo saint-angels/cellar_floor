@@ -60,7 +60,7 @@ func (w *World) Step() []Event {
 		if !ok || e.Dead {
 			continue
 		}
-		if w.cfg.Types[e.Type].Kind == "fauna" {
+		if w.spec(e).Kind == "fauna" {
 			events = append(events, w.aiStep(e)...)
 		}
 	}
@@ -71,7 +71,7 @@ func (w *World) Step() []Event {
 		if !ok || e.Dead {
 			continue
 		}
-		s := w.cfg.Types[e.Type]
+		s := w.spec(e)
 		if s.Kind == "structure" {
 			e.Age++
 			if s.Lifespan > 0 && e.Age > s.Lifespan {
@@ -215,7 +215,7 @@ func (w *World) spreadStep() {
 }
 
 func (w *World) kill(e *Entity, evType, msg string) Event {
-	s := w.cfg.Types[e.Type]
+	s := w.spec(e)
 	e.Dead = true
 	w.diedThisTick[e.ID] = true
 	w.counts[e.Type]--
@@ -235,9 +235,8 @@ func (w *World) reproduceAndGuard() []Event {
 	var events []Event
 
 	// births
-	for _, id := range w.SortedIDs() {
-		e := w.Entities[id]
-		s := w.cfg.Types[e.Type]
+	for _, e := range w.entities() {
+		s := w.spec(e)
 		if e.Dead || s.Kind != "fauna" {
 			continue
 		}

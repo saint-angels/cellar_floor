@@ -5,8 +5,7 @@ package sim
 func (w *World) companionInRadius(e *Entity, r int) *Entity {
 	var best *Entity
 	bestD := r + 1
-	for _, id := range w.SortedIDs() {
-		c := w.Entities[id]
+	for _, c := range w.entities() {
 		if c.ID == e.ID || c.Dead || c.Type != e.Type {
 			continue
 		}
@@ -26,7 +25,7 @@ func (w *World) nearestCompanion(e *Entity) *Entity {
 // meter is below threshold, then stay socializing until full. Returns
 // true when the entity spent this tick on company.
 func (w *World) socialStep(e *Entity) bool {
-	s := w.cfg.Types[e.Type]
+	s := w.spec(e)
 	if s.SocialSize <= 0 {
 		return false
 	}

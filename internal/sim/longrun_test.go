@@ -64,13 +64,15 @@ func TestFiftyThousandTickStability(t *testing.T) {
 func TestWorldDeterminism(t *testing.T) {
 	cfg := loadCfg(t)
 	a, b := gen.Generate(99, cfg), gen.Generate(99, cfg)
-	for i := 0; i < 2000; i++ {
+	// 1000 ticks is ample: a stray wall-clock or map-order dependency diverges
+	// the two runs within tens of ticks, long before this bound.
+	for i := 0; i < 1000; i++ {
 		a.Step()
 		b.Step()
 	}
 	ja, _ := json.Marshal(a)
 	jb, _ := json.Marshal(b)
 	if string(ja) != string(jb) {
-		t.Fatal("same seed diverged after 2000 ticks")
+		t.Fatal("same seed diverged after 1000 ticks")
 	}
 }

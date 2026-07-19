@@ -68,6 +68,11 @@ type Entity struct {
 	SeenTick    int64          `json:"seenTick,omitempty"`
 	GoldStrikes []GoldStrike   `json:"goldStrikes,omitempty"`
 	Ore         int            `json:"ore,omitempty"`
+
+	// spec caches cfg.Types[Type]. Unexported, so it never serializes and a
+	// loaded world re-resolves it on first use. The per-tick scans hash this
+	// string key thousands of times otherwise.
+	spec *data.EntityType
 }
 
 // GoldStrike records one gold drop for the rolling last-24h count.
@@ -119,6 +124,7 @@ type World struct {
 	occ          map[Point]int
 	counts       map[string]int
 	sortedCache  []int
+	entCache     []*Entity
 	sortedDirty  bool
 	lit          []bool
 }
@@ -144,6 +150,10 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 
 func (w *World) SetConfig(cfg *data.Config) {
 	w.cfg = cfg
+	// the cached specs point into the old config's table
+	for _, e := range w.Entities {
+		e.spec = nil
+	}
 	if w.dirty == nil {
 		w.dirty = map[int]bool{}
 	}
@@ -301,13 +311,12 @@ func (w *World) ClaimOffer(name string) bool {
 // sources. Called on load and whenever a light source spawns or dies.
 func (w *World) RecomputeLight() {
 	w.lit = make([]bool, w.Width*w.Height)
-	for _, id := range w.SortedIDs() {
-		e := w.Entities[id]
+	for _, e := range w.entities() {
 		if e.Dead {
 			continue
 		}
-		s, ok := w.cfg.Types[e.Type]
-		if !ok || s.LightRadius <= 0 {
+		s := w.spec(e)
+		if s == nil || s.LightRadius <= 0 {
 			continue
 		}
 		r := s.LightRadius
@@ -340,13 +349,12 @@ func (w *World) rebuildCounts() {
 
 func (w *World) rebuildOcc() {
 	w.occ = map[Point]int{}
-	for _, id := range w.SortedIDs() {
-		e := w.Entities[id]
+	for _, e := range w.entities() {
 		if e.Dead {
 			continue
 		}
-		if s, ok := w.cfg.Types[e.Type]; ok && s.Kind == "fauna" {
-			w.occ[e.Pos] = id
+		if s := w.spec(e); s != nil && s.Kind == "fauna" {
+			w.occ[e.Pos] = e.ID
 		}
 	}
 }
@@ -414,7 +422,7 @@ func (w *World) SpeedFactor() float64 {
 // per-tick MoveAcc increment for every walk so speed upgrades apply
 // everywhere a creature moves.
 func (w *World) moveSpeed(e *Entity) float64 {
-	return w.cfg.Types[e.Type].Speed * w.SpeedFactor()
+	return w.spec(e).Speed * w.SpeedFactor()
 }
 
 // NextLevelGold is the cumulative mined gold required for the next level.
@@ -495,16 +503,43 @@ func (w *World) FaunaAt(p Point) *Entity {
 }
 
 func (w *World) SortedIDs() []int {
-	if w.sortedDirty || w.sortedCache == nil {
-		ids := make([]int, 0, len(w.Entities))
-		for id := range w.Entities {
-			ids = append(ids, id)
-		}
-		sort.Ints(ids)
-		w.sortedCache = ids
-		w.sortedDirty = false
-	}
+	w.refreshOrder()
 	return w.sortedCache
+}
+
+// entities lists every entity in ascending ID order, the same order as
+// SortedIDs, so per-tick scans keep their deterministic sweep without paying
+// a map lookup per id.
+func (w *World) entities() []*Entity {
+	w.refreshOrder()
+	return w.entCache
+}
+
+func (w *World) refreshOrder() {
+	if !w.sortedDirty && w.sortedCache != nil {
+		return
+	}
+	ids := make([]int, 0, len(w.Entities))
+	for id := range w.Entities {
+		ids = append(ids, id)
+	}
+	sort.Ints(ids)
+	ents := make([]*Entity, len(ids))
+	for i, id := range ids {
+		ents[i] = w.Entities[id]
+	}
+	w.sortedCache = ids
+	w.entCache = ents
+	w.sortedDirty = false
+}
+
+// spec is cfg.Types[e.Type], cached on the entity. Returns nil for a type the
+// config does not define, matching the comma-ok lookups it replaces.
+func (w *World) spec(e *Entity) *data.EntityType {
+	if e.spec == nil {
+		e.spec = w.cfg.Types[e.Type]
+	}
+	return e.spec
 }
 
 func (w *World) CountAlive(typeID string) int {

@@ -6,17 +6,19 @@ import (
 	"cellarfloor/internal/data"
 )
 
+// typeEatsProduceOf reports whether eater's diet covers anything victim
+// produces. Both lists are a handful of entries, so it scans them directly:
+// fleeStep calls this for every entity pair every tick and the set it used to
+// build allocated a map each time.
 func typeEatsProduceOf(eater, victim *data.EntityType) bool {
 	if eater.ID == victim.ID || eater.Kind != "fauna" {
 		return false
 	}
-	prod := map[string]bool{}
-	for _, p := range victim.Produces {
-		prod[p.Resource] = true
-	}
 	for _, r := range eater.Eats {
-		if prod[r] {
-			return true
+		for _, p := range victim.Produces {
+			if p.Resource == r {
+				return true
+			}
 		}
 	}
 	return false
@@ -31,7 +33,7 @@ var neighbors = []Point{
 func adjacent(a, b Point) bool { return Dist(a, b) <= 1 }
 
 func (w *World) aiStep(e *Entity) []Event {
-	s := w.cfg.Types[e.Type]
+	s := w.spec(e)
 
 	// 0. darkness: a creature caught in the dark panics back toward light
 	if w.darkStep(e) {
@@ -106,22 +108,29 @@ func (w *World) aiStep(e *Entity) []Event {
 }
 
 func (w *World) findFood(e *Entity) *Entity {
-	eats := map[string]bool{}
-	for _, r := range w.cfg.Types[e.Type].Eats {
-		eats[r] = true
-	}
+	// Eats holds a couple of entries, so a linear scan beats building a set:
+	// this runs for every hungry creature every tick and the map cost it
+	// replaces (alloc plus a string hash per produce) dominated the profile.
+	eats := w.spec(e).Eats
 	var edibles []*Entity
 	var nearest *Entity
 	bestD := 1 << 30
-	for _, id := range w.SortedIDs() {
-		c := w.Entities[id]
+	for _, c := range w.entities() {
 		if c.ID == e.ID || c.Type == e.Type {
 			continue
 		}
 		edible := false
 		for _, p := range c.Produces {
-			if eats[p.Resource] && p.Amount >= 0.5 {
-				edible = true
+			if p.Amount < 0.5 {
+				continue
+			}
+			for _, r := range eats {
+				if r == p.Resource {
+					edible = true
+					break
+				}
+			}
+			if edible {
 				break
 			}
 		}
@@ -261,6 +270,51 @@ func (w *World) reachCost(dist []int32, p Point) int {
 	return int(best)
 }
 
+// sidestep picks a detour when the BFS step is blocked by another creature:
+// the nearest free neighbor that does not walk away from target. The BFS
+// ignores occupancy and is deterministic, so two creatures wedged head-on
+// each sit on the cell the other's path demands and both wait forever;
+// stepping aside breaks that symmetry. Reports false when hemmed in.
+func (w *World) sidestep(e *Entity, target Point) (Point, bool) {
+	cur := Dist(e.Pos, target)
+	var best Point
+	bestD := 0
+	found := false
+	for _, n := range neighbors {
+		p := Point{e.Pos.X + n.X, e.Pos.Y + n.Y}
+		if !w.InBounds(p) || !w.Passable(w.At(p)) || w.FaunaAt(p) != nil {
+			continue
+		}
+		d := Dist(p, target)
+		if d > cur {
+			continue // never retreat from the target to dodge
+		}
+		if !found || d < bestD {
+			best, bestD, found = p, d, true
+		}
+	}
+	return best, found
+}
+
+// walkStep advances e one cell toward target along the BFS path, sidestepping
+// a blocker when the path cell is taken. Reports false when the entity cannot
+// move at all this step.
+func (w *World) walkStep(e *Entity, next, target Point) bool {
+	step := next
+	if w.FaunaAt(step) != nil {
+		alt, ok := w.sidestep(e, target)
+		if !ok {
+			return false // hemmed in, wait
+		}
+		step = alt
+	}
+	delete(w.occ, e.Pos)
+	e.Pos = step
+	w.occ[e.Pos] = e.ID
+	w.markDirty(e.ID)
+	return true
+}
+
 // pathToward walks the entity along BFS shortest paths, stopping when
 // adjacent to the target. Unlike the greedy move it routes around
 // obstacles such as mold pockets.
@@ -269,13 +323,12 @@ func (w *World) pathToward(e *Entity, target Point) {
 	for e.MoveAcc >= 1 && !adjacent(e.Pos, target) {
 		e.MoveAcc--
 		next, ok := w.nextStepToward(e.Pos, target)
-		if !ok || w.FaunaAt(next) != nil {
+		if !ok {
 			return
 		}
-		delete(w.occ, e.Pos)
-		e.Pos = next
-		w.occ[e.Pos] = e.ID
-		w.markDirty(e.ID)
+		if !w.walkStep(e, next, target) {
+			return
+		}
 	}
 }
 
@@ -328,13 +381,12 @@ func (w *World) darkStep(e *Entity) bool {
 	}
 	var light *Entity
 	bestD := 1 << 30
-	for _, id := range w.SortedIDs() {
-		c := w.Entities[id]
+	for _, c := range w.entities() {
 		if c.Dead {
 			continue
 		}
-		s, ok := w.cfg.Types[c.Type]
-		if !ok || s.LightRadius <= 0 {
+		s := w.spec(c)
+		if s == nil || s.LightRadius <= 0 {
 			continue
 		}
 		if d := Dist(e.Pos, c.Pos); d < bestD {
@@ -350,18 +402,17 @@ func (w *World) darkStep(e *Entity) bool {
 }
 
 func (w *World) fleeStep(e *Entity) ([]Event, bool) {
-	me := w.cfg.Types[e.Type]
+	me := w.spec(e)
 	if me.FearRadius <= 0 {
 		return nil, false
 	}
 	var threat *Entity
 	bestD := me.FearRadius + 1
-	for _, id := range w.SortedIDs() {
-		c := w.Entities[id]
+	for _, c := range w.entities() {
 		if c.Dead || c.ID == e.ID {
 			continue
 		}
-		cs := w.cfg.Types[c.Type]
+		cs := w.spec(c)
 		if !typeEatsProduceOf(cs, me) {
 			continue
 		}

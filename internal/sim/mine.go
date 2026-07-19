@@ -10,7 +10,7 @@ import (
 // mineStep runs the mining behavior for entity types with mine_damage > 0.
 // Returns (events, true) when the entity spent this tick on mining.
 func (w *World) mineStep(e *Entity) ([]Event, bool) {
-	s := w.cfg.Types[e.Type]
+	s := w.spec(e)
 	if s.MineDamage <= 0 {
 		return nil, false
 	}
@@ -118,13 +118,9 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	e.MoveAcc += w.moveSpeed(e)
 	for e.MoveAcc >= 1 && !adjacent(e.Pos, target) {
 		e.MoveAcc--
-		if w.FaunaAt(next) != nil {
-			break // occupied, wait
+		if !w.walkStep(e, next, target) {
+			break // hemmed in, wait
 		}
-		delete(w.occ, e.Pos)
-		e.Pos = next
-		w.occ[e.Pos] = e.ID
-		w.markDirty(e.ID)
 		next, ok = w.nextStepToward(e.Pos, target)
 		if !ok {
 			break

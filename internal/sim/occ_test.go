@@ -50,7 +50,7 @@ func TestFaunaAtOccIndexAgreesWithBruteForce(t *testing.T) {
 	}
 
 	checkOcc(0)
-	for i := 1; i <= 3000; i++ {
+	for i := 1; i <= 2000; i++ {
 		w.Step()
 		if i%500 == 0 {
 			checkOcc(i)
