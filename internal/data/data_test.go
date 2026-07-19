@@ -24,8 +24,27 @@ func TestLoadRealData(t *testing.T) {
 	if !ok {
 		t.Fatal("no dwarf type")
 	}
-	if d.Kind != "fauna" || d.ID != "dwarf" || len(d.Eats) != 1 || d.MineDamage != 1 {
+	if d.Kind != "fauna" || d.ID != "dwarf" || len(d.Eats) != 2 || d.MineDamage != 1 {
 		t.Errorf("dwarf mis-parsed: %+v", d)
+	}
+	// the rabbit is prey: fauna that yields meat, which the dwarf eats so a
+	// hungry dwarf hunts it. Load already rejects eating an unproduced resource,
+	// so this also guards that meat stays produced somewhere.
+	r, ok := cfg.Types["rabbit"]
+	if !ok {
+		t.Fatal("no rabbit type")
+	}
+	if r.Kind != "fauna" || len(r.Produces) == 0 || r.Produces[0].Resource != "meat" {
+		t.Errorf("rabbit mis-parsed: %+v", r)
+	}
+	eatsMeat := false
+	for _, f := range d.Eats {
+		if f == "meat" {
+			eatsMeat = true
+		}
+	}
+	if !eatsMeat {
+		t.Error("dwarf should eat meat so hungry dwarves hunt rabbits")
 	}
 	if cfg.Gen.Width != 64 || len(cfg.Gen.Scatter) == 0 {
 		t.Errorf("gen mis-parsed: %+v", cfg.Gen)

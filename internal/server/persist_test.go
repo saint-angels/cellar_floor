@@ -53,7 +53,7 @@ func TestLoadPrunesUnknownType(t *testing.T) {
 	cfg := loadCfg(t)
 	w := gen.Generate(5, cfg)
 	ghost := w.Spawn("dwarf", sim.Point{X: 32, Y: 32})
-	ghost.Type = "rabbit" // simulate a save from before the pivot
+	ghost.Type = "goblin" // a type the config never defines
 	path := filepath.Join(t.TempDir(), "w.json")
 	if err := SaveWorld(w, path); err != nil {
 		t.Fatal(err)
