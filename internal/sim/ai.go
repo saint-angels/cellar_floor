@@ -64,6 +64,12 @@ func (w *World) aiStep(e *Entity) []Event {
 			w.pathToward(e, food.Pos)
 			return nil
 		}
+		// no walk-reachable food: tunnel toward the nearest food sensed
+		// through rock within the dig radius (place food behind a wall and the
+		// dwarf digs to reach it)
+		if evs, dug := w.digFoodStep(e); dug {
+			return evs
+		}
 		if hungry {
 			e.Action = "searching"
 			w.setTarget(e, 0)
@@ -170,6 +176,130 @@ func (w *World) findFood(e *Entity) *Entity {
 		}
 	}
 	return best
+}
+
+// edibleTo reports whether c offers a bite worth taking: a produced resource in
+// eats with at least minBite left. Shared by walk- and dig-food seeking.
+func edibleTo(c *Entity, eats []string, minBite float64) bool {
+	for _, p := range c.Produces {
+		if p.Amount < minBite {
+			continue
+		}
+		for _, r := range eats {
+			if r == p.Resource {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// nearestSensedFood returns the closest edible within the digger's sense
+// radius, measured in a straight line so it reaches through rock. Distinct from
+// findFood, which only sees food it can already walk to.
+func (w *World) nearestSensedFood(e *Entity) *Entity {
+	s := w.spec(e)
+	minBite := s.BiteSize * 0.5
+	var best *Entity
+	bestD := s.SenseRadius + 1
+	for _, c := range w.entities() {
+		if c.ID == e.ID || c.Type == e.Type {
+			continue
+		}
+		if !edibleTo(c, s.Eats, minBite) {
+			continue
+		}
+		if d := Dist(e.Pos, c.Pos); d <= s.SenseRadius && d < bestD {
+			best, bestD = c, d
+		}
+	}
+	return best
+}
+
+// stepTowardBuried greedily heads one tile toward a walled-off target: the
+// neighbor that most reduces distance, walking open tiles when possible and
+// otherwise naming a rock face to mine. ok is false at a dead end (only water
+// or backward moves remain), which greedy digging cannot route around.
+func (w *World) stepTowardBuried(from, to Point) (step Point, isDig, ok bool) {
+	cur := Dist(from, to)
+	var walk, dig Point
+	bw, bd := cur, cur
+	haveWalk, haveDig := false, false
+	for _, n := range neighbors {
+		p := Point{from.X + n.X, from.Y + n.Y}
+		if !w.InBounds(p) {
+			continue
+		}
+		d := Dist(p, to)
+		if d >= cur {
+			continue // only tiles that get us closer
+		}
+		t := w.At(p)
+		switch {
+		case w.Passable(t) && w.FaunaAt(p) == nil:
+			if !haveWalk || d < bw {
+				walk, bw, haveWalk = p, d, true
+			}
+		case w.Mineable(t):
+			if !haveDig || d < bd {
+				dig, bd, haveDig = p, d, true
+			}
+		}
+	}
+	if haveWalk {
+		return walk, false, true // prefer an open detour over digging
+	}
+	if haveDig {
+		return dig, true, true
+	}
+	return Point{}, false, false
+}
+
+// digFoodStep is the core of food-directed digging: a hungry dwarf with no
+// walk-reachable food commits to the nearest food it senses within its radius
+// and tunnels toward it, mining the rock in the way. Returns (events, true)
+// when it spent the tick on this.
+func (w *World) digFoodStep(e *Entity) ([]Event, bool) {
+	s := w.spec(e)
+	if s.SenseRadius <= 0 || s.MineDamage <= 0 {
+		return nil, false
+	}
+	target := w.nearestSensedFood(e)
+	if target == nil {
+		return nil, false
+	}
+	w.setTarget(e, target.ID)
+	if adjacent(e.Pos, target.Pos) {
+		return w.eatFrom(e, target), true
+	}
+	step, isDig, ok := w.stepTowardBuried(e.Pos, target.Pos)
+	if !ok {
+		return nil, false
+	}
+	if isDig {
+		// hand the face to the miner, which breaks it over ticks; the dwarf
+		// advances into the opened tile on a later step
+		e.MineTarget = &step
+		w.markDirty(e.ID)
+		return w.mineStep(e)
+	}
+	// walk the open leg toward the food, respecting move speed
+	e.Action = "digging to food"
+	e.MoveAcc += w.moveSpeed(e)
+	for e.MoveAcc >= 1 && !adjacent(e.Pos, target.Pos) {
+		e.MoveAcc--
+		st, dig, ok2 := w.stepTowardBuried(e.Pos, target.Pos)
+		if !ok2 || dig {
+			break // stop at a rock face; next tick mines it
+		}
+		if !w.walkStep(e, st, target.Pos) {
+			break
+		}
+	}
+	if adjacent(e.Pos, target.Pos) {
+		return w.eatFrom(e, target), true
+	}
+	return nil, true
 }
 
 func (w *World) eatFrom(e *Entity, food *Entity) []Event {

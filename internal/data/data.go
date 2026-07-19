@@ -68,6 +68,7 @@ type EntityType struct {
 	DecayTicks        int       `toml:"-" json:"decayTicks"`
 	DecayHours        float64   `toml:"decay_hours" json:"-"`
 	MineDamage        int       `toml:"mine_damage" json:"mineDamage"`
+	SenseRadius       int       `toml:"sense_radius" json:"senseRadius"` // how far a digger smells buried food
 	SocialSize        float64   `toml:"social_size" json:"socialSize"`
 	SocialThreshold   float64   `toml:"social_threshold" json:"socialThreshold"`
 	SocialRadius      int       `toml:"social_radius" json:"-"`

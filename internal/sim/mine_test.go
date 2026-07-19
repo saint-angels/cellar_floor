@@ -34,7 +34,7 @@ func mineCfg() *data.Config {
 				Eats: []string{"shroom"}, BiteSize: 2, StomachSize: 10, HungerThreshold: 4,
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
 				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100,
-				MineDamage: 1},
+				MineDamage: 1, SenseRadius: 8},
 			// Miner used by the lit-face gate tests. It also does 1 damage per
 			// tick; the gate worlds use a 10000 hp face so a face never mines
 			// out before a torch burns dark.
