@@ -102,7 +102,18 @@ export function startRender(canvas: HTMLCanvasElement) {
       if (veilCanvas) ctx.drawImage(veilCanvas, 0, 0);
       drawShakes(ctx, now);
       const lerpMs = world.tickIntervalMs / Math.max(world.timeScale, 1);
-      for (const e of world.entities.values()) {
+      // draw order: live fauna (dwarves, rabbits) render above the flora,
+      // corpses, and structures they can stand on. Live fauna never share a
+      // tile with each other (occupancy forbids it), so the layering is exact.
+      const zOf = (e: import("./types").RenderEntity) => {
+        if (e.dead) return 0;
+        const s = world.types[e.s];
+        if (!s || s.kind === "flora") return 1;
+        if (s.kind === "structure") return 2;
+        return 3;
+      };
+      const drawList = [...world.entities.values()].sort((a, b) => zOf(a) - zOf(b));
+      for (const e of drawList) {
         const sp = world.types[e.s];
         if (!sp) continue;
         const t = Math.min(1, (now - e.movedAt) / lerpMs);
