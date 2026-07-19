@@ -29,6 +29,9 @@
     #debug-claims .claim-row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
     #debug-claims .claim-row span.count { min-width: 2ch; text-align: right; }
     #debug-claims .claim-row span.name { flex: 1; }
+    #debug-entities button { display: inline-flex; align-items: center; gap: 6px; }
+    #debug-entities button.armed { background: #7a5a1e; color: #fff; }
+    #debug-entities .swatch { width: 10px; height: 10px; display: inline-block; border: 1px solid #0006; }
     #levelbox { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
     #levelbar { flex: 1; height: 10px; background: #1a1815; border: 1px solid #444; }
     #levelfill { height: 100%; width: 0%; background: #4a7c3f; }
@@ -77,6 +80,7 @@
       <div><h2>Gold</h2><button id="debug-gold10">+10 gold</button><button id="debug-gold100">+100 gold</button></div>
       <div><h2>Level</h2><button id="debug-level">complete level</button></div>
       <div><h2>Claims</h2><div id="debug-claims"></div></div>
+      <div><h2>Entities</h2><div id="debug-entities"></div></div>
     </div>
     <div id="claimcard"><div id="claimtext"></div><div id="offerbox"></div><div id="claimmore"></div></div>
     <div id="overlay">

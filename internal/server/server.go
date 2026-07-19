@@ -217,6 +217,12 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 				s.mu.Lock()
 				s.debugAction(m)
 				s.mu.Unlock()
+			case m.Type == "spawnentity":
+				s.mu.Lock()
+				if ev := s.spawnEntity(m.Name, m.X, m.Y); ev != nil {
+					s.pending = append(s.pending, *ev)
+				}
+				s.mu.Unlock()
 			case m.Type == "reset" && s.adminOK(m.Admin):
 				if b := s.resetWorld(); b != nil {
 					s.hub.Broadcast(b)

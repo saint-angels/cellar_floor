@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendClaim, sendDebug, sendReset, sendSpawn, sendTimescale, sendTorch } from "./net";
+import { sendClaim, sendDebug, sendReset, sendSpawn, sendSpawnEntity, sendTimescale, sendTorch } from "./net";
 import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
@@ -24,20 +24,50 @@ export function initUI(
 
 let spectating = false;
 let torchArmed = false;
+let placingEntity: string | null = null;
+
+function updatePlacingCursor() {
+  document.getElementById("map")!.classList.toggle("placing", torchArmed || placingEntity !== null);
+}
+
+function armEntityButtons(id: string | null) {
+  for (const b of document.querySelectorAll<HTMLElement>("#debug-entities button")) {
+    b.classList.toggle("armed", b.dataset.id === id);
+  }
+}
 
 function setTorchArmed(on: boolean) {
+  if (on && placingEntity) {
+    placingEntity = null; // torch and entity placement are exclusive
+    armEntityButtons(null);
+  }
   torchArmed = on;
   const btn = document.getElementById("torch-btn") as HTMLButtonElement;
   btn.classList.toggle("armed", on);
   btn.textContent = on ? "click the map" : "torch (1 gold)";
-  document.getElementById("map")!.classList.toggle("placing", on);
+  updatePlacingCursor();
+}
+
+// debug: arm placement of an entity type; click the map to drop one. Stays
+// armed for repeated placement until Escape or toggled off.
+function setPlacingEntity(id: string | null) {
+  placingEntity = id;
+  armEntityButtons(id);
+  if (id) {
+    if (torchArmed) setTorchArmed(false);
+    document.getElementById("debugmenu")!.style.display = "none";
+  }
+  updatePlacingCursor();
 }
 
 function initTorch() {
   const btn = document.getElementById("torch-btn") as HTMLButtonElement;
   btn.onclick = () => setTorchArmed(!torchArmed);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setTorchArmed(false);
+    if (e.key === "Escape") {
+      setTorchArmed(false);
+      setPlacingEntity(null);
+    }
   });
   world.onChange(() => {
     btn.disabled = !(world.playerState === "alive" && world.gold >= 1);
@@ -262,6 +292,30 @@ function initDebug() {
     }
     for (const [name, el] of counts) el.textContent = String(world.claims[name] ?? 0);
   });
+
+  // one button per supported entity type; arming one hides the menu and lets
+  // you click the map to drop it. Built once the type table arrives.
+  const ebox = document.getElementById("debug-entities")!;
+  world.onChange(() => {
+    const ids = Object.keys(world.types).sort((a, b) =>
+      world.types[a].name.localeCompare(world.types[b].name),
+    );
+    if (ebox.childElementCount === ids.length) return;
+    ebox.textContent = "";
+    for (const id of ids) {
+      const sp = world.types[id];
+      const b = document.createElement("button");
+      b.dataset.id = id;
+      const sw = document.createElement("span");
+      sw.className = "swatch";
+      sw.style.background = sp.color;
+      const label = document.createElement("span");
+      label.textContent = sp.name;
+      b.append(sw, label);
+      b.onclick = () => setPlacingEntity(placingEntity === id ? null : id);
+      ebox.appendChild(b);
+    }
+  });
 }
 
 function initTimescale() {
@@ -355,6 +409,10 @@ function initInspector(
   canvas.addEventListener("click", (ev) => {
     if (consumePan()) return;
     const t = tileFromPixel(canvas, ev.clientX, ev.clientY);
+    if (placingEntity) {
+      sendSpawnEntity(placingEntity, t.x, t.y);
+      return; // stay armed so several can be dropped; Escape to stop
+    }
     if (torchArmed) {
       sendTorch(t.x, t.y);
       setTorchArmed(false);

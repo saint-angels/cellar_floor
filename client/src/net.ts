@@ -60,6 +60,12 @@ export function sendTorch(x: number, y: number) {
     ws.send(JSON.stringify({ type: "torch", player: playerToken(), x, y }));
 }
 
+// debug: drop one entity of the given type on a tile
+export function sendSpawnEntity(name: string, x: number, y: number) {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "spawnentity", name, x, y }));
+}
+
 export function sendClaim(name: string) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "claim", player: playerToken(), name }));
