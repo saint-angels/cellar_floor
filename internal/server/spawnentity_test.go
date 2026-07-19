@@ -56,3 +56,16 @@ func TestSpawnEntityNonStructureStacksOnStructure(t *testing.T) {
 		t.Fatal("a mushroom on a structure cell should be allowed")
 	}
 }
+
+// Food (flora) can be buried in rock so dwarves dig to it; a live animal
+// cannot be dropped inside a wall.
+func TestSpawnFoodBuriesInRockButFaunaCannot(t *testing.T) {
+	s := newPlayerServer(t)
+	rock := findRock(t, s)
+	if ev := s.spawnEntity("mushroom", rock.X, rock.Y); ev == nil {
+		t.Fatal("flora should bury into mineable rock")
+	}
+	if ev := s.spawnEntity("rabbit", rock.X, rock.Y); ev != nil {
+		t.Fatal("fauna must not spawn inside rock")
+	}
+}

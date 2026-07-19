@@ -15,7 +15,14 @@ func (s *Server) spawnEntity(name string, x, y int) *sim.Event {
 		return nil
 	}
 	p := sim.Point{X: x, Y: y}
-	if !s.world.InBounds(p) || !s.world.Passable(s.world.At(p)) {
+	if !s.world.InBounds(p) {
+		return nil
+	}
+	// food (flora) may be buried in mineable rock so a hungry dwarf digs to
+	// reach it; fauna and structures still need open ground to stand on
+	tile := s.world.At(p)
+	buryable := s.cfg.Types[name].Kind == "flora" && s.world.Mineable(tile)
+	if !s.world.Passable(tile) && !buryable {
 		return nil
 	}
 	// structures cannot stack on another structure, matching torch placement

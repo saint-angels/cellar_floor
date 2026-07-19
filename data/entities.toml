@@ -9,6 +9,7 @@ name = "Dwarf"
 kind = "fauna"
 color = "#d9a066"
 eats = ["mushroom", "meat"] # hunts rabbits for meat when hungry
+sense_radius = 8 # smells food this far, through rock, and digs to reach it
 bite_size = 2.0
 stomach_size = 10.0
 hunger_threshold = 4.0
