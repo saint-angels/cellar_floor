@@ -21,6 +21,7 @@ export interface EntityType {
   thoughts?: Thought[];
   market?: boolean;
   carryCapacity?: number;
+  cost?: number;
 }
 
 export interface TerrainType {

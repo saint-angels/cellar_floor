@@ -223,6 +223,16 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 					s.pending = append(s.pending, *ev)
 				}
 				s.mu.Unlock()
+			case m.Type == "buyfood" && m.Player != "":
+				s.mu.Lock()
+				pm := s.buyFood(m.Player, m.Name, m.X, m.Y)
+				s.mu.Unlock()
+				if b, err := json.Marshal(pm); err == nil {
+					select {
+					case c.send <- b:
+					default:
+					}
+				}
 			case m.Type == "reset" && s.adminOK(m.Admin):
 				if b := s.resetWorld(); b != nil {
 					s.hub.Broadcast(b)

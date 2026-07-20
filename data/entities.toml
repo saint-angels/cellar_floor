@@ -2,6 +2,7 @@
 name = "Mushroom"
 kind = "flora"
 color = "#c4b5d9"
+cost = 1 # gold a player pays to plant one; the main way to steer dwarves
 produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 0.01 }]
 
 [type.dwarf]

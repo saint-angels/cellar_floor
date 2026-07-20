@@ -28,6 +28,11 @@
     #debug-entities button { display: inline-flex; align-items: center; gap: 6px; }
     #debug-entities button.armed { background: #7a5a1e; color: #fff; }
     #debug-entities .swatch { width: 10px; height: 10px; display: inline-block; border: 1px solid #0006; }
+    #food-buttons button { display: inline-flex; align-items: center; gap: 6px; background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; margin: 2px 4px 2px 0; font: inherit; }
+    #food-buttons button.armed { background: #7a5a1e; color: #fff; }
+    #food-buttons button:disabled { opacity: 0.4; cursor: default; }
+    #food-buttons .swatch { width: 10px; height: 10px; display: inline-block; border: 1px solid #0006; }
+    #food-hint { color: #8d857a; margin-top: 4px; }
     #levelbox { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
     #levelbar { flex: 1; height: 10px; background: #1a1815; border: 1px solid #444; }
     #levelfill { height: 100%; width: 0%; background: #4a7c3f; }
@@ -94,6 +99,9 @@
     <div><h2>Populations</h2><div id="pops"></div></div>
     <div id="goldbox"><h2>Gold</h2><div id="gold"><img id="goldicon" src="/coin.png" alt=""> <span id="goldnum">0</span></div>
       <div id="levelbox"><span id="levellabel">Lv 0</span><div id="levelbar"><div id="levelfill"></div></div></div>
+    </div>
+    <div id="foodbox"><h2>Food</h2><div id="food-buttons"></div>
+      <div id="food-hint">plant food to lure dwarves; buried food they dig toward</div>
     </div>
     <div><h2>Your Dwarf</h2><div id="mydwarf">none</div></div>
     <div style="flex:1;display:flex;flex-direction:column;min-height:0">

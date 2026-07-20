@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendClaim, sendDebug, sendReset, sendSpawn, sendSpawnEntity, sendTimescale } from "./net";
+import { sendBuyFood, sendClaim, sendDebug, sendReset, sendSpawn, sendSpawnEntity, sendTimescale } from "./net";
 import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
@@ -13,6 +13,7 @@ export function initUI(
   initOverlay();
   initLevel();
   initRecap();
+  initFood();
   initDebug();
   world.onChange(renderPops);
   world.onChange(renderGold);
@@ -22,26 +23,32 @@ export function initUI(
 }
 
 let spectating = false;
-let placingEntity: string | null = null;
+// armed placement: click the map to drop `id`. `paid` routes the click to the
+// player food intent (spends gold), otherwise the free debug spawner.
+let placing: { id: string; paid: boolean } | null = null;
 
 function updatePlacingCursor() {
-  document.getElementById("map")!.classList.toggle("placing", placingEntity !== null);
+  document.getElementById("map")!.classList.toggle("placing", placing !== null);
 }
 
-function armEntityButtons(id: string | null) {
+function armButtons() {
+  const id = placing?.id ?? null;
+  const paid = placing?.paid ?? false;
   for (const b of document.querySelectorAll<HTMLElement>("#debug-entities button")) {
-    b.classList.toggle("armed", b.dataset.id === id);
+    b.classList.toggle("armed", !paid && b.dataset.id === id);
+  }
+  for (const b of document.querySelectorAll<HTMLElement>("#food-buttons button")) {
+    b.classList.toggle("armed", paid && b.dataset.id === id);
   }
 }
 
-// debug: arm placement of an entity type; click the map to drop one. Stays
-// armed for repeated placement until Escape or toggled off.
-function setPlacingEntity(id: string | null) {
-  placingEntity = id;
-  armEntityButtons(id);
-  if (id) {
-    document.getElementById("debugmenu")!.style.display = "none";
-  }
+// arm placement of a type; click the map to drop one. Stays armed for repeated
+// placement until Escape or toggled off. Debug placements hide the menu; food
+// buttons live in the sidebar and stay put.
+function setPlacing(id: string | null, paid: boolean) {
+  placing = id ? { id, paid } : null;
+  armButtons();
+  if (id && !paid) document.getElementById("debugmenu")!.style.display = "none";
   updatePlacingCursor();
 }
 
@@ -210,6 +217,47 @@ function renderGold() {
   el.textContent = String(world.gold);
 }
 
+// player food shop: one button per buyable flora (cost > 0). Arming one lets
+// you click the map to plant it, spending colony gold; buried food a hungry
+// dwarf senses and tunnels toward. Buttons build once the type table arrives.
+function initFood() {
+  const box = document.getElementById("food-buttons")!;
+  const hint = document.getElementById("food-hint")!;
+  const defaultHint = hint.textContent;
+  world.onChange(() => {
+    const ids = Object.keys(world.types)
+      .filter((id) => world.types[id].kind === "flora" && (world.types[id].cost ?? 0) > 0)
+      .sort((a, b) => world.types[a].name.localeCompare(world.types[b].name));
+    if (box.childElementCount !== ids.length) {
+      box.textContent = "";
+      for (const id of ids) {
+        const sp = world.types[id];
+        const b = document.createElement("button");
+        b.dataset.id = id;
+        const sw = document.createElement("span");
+        sw.className = "swatch";
+        sw.style.background = sp.color;
+        const label = document.createElement("span");
+        label.textContent = `${sp.name} (${sp.cost}g)`;
+        b.append(sw, label);
+        b.onclick = () => setPlacing(placing?.id === id && placing.paid ? null : id, true);
+        box.appendChild(b);
+      }
+      armButtons();
+    }
+    // affordable only with a living dwarf and enough gold in the colony
+    for (const b of Array.from(box.querySelectorAll("button"))) {
+      const btn = b as HTMLButtonElement;
+      const cost = world.types[btn.dataset.id!]?.cost ?? 0;
+      btn.disabled = world.playerState !== "alive" || world.gold < cost;
+    }
+    // surface the latest paid-intent error (e.g. "not enough gold") in place
+    // of the hint; cleared by the next successful placement
+    hint.textContent = world.playerError || defaultHint;
+    hint.style.color = world.playerError ? "#d9724a" : "";
+  });
+}
+
 // the debug menu (Tab) bundles the admin-gated world controls: speed,
 // reset, gold grants, level completion, and claim counts
 function initDebug() {
@@ -219,7 +267,7 @@ function initDebug() {
   };
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      setPlacingEntity(null); // cancel an armed entity placement
+      setPlacing(null, false); // cancel any armed placement
       return;
     }
     if (e.key !== "Tab") return;
@@ -284,7 +332,7 @@ function initDebug() {
       const label = document.createElement("span");
       label.textContent = sp.name;
       b.append(sw, label);
-      b.onclick = () => setPlacingEntity(placingEntity === id ? null : id);
+      b.onclick = () => setPlacing(placing?.id === id && !placing.paid ? null : id, false);
       ebox.appendChild(b);
     }
   });
@@ -381,8 +429,9 @@ function initInspector(
   canvas.addEventListener("click", (ev) => {
     if (consumePan()) return;
     const t = tileFromPixel(canvas, ev.clientX, ev.clientY);
-    if (placingEntity) {
-      sendSpawnEntity(placingEntity, t.x, t.y);
+    if (placing) {
+      if (placing.paid) sendBuyFood(placing.id, t.x, t.y);
+      else sendSpawnEntity(placing.id, t.x, t.y);
       return; // stay armed so several can be dropped; Escape to stop
     }
     let picked: number | null = null;

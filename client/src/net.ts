@@ -61,6 +61,12 @@ export function sendSpawnEntity(name: string, x: number, y: number) {
     ws.send(JSON.stringify({ type: "spawnentity", name, x, y }));
 }
 
+// player intent: spend colony gold to plant one food item on a tile
+export function sendBuyFood(name: string, x: number, y: number) {
+  ws?.readyState === WebSocket.OPEN &&
+    ws.send(JSON.stringify({ type: "buyfood", player: playerToken(), name, x, y }));
+}
+
 export function sendClaim(name: string) {
   ws?.readyState === WebSocket.OPEN &&
     ws.send(JSON.stringify({ type: "claim", player: playerToken(), name }));
