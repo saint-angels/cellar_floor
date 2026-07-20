@@ -8,6 +8,7 @@ produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 0.01 }]
 name = "Dwarf"
 kind = "fauna"
 color = "#d9a066"
+light_radius = 2 # carries its own light; the world is otherwise dark
 eats = ["mushroom", "meat"] # hunts rabbits for meat when hungry
 sense_radius = 8 # smells food this far, through rock, and digs to reach it
 bite_size = 2.0
@@ -91,7 +92,7 @@ decay_hours = 0.5   # burnt stub lingers 30 min
 name = "Campfire"
 kind = "structure"
 color = "#e25822"
-light_radius = 8
+light_radius = 3
 lifespan_days = 0   # never burns out
 
 [type.market]

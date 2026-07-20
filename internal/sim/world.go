@@ -127,13 +127,14 @@ type World struct {
 	entCache     []*Entity
 	sortedDirty  bool
 	lit          []bool
+	mobileLight  bool // a fauna type carries light, so light must track movement
 }
 
 func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 	if seed == 0 {
 		seed = 0x9E3779B97F4A7C15
 	}
-	return &World{
+	world := &World{
 		Width: w, Height: h,
 		Terrain:    make([]Terrain, w*h),
 		Entities:   map[int]*Entity{},
@@ -146,10 +147,26 @@ func NewWorld(w, h int, seed uint64, cfg *data.Config) *World {
 		occ:        map[Point]int{},
 		counts:     map[string]int{},
 	}
+	world.computeMobileLight()
+	return world
+}
+
+// computeMobileLight caches whether any fauna emits light. When it does, the
+// lit field must be rebuilt every tick because those sources move; otherwise
+// the spawn/death-triggered rebuild suffices.
+func (w *World) computeMobileLight() {
+	w.mobileLight = false
+	for _, s := range w.cfg.Types {
+		if s.Kind == "fauna" && s.LightRadius > 0 {
+			w.mobileLight = true
+			return
+		}
+	}
 }
 
 func (w *World) SetConfig(cfg *data.Config) {
 	w.cfg = cfg
+	w.computeMobileLight()
 	// the cached specs point into the old config's table
 	for _, e := range w.Entities {
 		e.spec = nil

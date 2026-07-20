@@ -36,6 +36,12 @@ func (w *World) Step() []Event {
 
 	ids := w.SortedIDs()
 
+	// carried light moves with its bearer, so rebuild the lit field each tick
+	// from current positions before the AI reads it
+	if w.mobileLight {
+		w.RecomputeLight()
+	}
+
 	// 1. flora regrow (and corpse "produces" never regrow since regrow=0)
 	for _, id := range ids {
 		e := w.Entities[id]

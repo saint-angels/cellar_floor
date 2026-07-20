@@ -512,6 +512,9 @@ func (w *World) wander(e *Entity) {
 // darkStep sends a creature standing in an unlit cell toward the nearest
 // living light source. In a world with no light at all it does nothing.
 func (w *World) darkStep(e *Entity) bool {
+	if w.spec(e).LightRadius > 0 {
+		return false // carries its own light; never caught in the dark
+	}
 	if w.Lit(e.Pos) {
 		return false
 	}
