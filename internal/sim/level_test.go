@@ -151,7 +151,7 @@ func TestLuckRaisesDropBounds(t *testing.T) {
 	w.Cfg().Upgrades = []data.Upgrade{{Name: "Lucky", Kind: "luck", Amount: 1, Max: 2}}
 	w.Claims = map[string]int{"Lucky": 2}
 	e := w.Spawn("miner", Point{2, 2})
-	_ = e
+	assignFace(e, 3, 2)
 	for i := 0; i < 30; i++ {
 		w.Step()
 	}

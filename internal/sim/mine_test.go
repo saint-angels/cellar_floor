@@ -84,6 +84,14 @@ func newMineWorldDark(t *testing.T) *World {
 
 func idx(w *World, p Point) int { return p.Y*w.Width + p.X }
 
+// assignFace hands a miner a specific dig target. In the live game only
+// food-digging assigns one (dwarves never pick faces on their own); tests use
+// this to exercise the mining engine directly without staging buried food.
+func assignFace(e *Entity, x, y int) {
+	p := Point{x, y}
+	e.MineTarget = &p
+}
+
 // goldDropWorld builds a lit 5x5 world with one rock face beside the spawn
 // point {2,2} and a miner that mines a face out within the test's step budget.
 func goldDropWorld(t *testing.T, chance float64, lo, hi int) *World {
@@ -115,6 +123,7 @@ func TestGoldOddsArePerTerrain(t *testing.T) {
 	w.Terrain[idx(w, Point{1, 2})] = Terrain(5)  // softish, chance 0
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 3, 2)
 	var gold, mined int
 	for i := 0; i < 40; i++ {
 		for _, ev := range w.Step() {
@@ -137,6 +146,7 @@ func TestGoldOddsArePerTerrain(t *testing.T) {
 func TestMinedRockRollsGoldDrop(t *testing.T) {
 	w := newMineWorld(t) // gold_chance 1.0, gold_min 2, gold_max 2 in this test's cfg
 	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 3, 2)
 	var goldEv bool
 	for i := 0; i < 30; i++ { // mine_ticks 10 in test cfg plus walking
 		for _, ev := range w.Step() {
@@ -156,6 +166,7 @@ func TestMinedRockRollsGoldDrop(t *testing.T) {
 func TestNoDropFiresMinedEvent(t *testing.T) {
 	w := newMineWorldNoGold(t) // same but gold_chance 0
 	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 3, 2)
 	var mined bool
 	for i := 0; i < 30; i++ {
 		for _, ev := range w.Step() {
@@ -178,6 +189,7 @@ func TestDwarfMinesAdjacentRock(t *testing.T) {
 	w.Terrain[idx(w, rock)] = TerrainRock
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 3, 2)
 
 	w.Step()
 	if d.Action != "mining" {
@@ -225,6 +237,7 @@ func TestSoftRockMinesFaster(t *testing.T) {
 		}
 		d := w.Spawn("dwarf", Point{2, 2})
 		d.Fullness = 10
+		assignFace(d, 3, 2)
 		for i := 0; i < 60; i++ {
 			w.Step()
 			if w.At(face) == TerrainFloor {
@@ -250,6 +263,7 @@ func TestBFSRoutesAroundObstacles(t *testing.T) {
 	w.Terrain[idx(w, rock)] = TerrainRock
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 2, 6)
 	for i := 0; i < 40 && w.At(rock) != TerrainFloor; i++ {
 		w.Step()
 	}
@@ -258,39 +272,26 @@ func TestBFSRoutesAroundObstacles(t *testing.T) {
 	}
 }
 
-func TestOneDwarfPerFace(t *testing.T) {
+// Hardcore mining: a well-fed dwarf beside exposed, lit, mineable rock must
+// NOT start mining it. Food is the only driver — a dwarf mines solely to reach
+// food it senses (see TestHungryDwarfTunnelsToBuriedFood for the other half).
+func TestFedDwarfIgnoresExposedRock(t *testing.T) {
 	w := mineWorld(5, 5)
-	rock := Point{2, 1}
+	rock := Point{3, 2}
 	w.Terrain[idx(w, rock)] = TerrainRock
-	a := w.Spawn("dwarf", Point{1, 1})
-	a.Fullness = 10
-	b := w.Spawn("dwarf", Point{3, 1})
-	b.Fullness = 10
-	w.Step()
-	if a.MineTarget == nil {
-		t.Fatal("first dwarf has no target")
-	}
-	if b.MineTarget != nil && *b.MineTarget == *a.MineTarget {
-		t.Error("both dwarves claimed the same face")
-	}
-}
-
-func TestHungryDwarfEatsThenResumesMining(t *testing.T) {
-	w := mineWorld(6, 5)
-	rock := Point{4, 2}
-	w.Terrain[idx(w, rock)] = TerrainRock
-	w.Spawn("shroom", Point{1, 2})
 	d := w.Spawn("dwarf", Point{2, 2})
-	d.Fullness = 1 // below hunger threshold 4
-	w.Step()
-	if d.Action == "mining" || d.Action == "heading to mine" {
-		t.Fatalf("hungry dwarf mined instead of eating: %q", d.Action)
-	}
-	for i := 0; i < 30 && d.Action != "mining"; i++ {
+	d.Fullness = 10 // well fed, no reason to seek food
+	for i := 0; i < 30; i++ {
 		w.Step()
+		if d.Action == "mining" || d.Action == "heading to mine" {
+			t.Fatalf("fed dwarf mined exposed rock at step %d: %q", i, d.Action)
+		}
 	}
-	if d.Action != "mining" {
-		t.Fatalf("dwarf never resumed mining, action %q fullness %v", d.Action, d.Fullness)
+	if w.At(rock) != TerrainRock {
+		t.Fatal("rock was mined with no food to reach")
+	}
+	if w.MineDamage[idx(w, rock)] != 0 {
+		t.Fatalf("exposed rock took %d damage", w.MineDamage[idx(w, rock)])
 	}
 }
 
@@ -300,6 +301,7 @@ func TestMineStateSurvivesSaveLoad(t *testing.T) {
 	w.Terrain[idx(w, rock)] = TerrainRock
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 3, 2)
 	for i := 0; i < 3; i++ {
 		w.Step()
 	}
@@ -328,6 +330,7 @@ func TestMineStateSurvivesSaveLoad(t *testing.T) {
 func TestGoldWindowTracksLast24h(t *testing.T) {
 	w := newMineWorld(t) // chance 1.0, drop exactly 2
 	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 3, 2)
 	for i := 0; i < 30; i++ {
 		w.Step()
 	}
@@ -347,23 +350,14 @@ func TestGoldWindowTracksLast24h(t *testing.T) {
 	}
 }
 
-func TestOnlyLitFacesPicked(t *testing.T) {
-	// world where the only reachable rock face is dark: no target
-	w := newMineWorldDark(t) // rock faces exist, zero light sources
-	e := w.Spawn("miner", Point{2, 2})
-	w.Step()
-	if e.MineTarget != nil {
-		t.Fatal("no face is lit, no target may be picked")
-	}
-}
-
 func TestTargetDroppedWhenLightDies(t *testing.T) {
 	w := newMineWorldDark(t)
 	w.Spawn("torch", Point{3, 2}) // lights the face at {4,2}
 	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 4, 2) // the lit face it is digging toward
 	w.Step()
 	if e.MineTarget == nil {
-		t.Fatal("lit face should be picked")
+		t.Fatal("lit face should still be assigned")
 	}
 	// kill the torch (age it out), face goes dark
 	for i := 0; i < torchLifespan+1; i++ {
@@ -380,6 +374,7 @@ func TestDamageAccrualAndCompletion(t *testing.T) {
 	w.Terrain[idx(w, face)] = TerrainRock // 10 hp in this cfg
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 3, 2)
 	w.Step() // adjacent: first tick of damage
 	if got := w.MineDamage[idx(w, face)]; got != 1 {
 		t.Fatalf("damage after one tick = %d, want 1", got)
@@ -404,6 +399,7 @@ func TestAOEDamagesAllAdjacentLitFaces(t *testing.T) {
 	}
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 3, 2)
 	w.Step()
 	for _, f := range faces {
 		if got := w.MineDamage[idx(w, f)]; got != 1 {
@@ -441,7 +437,7 @@ func TestAOESkipsUnlitFaces(t *testing.T) {
 	w.Terrain[idx(w, Point{2, 1})] = TerrainRock
 	w.Spawn("torch", Point{5, 2})
 	e := w.Spawn("miner", Point{2, 2})
-	_ = e
+	assignFace(e, 3, 2)
 	// guard the geometry so any light-model change fails loudly
 	if !w.Lit(Point{3, 2}) || w.Lit(Point{2, 1}) {
 		t.Fatal("test geometry wrong: want {3,2} lit and {2,1} dark")
@@ -465,6 +461,7 @@ func TestMineBonusSpeedsMining(t *testing.T) {
 	w.Terrain[idx(w, face)] = TerrainRock
 	d := w.Spawn("dwarf", Point{2, 2})
 	d.Fullness = 10
+	assignFace(d, 3, 2)
 	w.Step()
 	if got := w.MineDamage[idx(w, face)]; got != 2 {
 		t.Fatalf("damage per tick = %d, want 2 with a claimed damage upgrade", got)
@@ -477,7 +474,7 @@ func TestMineBonusSpeedsMining(t *testing.T) {
 func TestRecapCountersTrack(t *testing.T) {
 	w := newMineWorld(t) // chance 1.0, drop exactly 2
 	e := w.Spawn("miner", Point{2, 2})
-	_ = e
+	assignFace(e, 3, 2)
 	for i := 0; i < 30; i++ {
 		w.Step()
 	}

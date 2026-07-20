@@ -31,10 +31,11 @@ func TestBeamHitsOnlyTheTarget(t *testing.T) {
 	w.Terrain[idx(w, Point{4, 2})] = Terrain(3)
 	w.Terrain[idx(w, Point{4, 3})] = Terrain(3)
 	e := w.Spawn("miner", Point{3, 2})
+	assignFace(e, 4, 2)
 	w.Step()
 
 	if e.MineTarget == nil {
-		t.Fatal("miner must pick a face")
+		t.Fatal("miner must have a face")
 	}
 	ti := e.MineTarget.Y*w.Width + e.MineTarget.X
 	oi := idx(w, Point{4, 2})

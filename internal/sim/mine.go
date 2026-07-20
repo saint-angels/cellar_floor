@@ -2,7 +2,6 @@ package sim
 
 import (
 	"fmt"
-	"sort"
 
 	"cellarfloor/internal/data"
 )
@@ -14,17 +13,16 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 	if s.MineDamage <= 0 {
 		return nil, false
 	}
-	if e.MineTarget != nil && (!w.Mineable(w.At(*e.MineTarget)) || !w.Lit(*e.MineTarget)) {
+	// hardcore mining: a dwarf never picks a face on its own. A MineTarget is
+	// assigned only by food-digging (digFoodStep), the sole driver of mining;
+	// with no assignment there is nothing to mine.
+	if e.MineTarget == nil {
+		return nil, false
+	}
+	if !w.Mineable(w.At(*e.MineTarget)) || !w.Lit(*e.MineTarget) {
 		e.MineTarget = nil
 		w.markDirty(e.ID)
-	}
-	if e.MineTarget == nil {
-		face, ok := w.pickMineTarget(e)
-		if !ok {
-			return nil, false
-		}
-		e.MineTarget = &face
-		w.markDirty(e.ID)
+		return nil, false
 	}
 	target := *e.MineTarget
 
@@ -127,69 +125,6 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		}
 	}
 	return nil, true
-}
-
-// pickMineTarget BFSes the walkable region around e and returns the nearest
-// unclaimed, lit mineable face.
-func (w *World) pickMineTarget(e *Entity) (Point, bool) {
-	dist := map[Point]int{e.Pos: 0}
-	queue := []Point{e.Pos}
-	faceDist := map[Point]int{}
-	for len(queue) > 0 {
-		p := queue[0]
-		queue = queue[1:]
-		for _, n := range neighbors {
-			q := Point{p.X + n.X, p.Y + n.Y}
-			if !w.InBounds(q) {
-				continue
-			}
-			t := w.At(q)
-			if w.Mineable(t) {
-				if !w.Lit(q) {
-					continue
-				}
-				if d, seen := faceDist[q]; !seen || dist[p]+1 < d {
-					faceDist[q] = dist[p] + 1
-				}
-				continue
-			}
-			if !w.Passable(t) {
-				continue
-			}
-			if _, seen := dist[q]; seen {
-				continue
-			}
-			dist[q] = dist[p] + 1
-			queue = append(queue, q)
-		}
-	}
-
-	// drop faces claimed by other living miners
-	for _, id := range w.SortedIDs() {
-		c := w.Entities[id]
-		if c.ID != e.ID && !c.Dead && c.MineTarget != nil {
-			delete(faceDist, *c.MineTarget)
-		}
-	}
-	if len(faceDist) == 0 {
-		return Point{}, false
-	}
-
-	// deterministic choice: sort faces by cell index, take the nearest
-	faces := make([]Point, 0, len(faceDist))
-	for f := range faceDist {
-		faces = append(faces, f)
-	}
-	sort.Slice(faces, func(i, j int) bool {
-		return faces[i].Y*w.Width+faces[i].X < faces[j].Y*w.Width+faces[j].X
-	})
-	best := faces[0]
-	for _, f := range faces {
-		if faceDist[f] < faceDist[best] {
-			best = f
-		}
-	}
-	return best, true
 }
 
 // nextStepToward BFSes over passable terrain and returns the first step

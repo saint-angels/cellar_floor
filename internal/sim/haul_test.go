@@ -46,6 +46,7 @@ func TestOreAccruesInsteadOfGold(t *testing.T) {
 	w.Terrain[idx(w, Point{3, 2})] = TerrainRock
 	w.Spawn("market", Point{10, 2})
 	e := w.Spawn("hauler", Point{2, 2})
+	assignFace(e, 3, 2)
 	var ore *Event
 	for i := 0; i < 40 && ore == nil; i++ {
 		for _, ev := range w.Step() {
@@ -76,6 +77,7 @@ func TestBaglessMinerStillPaysGoldDirectly(t *testing.T) {
 	w := haulWorld(t, 5, 5, 1.0, 2)
 	w.Terrain[idx(w, Point{3, 2})] = TerrainRock
 	e := w.Spawn("miner", Point{2, 2}) // capacity 0 in mineCfg
+	assignFace(e, 3, 2)
 	var goldEv bool
 	for i := 0; i < 30; i++ {
 		for _, ev := range w.Step() {
@@ -103,6 +105,7 @@ func TestFullBagHaulsAndDeposits(t *testing.T) {
 	w.Terrain[idx(w, Point{3, 2})] = TerrainRock
 	w.Spawn("market", Point{10, 2})
 	e := w.Spawn("hauler", Point{2, 2})
+	assignFace(e, 3, 2)
 	var sold *Event
 	for i := 0; i < 80 && sold == nil; i++ {
 		for _, ev := range w.Step() {

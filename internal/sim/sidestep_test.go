@@ -30,6 +30,7 @@ func wedgeWorld(t *testing.T) (*World, *Entity, *Entity) {
 	w.Spawn("market", Point{1, 6})
 
 	miner := w.Spawn("dwarf", Point{4, 3}) // ore 0 -> walks east to the face
+	assignFace(miner, 8, 2)                // dig target (food-digging assigns this live)
 	hauler := w.Spawn("dwarf", Point{5, 2})
 	hauler.Ore = cfg.Types["dwarf"].CarryCapacity // full bag -> walks west to market
 	return w, miner, hauler

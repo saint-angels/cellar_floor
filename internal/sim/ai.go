@@ -89,7 +89,9 @@ func (w *World) aiStep(e *Entity) []Event {
 		return evs
 	}
 
-	// 5. mining
+	// 5. finish an assigned dig. mineStep never picks a face on its own now;
+	// it only breaks one already assigned by food-digging, so a fed dwarf
+	// with no buried food to reach never mines (food is the only driver).
 	if evs, mined := w.mineStep(e); mined {
 		return evs
 	}

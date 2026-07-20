@@ -13,7 +13,8 @@ func TestCarriedLightMinesInTheDark(t *testing.T) {
 	w.Terrain[idx(w, face)] = Terrain(3) // rock right above the dwarf
 
 	d := w.Spawn("dwarf", Point{5, 5})
-	d.Fullness = 8 // well fed, so it mines rather than seeks food
+	d.Fullness = 8 // well fed; it mines only the face assigned to it
+	assignFace(d, 5, 4)
 
 	if !w.Lit(d.Pos) {
 		t.Fatal("a light-carrier must light its own tile")
