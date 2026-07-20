@@ -28,11 +28,17 @@ is a deliberate decision, not a side effect.
 
 - **Creatures are autonomous.** Nobody takes orders; behavior emerges from
   needs and simple priorities (danger, food, work, rest).
-- **The player influences, never commands.** Player tools shape the
-  environment (torches) and the creatures respond to it. The opening
-  states this: every rock face starts beyond the campfire's light, so
-  the first torch is the first decision, and an undirected dwarf stays
-  in the clearing, afraid of the dark.
+- **The player influences, never commands — you garden the cave.** Player
+  tools shape the environment, not the individual creature; creatures respond
+  to the space you make. You don't pilot a dwarf, you place attractors and let
+  the cave you've shaped pull it. An undirected dwarf is never ordered — it
+  wanders the dug-out space until something it senses draws it in. Movement is
+  emergent; the player tends a colony, not a unit.
+- **Food is the single lever.** Hunger is the only thing that moves a dwarf
+  with intent: it pursues food it senses — on foot, or by tunnelling through
+  rock toward food buried beyond a wall — and mines only as the act of
+  reaching it. Players plant food (spending gold) to steer; a dwarf with
+  nothing to reach does not mine. Gold falls out of the rock broken on the way.
 - **The events feed is the narrator.** Anything notable that happens should
   emit a small human-readable event ("Dwarf struck gold").
 
