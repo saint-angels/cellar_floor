@@ -30,9 +30,16 @@ The attractor model:
 - Control = laying food chains across open ground to lead a wanderer to a wall,
   then a beacon beyond the wall to make it dig through.
 
-Open decision — ownership: food is environmental, so any dwarf answers any
-beacon. Leaning collective: the cave is a commons everyone terraforms; score
-by contribution (gold you caused), not by "your dwarf." Resolve before it ships.
+Decided — ownership: COLLECTIVE for now. Food is environmental; any dwarf
+answers any beacon. The cave is a commons everyone terraforms together; think
+"score by contribution (gold you caused)" over "your dwarf." Per-player
+constraints may come later.
+
+Decided — neglect: keep starvation, keep it a bit hardcore. Leaving the clock
+at starve_hours = 48 (~2 days unfed). Fullness stays as a survival timer that
+eating (even overeating) resets. Note the coupling: because a digging dwarf
+runs at Fullness 0 the whole dig, the starve clock also bounds how deep a
+single dig reaches before it must eat — relevant when tuning radius-as-depth.
 
 Suggestions in this direction (backlog, not the current focus):
 - Two food tiers: cheap small-radius CRUMBS for precise steering; expensive

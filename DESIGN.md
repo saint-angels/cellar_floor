@@ -14,8 +14,10 @@ is a deliberate decision, not a side effect.
 
 ## World
 
-- **One persistent world.** The server runs continuously, autosaves, and
-  survives restarts; anything that matters lives in world.json.
+- **One persistent world, a shared commons.** The server runs continuously,
+  autosaves, and survives restarts; anything that matters lives in world.json.
+  All players shape one cave together — influence is collective, not per-player
+  (per-player constraints may come later).
 - **Deterministic per seed.** The same seed produces the same world and the
   same history. Sim code never depends on map iteration order or wall-clock
   time.
