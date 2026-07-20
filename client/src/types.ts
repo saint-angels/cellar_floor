@@ -13,6 +13,7 @@ export interface EntityType {
   socialSize: number;
   socialThreshold: number;
   fearRadius: number;
+  senseRadius?: number;
   popFloor: number;
   popCap: number;
   lightRadius: number;

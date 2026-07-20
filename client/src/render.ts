@@ -113,6 +113,36 @@ export function startRender(canvas: HTMLCanvasElement) {
         return 3;
       };
       const drawList = [...world.entities.values()].sort((a, b) => zOf(a) - zOf(b));
+      // a persistent thin line from each digger to the food it is committed to
+      // (TargetID), so a mushroom planted in the dark reveals which dwarf is
+      // tunnelling toward it. Only diggers (senseRadius > 0) and only edible
+      // targets, so haul (market) and social (companion) lines never appear.
+      const centerOf = (e: import("./types").RenderEntity) => {
+        const t = Math.min(1, (now - e.movedAt) / lerpMs);
+        return {
+          cx: (e.px + (e.x - e.px) * t) * TILE + TILE / 2,
+          cy: (e.py + (e.y - e.py) * t) * TILE + TILE / 2,
+        };
+      };
+      ctx.save();
+      ctx.lineWidth = 0.75;
+      ctx.setLineDash([3, 3]);
+      for (const e of drawList) {
+        const sp = world.types[e.s];
+        if (!sp || e.dead || !(sp.senseRadius ?? 0) || !e.tid || !sp.eats) continue;
+        const tgt = world.entities.get(e.tid);
+        if (!tgt || tgt.dead || !tgt.res) continue;
+        if (!Object.keys(tgt.res).some((r) => sp.eats!.includes(r))) continue;
+        const a = centerOf(e);
+        const b = centerOf(tgt);
+        ctx.strokeStyle = e.id === world.playerDwarfId ? "rgba(150, 200, 120, 0.75)" : "rgba(150, 200, 120, 0.35)";
+        ctx.beginPath();
+        ctx.moveTo(a.cx, a.cy);
+        ctx.lineTo(b.cx, b.cy);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
       for (const e of drawList) {
         const sp = world.types[e.s];
         if (!sp) continue;

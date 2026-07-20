@@ -281,7 +281,15 @@ func (w *World) digFoodStep(e *Entity) ([]Event, bool) {
 		// advances into the opened tile on a later step
 		e.MineTarget = &step
 		w.markDirty(e.ID)
-		return w.mineStep(e)
+		evs, mined := w.mineStep(e)
+		// mineStep clears TargetID once it starts breaking the face (the face
+		// rides MineTarget). Re-assert the food commitment so it persists
+		// across the whole dig and the client can draw a line to the buried
+		// food the dwarf is tunnelling toward.
+		if mined {
+			w.setTarget(e, target.ID)
+		}
+		return evs, mined
 	}
 	// walk the open leg toward the food, respecting move speed
 	e.Action = "digging to food"

@@ -38,6 +38,37 @@ func TestHungryDwarfTunnelsToBuriedFood(t *testing.T) {
 	}
 }
 
+// While tunnelling toward buried food the dwarf must stay committed to that
+// food entity (TargetID), even on the ticks it spends breaking rock — the
+// client draws a persistent line from the digger to its committed food, so a
+// flicker to 0 mid-dig would break it.
+func TestBuriedDigKeepsFoodTarget(t *testing.T) {
+	w := mineWorld(24, 24)
+	for x := 8; x <= 12; x++ {
+		for y := 6; y <= 14; y++ {
+			w.Terrain[idx(w, Point{x, y})] = Terrain(3) // rock
+		}
+	}
+	food := w.Spawn("shroom", Point{10, 10})
+	d := w.Spawn("dwarf", Point{6, 10})
+	d.Fullness = 1
+
+	// step until the dwarf is actively mining a rock face toward the food
+	mined := false
+	for i := 0; i < 400 && !mined; i++ {
+		w.Step()
+		if d.Action == "mining" {
+			mined = true
+		}
+	}
+	if !mined {
+		t.Fatalf("dwarf never started mining toward the buried food: %v", d.Action)
+	}
+	if d.TargetID != food.ID {
+		t.Fatalf("TargetID = %d while mining toward food, want the food id %d", d.TargetID, food.ID)
+	}
+}
+
 // With no food sensed at all, digFoodStep must stay out of the way: the dwarf
 // falls through to searching rather than tunnelling at random.
 func TestNoSensedFoodNoDigging(t *testing.T) {
