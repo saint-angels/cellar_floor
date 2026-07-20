@@ -95,6 +95,7 @@ type ScatterRule struct {
 	Type    string  `toml:"type"`
 	Terrain string  `toml:"terrain"`
 	Chance  float64 `toml:"chance"`
+	Max     int     `toml:"max"` // cap on placements; 0 = unlimited
 }
 
 type VeinRule struct {
@@ -460,6 +461,9 @@ func Validate(cfg *Config) error {
 		}
 		if _, ok := cfg.TerrainIndex(r.Terrain); !ok {
 			return fmt.Errorf("scatter rule references unknown terrain %q", r.Terrain)
+		}
+		if r.Max < 0 {
+			return fmt.Errorf("scatter rule for %q: max must be non-negative", r.Type)
 		}
 	}
 	for _, v := range cfg.Gen.Veins {

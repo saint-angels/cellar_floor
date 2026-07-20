@@ -59,14 +59,20 @@ func TestMovementAvoidsWater(t *testing.T) {
 	}
 }
 
-func TestFullRabbitDoesNotEat(t *testing.T) {
+// Greedy eating: even a completely full eater keeps emptying a beacon in
+// range — overeating is wasted, but the source drains, so food is a
+// consumable token and never accumulates into a larder.
+func TestFullRabbitStillEatsGreedily(t *testing.T) {
 	w := flatWorld(t, 8, 8, 1)
 	b := w.Spawn("bush", Point{2, 2})
 	r := w.Spawn("rabbit", Point{2, 3})
 	r.Fullness = w.Cfg().Types["rabbit"].StomachSize
 	before := b.Produces[0].Amount
 	w.Step()
-	if b.Produces[0].Amount < before {
-		t.Error("sated rabbit ate anyway")
+	if b.Produces[0].Amount >= before {
+		t.Error("full rabbit must still eat the beacon down")
+	}
+	if r.Fullness > w.Cfg().Types["rabbit"].StomachSize {
+		t.Errorf("fullness %v overflowed the stomach", r.Fullness)
 	}
 }

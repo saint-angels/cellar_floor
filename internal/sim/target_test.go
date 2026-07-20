@@ -11,11 +11,17 @@ func TestInteractionTargetTracksFood(t *testing.T) {
 	if r.TargetID != b.ID {
 		t.Fatalf("seeking food: TargetID = %d, want bush %d", r.TargetID, b.ID)
 	}
-	// full again: back to idle wandering, the target clears
+	// greedy: even full, the beacon still pulls — the target holds
 	r.Fullness = w.Cfg().Types["rabbit"].StomachSize
 	w.Step()
+	if r.TargetID != b.ID {
+		t.Fatalf("greedy: full rabbit dropped the beacon, TargetID = %d", r.TargetID)
+	}
+	// the bush runs dry: nothing worth eating, the target finally clears
+	b.Produces[0].Amount = 0
+	w.Step()
 	if r.TargetID != 0 {
-		t.Fatalf("idle: TargetID = %d, want 0", r.TargetID)
+		t.Fatalf("dry beacon: TargetID = %d, want 0", r.TargetID)
 	}
 }
 
@@ -48,15 +54,17 @@ func TestMealEndsWhenFull(t *testing.T) {
 	}
 }
 
-func TestNoFoodTrekForASliver(t *testing.T) {
+// A regrowing stub (under half a bite left) is not worth a trek even to a
+// hungry eater — without this guard a greedy eater camps the stub and sips
+// its per-tick regrowth forever.
+func TestNoTrekForARegrowingStub(t *testing.T) {
 	w := flatWorld(t, 16, 16, 1)
 	far := w.Spawn("bush", Point{14, 14})
+	far.Produces[0].Amount = 0.3 // < half a bite, and it regrows
 	r := w.Spawn("rabbit", Point{2, 2})
-	// nearly full and mid-meal by action; the far bush must not tempt it
-	r.Fullness = w.Cfg().Types["rabbit"].StomachSize - 0.3
-	r.Action = "eating"
+	r.Fullness = 1 // even hungry
 	w.Step()
 	if r.Action == "seeking food" || r.TargetID == far.ID {
-		t.Fatalf("action = %q target %d, a sliver of room must not start a trek", r.Action, r.TargetID)
+		t.Fatalf("action = %q target %d: a regrowing stub must not start a trek", r.Action, r.TargetID)
 	}
 }

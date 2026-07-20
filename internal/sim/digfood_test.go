@@ -69,6 +69,33 @@ func TestBuriedDigKeepsFoodTarget(t *testing.T) {
 	}
 }
 
+// Greedy eating: a completely FULL dwarf still pursues and eats a beacon in
+// range, and a non-regrowing food eaten clean dies and is removed — food is a
+// consumable command token, never a stockpile.
+func TestFullDwarfGreedilyConsumesFood(t *testing.T) {
+	w := mineWorld(12, 8)
+	f := w.Spawn("shroom", Point{6, 4})
+	f.Produces[0].Regrow = 0 // a planted token, not a regrowing patch
+	d := w.Spawn("dwarf", Point{4, 4})
+	d.Fullness = 10 // completely full: the old rules would ignore the food
+	consumed := false
+	for i := 0; i < 20 && !consumed; i++ {
+		for _, ev := range w.Step() {
+			if ev.Type == "consumed" && ev.Actor == f.ID {
+				consumed = true
+			}
+		}
+	}
+	if !consumed {
+		t.Fatalf("full dwarf never ate the token clean: %.2f left, dwarf %q at %v",
+			f.Produces[0].Amount, d.Action, d.Pos)
+	}
+	w.Step() // decay 0: the husk is swept the next tick
+	if _, ok := w.Entities[f.ID]; ok {
+		t.Error("consumed food never removed from the world")
+	}
+}
+
 // The beacon model: sensing range is a property of the FOOD, not the eater. A
 // hungry dwarf beyond a food's sense_radius never pursues it — even across
 // open, walkable ground — while one inside the radius goes and eats.

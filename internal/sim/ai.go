@@ -46,37 +46,31 @@ func (w *World) aiStep(e *Entity) []Event {
 		return evs
 	}
 
-	// 2. food; once a meal starts, keep eating until the stomach is full
-	// (or nothing edible remains), not just past the hunger threshold. Under
-	// half a bite of room the meal is over; without that cutoff a dwarf
-	// whose mushroom ran dry would trek to another for a sliver of food
+	// 2. food — greedy: any beacon that catches a creature pulls it, full or
+	// not; it eats the source clean and moves on, so food never accumulates.
+	// Each item is a consumable command token (garden the cave), and eating
+	// resets the starve clock. Live prey stays hunger-gated inside findFood.
 	hungry := e.Fullness < s.HungerThreshold
-	topping := (e.Action == "eating" || e.Action == "seeking food") &&
-		s.StomachSize-e.Fullness > s.BiteSize*0.5
-	if hungry || topping {
-		food := w.findFood(e)
-		if food != nil {
-			w.setTarget(e, food.ID)
-			if adjacent(e.Pos, food.Pos) {
-				return w.eatFrom(e, food)
-			}
-			e.Action = "seeking food"
-			w.pathToward(e, food.Pos)
-			return nil
+	if food := w.findFood(e); food != nil {
+		w.setTarget(e, food.ID)
+		if adjacent(e.Pos, food.Pos) {
+			return w.eatFrom(e, food)
 		}
-		// no walk-reachable food: tunnel toward the nearest food whose beacon
-		// reaches through the rock (place food behind a wall and the dwarf
-		// digs to reach it)
-		if evs, dug := w.digFoodStep(e); dug {
-			return evs
-		}
-		if hungry {
-			e.Action = "searching"
-			w.setTarget(e, 0)
-			w.wander(e)
-			return nil
-		}
-		// stomach not full but no food left; fall through to other work
+		e.Action = "seeking food"
+		w.pathToward(e, food.Pos)
+		return nil
+	}
+	// no walk-reachable food: tunnel toward the nearest beacon reaching
+	// through the rock (food planted behind a wall makes the dwarf dig to it)
+	if evs, dug := w.digFoodStep(e); dug {
+		return evs
+	}
+	if hungry {
+		// starving with no beacon in range: wander and hope to cross one
+		e.Action = "searching"
+		w.setTarget(e, 0)
+		w.wander(e)
+		return nil
 	}
 
 	// 3. company
@@ -116,16 +110,10 @@ func (w *World) aiStep(e *Entity) []Event {
 }
 
 func (w *World) findFood(e *Entity) *Entity {
-	// Eats holds a couple of entries, so a linear scan beats building a set:
-	// this runs for every hungry creature every tick and the map cost it
-	// replaces (alloc plus a string hash per produce) dominated the profile.
+	// Eats holds a couple of entries, so linear scans beat building sets:
+	// greedy eaters run this every tick for every creature.
 	s := w.spec(e)
-	eats := s.Eats
-	// Only count food we would actually take a bite from: eatFrom refuses a
-	// bite below BiteSize/2, so a source with less left than that is a stub.
-	// Selecting it anyway pins a hungry eater to a near-empty tile while a full
-	// source sits one step away, and it slowly starves in place.
-	minBite := s.BiteSize * 0.5
+	hungry := e.Fullness < s.HungerThreshold
 	var edibles []*Entity
 	var nearest *Entity
 	bestD := 1 << 30
@@ -133,22 +121,12 @@ func (w *World) findFood(e *Entity) *Entity {
 		if c.ID == e.ID || c.Type == e.Type {
 			continue
 		}
-		edible := false
-		for _, p := range c.Produces {
-			if p.Amount < minBite {
-				continue
-			}
-			for _, r := range eats {
-				if r == p.Resource {
-					edible = true
-					break
-				}
-			}
-			if edible {
-				break
-			}
+		// live prey is only worth killing when hungry; flora and corpses
+		// (passive beacons) pull a greedy eater regardless of fullness
+		if !hungry && !c.Dead && w.spec(c).Kind == "fauna" {
+			continue
 		}
-		if !edible {
+		if !edibleTo(c, s.Eats, s.BiteSize) {
 			continue
 		}
 		// beacon model: food is sensed only within ITS OWN radius (a property
@@ -186,11 +164,12 @@ func (w *World) findFood(e *Entity) *Entity {
 	return best
 }
 
-// edibleTo reports whether c offers a bite worth taking: a produced resource in
-// eats with at least minBite left. Shared by walk- and dig-food seeking.
-func edibleTo(c *Entity, eats []string, minBite float64) bool {
-	for _, p := range c.Produces {
-		if p.Amount < minBite {
+// edibleTo reports whether c offers a bite worth taking (see biteWorthy) of a
+// resource in eats. Shared by walk- and dig-food seeking.
+func edibleTo(c *Entity, eats []string, biteSize float64) bool {
+	for i := range c.Produces {
+		p := &c.Produces[i]
+		if !biteWorthy(p, biteSize) {
 			continue
 		}
 		for _, r := range eats {
@@ -202,19 +181,45 @@ func edibleTo(c *Entity, eats []string, minBite float64) bool {
 	return false
 }
 
+// biteWorthy: at least half a bite left, or a finishable remnant of a
+// non-regrowing food — the last sliver kills the token. The regrow guard stops
+// an eater camping a regrowing stub to sip its per-tick trickle.
+func biteWorthy(p *data.Produce, biteSize float64) bool {
+	if p.Amount <= 0 {
+		return false
+	}
+	return p.Amount >= biteSize*0.5 || p.Regrow <= 0
+}
+
+// spent reports whether a food has nothing left in any produce and no way to
+// regrow; such a husk is dead weight and its beacon must die with it.
+func spent(food *Entity) bool {
+	for i := range food.Produces {
+		p := &food.Produces[i]
+		if p.Amount > 0 || p.Regrow > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // nearestSensedFood returns the closest edible whose own sense radius covers
 // the eater, measured in a straight line so a beacon reaches through rock.
 // Distinct from findFood, which only sees food it can already walk to.
 func (w *World) nearestSensedFood(e *Entity) *Entity {
 	s := w.spec(e)
-	minBite := s.BiteSize * 0.5
+	hungry := e.Fullness < s.HungerThreshold
 	var best *Entity
 	bestD := 1 << 30
 	for _, c := range w.entities() {
 		if c.ID == e.ID || c.Type == e.Type {
 			continue
 		}
-		if !edibleTo(c, s.Eats, minBite) {
+		// same prey rule as findFood: live fauna is only food when hungry
+		if !hungry && !c.Dead && w.spec(c).Kind == "fauna" {
+			continue
+		}
+		if !edibleTo(c, s.Eats, s.BiteSize) {
 			continue
 		}
 		if d := Dist(e.Pos, c.Pos); d <= w.spec(c).SenseRadius && d < bestD {
@@ -263,7 +268,7 @@ func (w *World) stepTowardBuried(from, to Point) (step Point, isDig, ok bool) {
 	return Point{}, false, false
 }
 
-// digFoodStep is the core of food-directed digging: a hungry dwarf with no
+// digFoodStep is the core of food-directed digging: a dwarf with no
 // walk-reachable food commits to the nearest food whose beacon radius reaches
 // it and tunnels toward it, mining the rock in the way. Returns (events, true)
 // when it spent the tick on this.
@@ -332,37 +337,42 @@ func (w *World) eatFrom(e *Entity, food *Entity) []Event {
 	}
 	for i := range food.Produces {
 		p := &food.Produces[i]
-		if !eats[p.Resource] || p.Amount <= 0 {
+		if !eats[p.Resource] || !biteWorthy(p, s.BiteSize) {
 			continue
 		}
+		// greedy: bite regardless of stomach room. Overeating is wasted, but
+		// the source still empties — each food is a consumable token, and
+		// eating (even while full) holds the starve clock at bay.
 		bite := s.BiteSize
 		if p.Amount < bite {
-			bite = p.Amount
-		}
-		if room := s.StomachSize - e.Fullness; room < bite {
-			bite = room
-		}
-		// an effectively full stomach ends the meal; without this the tick
-		// drain reopens a sliver of room and pins the eater to the food in
-		// an endless nibble loop
-		if bite < s.BiteSize*0.5 {
-			if e.Action == "eating" {
-				e.Action = "idle"
-				w.markDirty(e.ID)
-			}
-			return nil
+			bite = p.Amount // finish the sliver so the token dies
 		}
 		p.Amount -= bite
 		e.Fullness += bite
+		if e.Fullness > s.StomachSize {
+			e.Fullness = s.StomachSize
+		}
 		e.Action = "eating"
 		w.markDirty(e.ID)
 		w.markDirty(food.ID)
-		return []Event{{
+		evs := []Event{{
 			Tick: w.Tick, Type: "ate",
 			Actor: e.ID, ActorType: e.Type,
 			Target: food.ID, TargetType: food.Type,
 			Msg: fmt.Sprintf("%s ate %s from %s", s.Name, p.Resource, w.cfg.Types[food.Type].Name),
 		}}
+		// a flora eaten clean with nothing regrowing is spent: it dies, and
+		// its beacon dies with it
+		if !food.Dead && w.cfg.Types[food.Type].Kind == "flora" && spent(food) {
+			evs = append(evs, w.kill(food, "consumed",
+				fmt.Sprintf("%s was eaten clean", w.cfg.Types[food.Type].Name)))
+		}
+		return evs
+	}
+	// nothing worth eating left here; release the meal
+	if e.Action == "eating" {
+		e.Action = "idle"
+		w.markDirty(e.ID)
 	}
 	return nil
 }

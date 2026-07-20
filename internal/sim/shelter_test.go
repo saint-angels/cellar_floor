@@ -4,7 +4,11 @@ import "testing"
 
 func TestRabbitRemembersHomeAndReturns(t *testing.T) {
 	w := flatWorld(t, 20, 20, 1)
-	w.Spawn("bush", Point{3, 3})
+	b := w.Spawn("bush", Point{3, 3})
+	// drain the berries so the greedy eater is not glued to its own home as
+	// food; an empty bush still counts as shelter (adoption is by produce
+	// kind, not amount)
+	b.Produces[0].Amount = 0
 	r := w.Spawn("rabbit", Point{4, 3})
 	r.Fullness = 10
 	w.Step()

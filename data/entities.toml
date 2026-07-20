@@ -4,7 +4,9 @@ kind = "flora"
 color = "#c4b5d9"
 cost = 1 # gold a player pays to plant one; the main way to steer dwarves
 sense_radius = 8 # beacon: eaters sense this within 8 tiles, through rock — both catch range and dig depth
-produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 0.01 }]
+# no regrow: a mushroom is a consumable command token — eaten clean, it dies
+# and its beacon with it. The worldgen starting patch is therefore finite.
+produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 0 }]
 
 [type.dwarf]
 name = "Dwarf"

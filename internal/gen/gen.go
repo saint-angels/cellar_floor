@@ -200,25 +200,38 @@ func Generate(seed int64, cfg *data.Config) *sim.World {
 		}
 	}
 
-	for y := 0; y < g.Height; y++ {
-		for x := 0; x < g.Width; x++ {
-			p := sim.Point{X: x, Y: y}
-			tname := w.TerrainName(w.At(p))
-			for _, rule := range g.Scatter {
-				if rule.Terrain != tname {
-					continue
+	for _, rule := range g.Scatter {
+		// candidate tiles for this rule, shuffled so a capped rule (max > 0)
+		// lands uniformly instead of favoring the top of the map
+		var cands []sim.Point
+		for y := 0; y < g.Height; y++ {
+			for x := 0; x < g.Width; x++ {
+				p := sim.Point{X: x, Y: y}
+				if w.TerrainName(w.At(p)) == rule.Terrain {
+					cands = append(cands, p)
 				}
-				if w.RandFloat() >= rule.Chance {
-					continue
-				}
-				s := cfg.Types[rule.Type]
-				if s.Kind == "fauna" {
-					if !w.Passable(w.At(p)) || w.FaunaAt(p) != nil {
-						continue
-					}
-				}
-				w.Spawn(rule.Type, p)
 			}
+		}
+		for i := len(cands) - 1; i > 0; i-- {
+			j := w.RandN(i + 1)
+			cands[i], cands[j] = cands[j], cands[i]
+		}
+		placed := 0
+		for _, p := range cands {
+			if rule.Max > 0 && placed >= rule.Max {
+				break
+			}
+			if w.RandFloat() >= rule.Chance {
+				continue
+			}
+			s := cfg.Types[rule.Type]
+			if s.Kind == "fauna" {
+				if !w.Passable(w.At(p)) || w.FaunaAt(p) != nil {
+					continue
+				}
+			}
+			w.Spawn(rule.Type, p)
+			placed++
 		}
 	}
 	w.DirtyAndReset()
