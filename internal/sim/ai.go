@@ -110,6 +110,19 @@ func (w *World) aiStep(e *Entity) []Event {
 }
 
 func (w *World) findFood(e *Entity) *Entity {
+	// sticky commitment: a chosen food is finished before anything else is
+	// considered. Re-picking the nearest beacon every tick bounced an eater
+	// one step back and forth between two equidistant mushrooms and let a
+	// fresher one drag it away mid-meal.
+	if cur := w.validFoodTarget(e); cur != nil {
+		if adjacent(e.Pos, cur.Pos) {
+			return cur
+		}
+		if _, ok := w.nextStepToward(e.Pos, cur.Pos); ok {
+			return cur
+		}
+		// walled off: digFoodStep keeps the same commitment through rock
+	}
 	// Eats holds a couple of entries, so linear scans beat building sets:
 	// greedy eaters run this every tick for every creature.
 	s := w.spec(e)
@@ -162,6 +175,28 @@ func (w *World) findFood(e *Entity) *Entity {
 		}
 	}
 	return best
+}
+
+// validFoodTarget returns the entity behind e.TargetID while it remains a
+// committed meal: still present, edible to e, not a same-type companion, and
+// (for live prey) only while e stays hungry. Anything else — eaten clean,
+// a social companion, a market — yields nil so a fresh pick happens.
+func (w *World) validFoodTarget(e *Entity) *Entity {
+	if e.TargetID == 0 {
+		return nil
+	}
+	c := w.Entities[e.TargetID]
+	if c == nil || c.ID == e.ID || c.Type == e.Type {
+		return nil
+	}
+	s := w.spec(e)
+	if hungry := e.Fullness < s.HungerThreshold; !hungry && !c.Dead && w.spec(c).Kind == "fauna" {
+		return nil
+	}
+	if !edibleTo(c, s.Eats, s.BiteSize) {
+		return nil
+	}
+	return c
 }
 
 // edibleTo reports whether c offers a bite worth taking (see biteWorthy) of a
@@ -279,7 +314,12 @@ func (w *World) digFoodStep(e *Entity) ([]Event, bool) {
 	if s.MineDamage <= 0 {
 		return nil, false
 	}
-	target := w.nearestSensedFood(e)
+	// sticky here too: a dig in progress is finished before a nearer beacon
+	// may recruit the digger
+	target := w.validFoodTarget(e)
+	if target == nil {
+		target = w.nearestSensedFood(e)
+	}
 	if target == nil {
 		return nil, false
 	}

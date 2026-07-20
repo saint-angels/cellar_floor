@@ -96,6 +96,49 @@ func TestFullDwarfGreedilyConsumesFood(t *testing.T) {
 	}
 }
 
+// Two equidistant beacons must not tug an eater back and forth one step each
+// way: once committed, a dwarf finishes its chosen mushroom before the other
+// one may pull it (sticky food commitment).
+func TestCommittedFoodIsFinishedFirst(t *testing.T) {
+	w := mineWorld(12, 8)
+	a := w.Spawn("shroom", Point{2, 4})
+	b := w.Spawn("shroom", Point{6, 4})
+	a.Produces[0].Regrow = 0
+	b.Produces[0].Regrow = 0
+	d := w.Spawn("dwarf", Point{4, 4}) // exactly between the two
+	d.Fullness = 10
+
+	first := 0
+	for i := 0; i < 60; i++ {
+		w.Step()
+		if first == 0 {
+			first = d.TargetID
+			continue
+		}
+		fe := w.Entities[first]
+		if fe == nil || fe.Dead {
+			break // the committed one is finished
+		}
+		if d.TargetID != first {
+			t.Fatalf("step %d: dwarf switched from %d to %d before finishing its meal", i, first, d.TargetID)
+		}
+	}
+	if first == 0 {
+		t.Fatal("dwarf never committed to a mushroom")
+	}
+	// and the other one is eaten next, not abandoned
+	other := a
+	if first == a.ID {
+		other = b
+	}
+	for i := 0; i < 80 && !other.Dead; i++ {
+		w.Step()
+	}
+	if !other.Dead {
+		t.Fatalf("second mushroom never finished: %.2f left", other.Produces[0].Amount)
+	}
+}
+
 // The beacon model: sensing range is a property of the FOOD, not the eater. A
 // hungry dwarf beyond a food's sense_radius never pursues it — even across
 // open, walkable ground — while one inside the radius goes and eats.
