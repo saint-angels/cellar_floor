@@ -17,10 +17,6 @@
     #timescale button { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; }
     #timescale button.active { background: #4a7c3f; color: #fff; }
     #timescale button.reset { border-color: #6a3a32; color: #d9724a; margin-left: 8px; }
-    #torch-btn { background: #262220; color: #cfc9bf; border: 1px solid #444; padding: 4px 10px; cursor: pointer; margin-top: 6px; }
-    #torch-btn.armed { background: #7a5a1e; color: #fff; }
-    #torch-btn:disabled { opacity: 0.4; cursor: default; }
-    #torch-error { color: #d9724a; min-height: 1em; }
     #goldicon { width: 12px; height: 14px; image-rendering: pixelated; vertical-align: -2px; }
     #debugmenu { position: absolute; top: 8px; left: 8px; display: none; background: rgba(20, 17, 15, 0.95); border: 1px solid #6a5a2e; padding: 10px 14px; z-index: 5; max-height: calc(100% - 24px); overflow-y: auto; }
     #debugmenu h2 { margin: 6px 0 4px; }
@@ -59,7 +55,7 @@
     @media (max-width: 700px) {
       body { flex-direction: column; }
       #map { min-height: 0; }
-      /* the sheet opens on gold, torch, and the level bar; populations,
+      /* the sheet opens on gold and the level bar; populations,
          your dwarf, and events sit below the fold behind its scroll */
       #side { width: auto; max-height: min(240px, 38dvh); border-left: none; border-top: 1px solid #333; }
       #goldbox { order: -1; }
@@ -67,7 +63,7 @@
     /* thumb-sized controls on touch devices */
     @media (pointer: coarse) {
       body { font-size: 15px; }
-      #timescale button, #torch-btn, #debugmenu button, #claimcard button, #spawn-btn { padding: 10px 16px; }
+      #timescale button, #debugmenu button, #claimcard button, #spawn-btn { padding: 10px 16px; }
       #claim-btn { padding: 10px 22px; }
     }
   </style>
@@ -97,9 +93,7 @@
   <div id="side">
     <div><h2>Populations</h2><div id="pops"></div></div>
     <div id="goldbox"><h2>Gold</h2><div id="gold"><img id="goldicon" src="/coin.png" alt=""> <span id="goldnum">0</span></div>
-      <button id="torch-btn" disabled>torch (1 gold)</button>
       <div id="levelbox"><span id="levellabel">Lv 0</span><div id="levelbar"><div id="levelfill"></div></div></div>
-      <div id="torch-error"></div>
     </div>
     <div><h2>Your Dwarf</h2><div id="mydwarf">none</div></div>
     <div style="flex:1;display:flex;flex-direction:column;min-height:0">

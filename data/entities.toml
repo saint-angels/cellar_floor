@@ -80,14 +80,6 @@ thoughts = [
   { when = "always", text = "sniff sniff" },
 ]
 
-[type.torch]
-name = "Torch"
-kind = "structure"
-color = "#ffb347"
-light_radius = 5
-lifespan_days = 1
-decay_hours = 0.5   # burnt stub lingers 30 min
-
 [type.campfire]
 name = "Campfire"
 kind = "structure"

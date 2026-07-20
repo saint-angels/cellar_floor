@@ -5,25 +5,25 @@ import "testing"
 func TestSpawnEntityHappyPath(t *testing.T) {
 	s := newPlayerServer(t)
 	p := findFreeDirt(t, s)
-	before := s.world.CountAlive("torch")
-	ev := s.spawnEntity("torch", p.X, p.Y)
+	before := s.world.CountAlive("campfire")
+	ev := s.spawnEntity("campfire", p.X, p.Y)
 	if ev == nil {
 		t.Fatal("spawnEntity returned nil on a valid tile")
 	}
 	if ev.Type != "placed" {
 		t.Fatalf("event type = %q, want placed", ev.Type)
 	}
-	if got := s.world.CountAlive("torch"); got != before+1 {
-		t.Fatalf("torch count = %d, want %d", got, before+1)
+	if got := s.world.CountAlive("campfire"); got != before+1 {
+		t.Fatalf("campfire count = %d, want %d", got, before+1)
 	}
 	found := false
 	for _, e := range s.world.Entities {
-		if e.Type == "torch" && e.Pos == p {
+		if e.Type == "campfire" && e.Pos == p {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatal("torch not spawned on the target tile")
+		t.Fatal("campfire not spawned on the target tile")
 	}
 }
 
@@ -34,15 +34,15 @@ func TestSpawnEntityValidation(t *testing.T) {
 	if ev := s.spawnEntity("dragon", free.X, free.Y); ev != nil {
 		t.Fatal("unknown type must be rejected")
 	}
-	if ev := s.spawnEntity("torch", -1, 0); ev != nil {
+	if ev := s.spawnEntity("campfire", -1, 0); ev != nil {
 		t.Fatal("out of bounds must be rejected")
 	}
 	rock := findRock(t, s)
-	if ev := s.spawnEntity("torch", rock.X, rock.Y); ev != nil {
+	if ev := s.spawnEntity("campfire", rock.X, rock.Y); ev != nil {
 		t.Fatal("impassable cell must be rejected")
 	}
 	structPos := findStructure(t, s)
-	if ev := s.spawnEntity("torch", structPos.X, structPos.Y); ev != nil {
+	if ev := s.spawnEntity("campfire", structPos.X, structPos.Y); ev != nil {
 		t.Fatal("a second structure on an occupied cell must be rejected")
 	}
 }

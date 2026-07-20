@@ -264,16 +264,6 @@ func (s *Server) handleWS(rw http.ResponseWriter, r *http.Request) {
 					default:
 					}
 				}
-			case m.Type == "torch" && m.Player != "":
-				s.mu.Lock()
-				pm := s.placeTorch(m.Player, m.X, m.Y)
-				s.mu.Unlock()
-				if b, err := json.Marshal(pm); err == nil {
-					select {
-					case c.send <- b:
-					default:
-					}
-				}
 			}
 		}
 	}()

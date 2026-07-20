@@ -97,42 +97,6 @@ func TestWSHelloSpawnFlow(t *testing.T) {
 	}
 }
 
-func TestWSTorch(t *testing.T) {
-	s, ts := newWSServer(t)
-	c := dialWS(t, ts)
-
-	send(t, c, map[string]any{"type": "spawn", "player": "tok1", "name": "Misha"})
-	pm := readPlayerMsg(t, c)
-	if pm.State != "alive" {
-		t.Fatalf("spawn: %+v", pm)
-	}
-
-	s.mu.Lock()
-	s.world.Gold = 3
-	p := findFreeDirt(t, s)
-	s.mu.Unlock()
-
-	send(t, c, map[string]any{"type": "torch", "player": "tok1", "x": p.X, "y": p.Y})
-	if res := readPlayerMsg(t, c); res.Error != "" {
-		t.Fatalf("torch reply error: %q", res.Error)
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.world.Gold != 2 {
-		t.Fatalf("gold = %d, want 2", s.world.Gold)
-	}
-	found := false
-	for _, e := range s.world.Entities {
-		if e.Type == "torch" && e.Pos == p {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("torch entity not spawned")
-	}
-}
-
 func TestWSClaim(t *testing.T) {
 	s, ts := newWSServer(t)
 	c := dialWS(t, ts)

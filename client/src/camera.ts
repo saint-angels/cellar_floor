@@ -14,7 +14,7 @@ let lastY = 0;
 let suppressClick = false;
 
 // consumePan reports and clears the swallow flag set by a real drag, so
-// the click that ends a pan never selects an entity or places a torch.
+// the click that ends a pan never selects or places an entity.
 export function consumePan(): boolean {
   const s = suppressClick;
   suppressClick = false;

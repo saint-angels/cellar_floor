@@ -10,7 +10,7 @@ import (
 )
 
 // firstSpawnGold is the colony gold a brand-new player brings along,
-// enough for a few torches to direct their dwarf from the start.
+// enough to place a little food and direct their dwarf from the start.
 const firstSpawnGold = 5
 
 // Player ties an anonymous browser token to a dwarf. Ownership is a server

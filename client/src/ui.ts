@@ -1,5 +1,5 @@
 import { world } from "./world";
-import { sendClaim, sendDebug, sendReset, sendSpawn, sendSpawnEntity, sendTimescale, sendTorch } from "./net";
+import { sendClaim, sendDebug, sendReset, sendSpawn, sendSpawnEntity, sendTimescale } from "./net";
 import { consumePan } from "./camera";
 import type { SimEvent } from "./types";
 
@@ -11,7 +11,6 @@ export function initUI(
   initEvents();
   initInspector(canvas, tileFromPixel);
   initOverlay();
-  initTorch();
   initLevel();
   initRecap();
   initDebug();
@@ -23,11 +22,10 @@ export function initUI(
 }
 
 let spectating = false;
-let torchArmed = false;
 let placingEntity: string | null = null;
 
 function updatePlacingCursor() {
-  document.getElementById("map")!.classList.toggle("placing", torchArmed || placingEntity !== null);
+  document.getElementById("map")!.classList.toggle("placing", placingEntity !== null);
 }
 
 function armEntityButtons(id: string | null) {
@@ -36,45 +34,15 @@ function armEntityButtons(id: string | null) {
   }
 }
 
-function setTorchArmed(on: boolean) {
-  if (on && placingEntity) {
-    placingEntity = null; // torch and entity placement are exclusive
-    armEntityButtons(null);
-  }
-  torchArmed = on;
-  const btn = document.getElementById("torch-btn") as HTMLButtonElement;
-  btn.classList.toggle("armed", on);
-  btn.textContent = on ? "click the map" : "torch (1 gold)";
-  updatePlacingCursor();
-}
-
 // debug: arm placement of an entity type; click the map to drop one. Stays
 // armed for repeated placement until Escape or toggled off.
 function setPlacingEntity(id: string | null) {
   placingEntity = id;
   armEntityButtons(id);
   if (id) {
-    if (torchArmed) setTorchArmed(false);
     document.getElementById("debugmenu")!.style.display = "none";
   }
   updatePlacingCursor();
-}
-
-function initTorch() {
-  const btn = document.getElementById("torch-btn") as HTMLButtonElement;
-  btn.onclick = () => setTorchArmed(!torchArmed);
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      setTorchArmed(false);
-      setPlacingEntity(null);
-    }
-  });
-  world.onChange(() => {
-    btn.disabled = !(world.playerState === "alive" && world.gold >= 1);
-    if (btn.disabled && torchArmed) setTorchArmed(false);
-    const err = document.getElementById("torch-error")!;
-    err.textContent = world.playerState === "alive" ? world.playerError : "";
-  });
 }
 
 // a one-line effect description per upgrade kind for the offer buttons
@@ -250,6 +218,10 @@ function initDebug() {
     menu.style.display = menu.style.display === "block" ? "none" : "block";
   };
   window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      setPlacingEntity(null); // cancel an armed entity placement
+      return;
+    }
     if (e.key !== "Tab") return;
     const t = e.target as HTMLElement;
     if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
@@ -412,11 +384,6 @@ function initInspector(
     if (placingEntity) {
       sendSpawnEntity(placingEntity, t.x, t.y);
       return; // stay armed so several can be dropped; Escape to stop
-    }
-    if (torchArmed) {
-      sendTorch(t.x, t.y);
-      setTorchArmed(false);
-      return;
     }
     let picked: number | null = null;
     let bestD = 3;
