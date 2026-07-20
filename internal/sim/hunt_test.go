@@ -16,6 +16,7 @@ func TestHungryDwarfHuntsAndEatsRabbit(t *testing.T) {
 	cfg.Types["rabbit"] = &data.EntityType{
 		ID: "rabbit", Name: "Rabbit", Kind: "fauna", Color: "#fff",
 		Eats:            []string{"shroom"},
+		SenseRadius:     6, // prey scent: the dwarf senses it within 6 tiles
 		Produces:        []data.Produce{{Resource: "meat", Amount: 4, Max: 4}},
 		BiteSize:        1,
 		StomachSize:     6,

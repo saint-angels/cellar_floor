@@ -29,12 +29,13 @@ func mineCfg() *data.Config {
 		Terrain: canonicalWithHP(),
 		Types: map[string]*data.EntityType{
 			"shroom": {ID: "shroom", Name: "Shroom", Kind: "flora", Color: "#fff",
-				Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.01}}},
+				SenseRadius: 8, // beacon: eaters sense it within 8 tiles, through rock
+				Produces:    []data.Produce{{Resource: "shroom", Amount: 6, Max: 6, Regrow: 0.01}}},
 			"dwarf": {ID: "dwarf", Name: "Dwarf", Kind: "fauna", Color: "#fff",
 				Eats: []string{"shroom"}, BiteSize: 2, StomachSize: 10, HungerThreshold: 4,
 				Metabolism: 0.0001, StarveTicks: 100000, Speed: 1, Lifespan: 1 << 30,
 				MatureAge: 1 << 30, PopCap: 10, DecayTicks: 100,
-				MineDamage: 1, SenseRadius: 8},
+				MineDamage: 1},
 			// Miner used by the lit-face gate tests. It also does 1 damage per
 			// tick; the gate worlds use a 10000 hp face so a face never mines
 			// out before a torch burns dark.

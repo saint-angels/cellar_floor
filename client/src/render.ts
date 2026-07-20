@@ -113,10 +113,6 @@ export function startRender(canvas: HTMLCanvasElement) {
         return 3;
       };
       const drawList = [...world.entities.values()].sort((a, b) => zOf(a) - zOf(b));
-      // a persistent thin line from each digger to the food it is committed to
-      // (TargetID), so a mushroom planted in the dark reveals which dwarf is
-      // tunnelling toward it. Only diggers (senseRadius > 0) and only edible
-      // targets, so haul (market) and social (companion) lines never appear.
       const centerOf = (e: import("./types").RenderEntity) => {
         const t = Math.min(1, (now - e.movedAt) / lerpMs);
         return {
@@ -124,12 +120,33 @@ export function startRender(canvas: HTMLCanvasElement) {
           cy: (e.py + (e.y - e.py) * t) * TILE + TILE / 2,
         };
       };
+      // beacon rings: every living food broadcasts its own sense radius — the
+      // ring is both its catch range and how deep a buried one commits a dig,
+      // so reach is plannable when placing the next piece of a chain
       ctx.save();
+      ctx.lineWidth = 0.75;
+      ctx.setLineDash([4, 3]);
+      for (const e of drawList) {
+        const sp = world.types[e.s];
+        const r = sp?.senseRadius ?? 0;
+        if (!sp || e.dead || r <= 0) continue;
+        const c = centerOf(e);
+        ctx.strokeStyle = sp.color;
+        ctx.globalAlpha = 0.45;
+        ctx.beginPath();
+        ctx.arc(c.cx, c.cy, (r + 0.5) * TILE, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      // a persistent thin line from each pursuer to the food it is committed
+      // to (TargetID), so a mushroom planted in the dark reveals which dwarf
+      // is tunnelling toward it. Only edible targets, so haul (market) and
+      // social (companion) lines never appear.
       ctx.lineWidth = 0.75;
       ctx.setLineDash([3, 3]);
       for (const e of drawList) {
         const sp = world.types[e.s];
-        if (!sp || e.dead || !(sp.senseRadius ?? 0) || !e.tid || !sp.eats) continue;
+        if (!sp || e.dead || sp.kind !== "fauna" || !e.tid || !sp.eats) continue;
         const tgt = world.entities.get(e.tid);
         if (!tgt || tgt.dead || !tgt.res) continue;
         if (!Object.keys(tgt.res).some((r) => sp.eats!.includes(r))) continue;

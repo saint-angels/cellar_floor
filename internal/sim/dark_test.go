@@ -88,7 +88,8 @@ func TestHungrySeekerRoutesAroundWalls(t *testing.T) {
 	cfg := darkCfg()
 	cfg.Types["miner"].HungerThreshold = 9
 	cfg.Types["shroomy"] = &data.EntityType{ID: "shroomy", Name: "Shroomy", Kind: "flora", Color: "#fff",
-		Produces: []data.Produce{{Resource: "shroom", Amount: 6, Max: 6}}}
+		SenseRadius: 8, // beacon: the seeker must sense both mushrooms
+		Produces:    []data.Produce{{Resource: "shroom", Amount: 6, Max: 6}}}
 	cfg.Types["miner"].Eats = []string{"shroom"}
 	w := NewWorld(11, 11, 1, cfg)
 	w.Spawn("campfire", Point{5, 5}) // small light; irrelevant, keep dwarf calm

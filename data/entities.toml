@@ -3,6 +3,7 @@ name = "Mushroom"
 kind = "flora"
 color = "#c4b5d9"
 cost = 1 # gold a player pays to plant one; the main way to steer dwarves
+sense_radius = 8 # beacon: eaters sense this within 8 tiles, through rock — both catch range and dig depth
 produces = [{ resource = "mushroom", amount = 6, max = 6, regrow_days = 0.01 }]
 
 [type.dwarf]
@@ -11,7 +12,6 @@ kind = "fauna"
 color = "#d9a066"
 light_radius = 2 # carries its own light; the world is otherwise dark
 eats = ["mushroom", "meat"] # hunts rabbits for meat when hungry
-sense_radius = 8 # smells food this far, through rock, and digs to reach it
 bite_size = 2.0
 stomach_size = 10.0
 hunger_threshold = 4.0
@@ -58,6 +58,7 @@ name = "Rabbit"
 kind = "fauna"
 color = "#e8e4dc"
 eats = ["mushroom"]
+sense_radius = 6 # prey scent: hunters sense the rabbit (alive or corpse) within 6 tiles
 produces = [{ resource = "meat", amount = 4, max = 4, regrow_days = 0 }]
 bite_size = 1.0
 stomach_size = 6.0

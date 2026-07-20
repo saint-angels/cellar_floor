@@ -64,9 +64,9 @@ func (w *World) aiStep(e *Entity) []Event {
 			w.pathToward(e, food.Pos)
 			return nil
 		}
-		// no walk-reachable food: tunnel toward the nearest food sensed
-		// through rock within the dig radius (place food behind a wall and the
-		// dwarf digs to reach it)
+		// no walk-reachable food: tunnel toward the nearest food whose beacon
+		// reaches through the rock (place food behind a wall and the dwarf
+		// digs to reach it)
 		if evs, dug := w.digFoodStep(e); dug {
 			return evs
 		}
@@ -151,6 +151,12 @@ func (w *World) findFood(e *Entity) *Entity {
 		if !edible {
 			continue
 		}
+		// beacon model: food is sensed only within ITS OWN radius (a property
+		// of the food, not the eater). Anything farther simply does not exist
+		// to a hungry creature — it wanders until a beacon catches it.
+		if Dist(e.Pos, c.Pos) > w.spec(c).SenseRadius {
+			continue
+		}
 		edibles = append(edibles, c)
 		if d := Dist(e.Pos, c.Pos); d < bestD {
 			nearest, bestD = c, d
@@ -196,14 +202,14 @@ func edibleTo(c *Entity, eats []string, minBite float64) bool {
 	return false
 }
 
-// nearestSensedFood returns the closest edible within the digger's sense
-// radius, measured in a straight line so it reaches through rock. Distinct from
-// findFood, which only sees food it can already walk to.
+// nearestSensedFood returns the closest edible whose own sense radius covers
+// the eater, measured in a straight line so a beacon reaches through rock.
+// Distinct from findFood, which only sees food it can already walk to.
 func (w *World) nearestSensedFood(e *Entity) *Entity {
 	s := w.spec(e)
 	minBite := s.BiteSize * 0.5
 	var best *Entity
-	bestD := s.SenseRadius + 1
+	bestD := 1 << 30
 	for _, c := range w.entities() {
 		if c.ID == e.ID || c.Type == e.Type {
 			continue
@@ -211,7 +217,7 @@ func (w *World) nearestSensedFood(e *Entity) *Entity {
 		if !edibleTo(c, s.Eats, minBite) {
 			continue
 		}
-		if d := Dist(e.Pos, c.Pos); d <= s.SenseRadius && d < bestD {
+		if d := Dist(e.Pos, c.Pos); d <= w.spec(c).SenseRadius && d < bestD {
 			best, bestD = c, d
 		}
 	}
@@ -258,12 +264,14 @@ func (w *World) stepTowardBuried(from, to Point) (step Point, isDig, ok bool) {
 }
 
 // digFoodStep is the core of food-directed digging: a hungry dwarf with no
-// walk-reachable food commits to the nearest food it senses within its radius
-// and tunnels toward it, mining the rock in the way. Returns (events, true)
+// walk-reachable food commits to the nearest food whose beacon radius reaches
+// it and tunnels toward it, mining the rock in the way. Returns (events, true)
 // when it spent the tick on this.
 func (w *World) digFoodStep(e *Entity) ([]Event, bool) {
 	s := w.spec(e)
-	if s.SenseRadius <= 0 || s.MineDamage <= 0 {
+	// sensing range lives on the food (its beacon radius), so the only
+	// eater-side requirement is being able to dig at all
+	if s.MineDamage <= 0 {
 		return nil, false
 	}
 	target := w.nearestSensedFood(e)

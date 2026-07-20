@@ -2,12 +2,14 @@
 name = "Grass"
 kind = "flora"
 color = "#69a85c"
+sense_radius = 12 # beacon: eaten food must say how far it is sensed
 produces = [{ resource = "grass", amount = 5, max = 5, regrow_days = 0.0003215020576131687 }]
 
 [type.bush]
 name = "Berry Bush"
 kind = "flora"
 color = "#2d6a4f"
+sense_radius = 12
 produces = [{ resource = "berries", amount = 8, max = 8, regrow_days = 0.004629629629629629 }]
 
 [type.tree]
@@ -20,6 +22,7 @@ produces = [{ resource = "wood", amount = 20, max = 20, regrow_days = 0 }]
 name = "Rabbit"
 kind = "fauna"
 color = "#e8e4dc"
+sense_radius = 10 # prey scent for wolves
 produces = [
   { resource = "meat", amount = 4, max = 4, regrow_days = 0 },
   { resource = "fur",  amount = 1, max = 1, regrow_days = 0 },
@@ -48,6 +51,7 @@ decay_hours = 0.05555555555555555
 name = "Wolf"
 kind = "fauna"
 color = "#8a8d91"
+sense_radius = 10 # wolves produce meat too (corpse-eaten), so they carry a scent
 produces = [
   { resource = "meat", amount = 4, max = 4, regrow_days = 0 },
   { resource = "fur",  amount = 2, max = 2, regrow_days = 0 },

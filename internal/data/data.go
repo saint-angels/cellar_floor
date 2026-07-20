@@ -68,7 +68,7 @@ type EntityType struct {
 	DecayTicks        int       `toml:"-" json:"decayTicks"`
 	DecayHours        float64   `toml:"decay_hours" json:"-"`
 	MineDamage        int       `toml:"mine_damage" json:"mineDamage"`
-	SenseRadius       int       `toml:"sense_radius" json:"senseRadius"` // how far a digger smells buried food
+	SenseRadius       int       `toml:"sense_radius" json:"senseRadius"` // beacon: how far eaters sense THIS entity as food, through rock
 	SocialSize        float64   `toml:"social_size" json:"socialSize"`
 	SocialThreshold   float64   `toml:"social_threshold" json:"socialThreshold"`
 	SocialRadius      int       `toml:"social_radius" json:"-"`
@@ -326,6 +326,12 @@ func Validate(cfg *Config) error {
 			produced[p.Resource] = true
 		}
 	}
+	eaten := map[string]bool{}
+	for _, s := range cfg.Types {
+		for _, r := range s.Eats {
+			eaten[r] = true
+		}
+	}
 	for id, s := range cfg.Types {
 		if s.Kind != "flora" && s.Kind != "fauna" && s.Kind != "structure" {
 			return fmt.Errorf("type %s: kind must be flora, fauna or structure, got %q", id, s.Kind)
@@ -341,6 +347,16 @@ func Validate(cfg *Config) error {
 		}
 		if s.Cost < 0 {
 			return fmt.Errorf("type %s: cost must be non-negative", id)
+		}
+		if s.SenseRadius < 0 {
+			return fmt.Errorf("type %s: sense_radius must be non-negative", id)
+		}
+		// beacon model: eaters only sense food within the FOOD's sense_radius,
+		// so an edible type without one would silently never be eaten
+		for _, p := range s.Produces {
+			if eaten[p.Resource] && s.SenseRadius <= 0 {
+				return fmt.Errorf("type %s: produces edible %q but has no sense_radius; eaters could never find it", id, p.Resource)
+			}
 		}
 		// only flora is player-buyable for now: food you plant for dwarves
 		if s.Cost > 0 && s.Kind != "flora" {

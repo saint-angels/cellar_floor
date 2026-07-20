@@ -69,6 +69,39 @@ func TestBuriedDigKeepsFoodTarget(t *testing.T) {
 	}
 }
 
+// The beacon model: sensing range is a property of the FOOD, not the eater. A
+// hungry dwarf beyond a food's sense_radius never pursues it — even across
+// open, walkable ground — while one inside the radius goes and eats.
+func TestFoodBeaconRadiusGatesPursuit(t *testing.T) {
+	w := mineWorld(30, 8) // all-grass, sunstone-lit: pure open ground
+	w.Cfg().Types["shroom"].SenseRadius = 3
+	w.Spawn("shroom", Point{25, 4})
+
+	far := w.Spawn("dwarf", Point{4, 4}) // Dist 21: far outside the beacon
+	far.Fullness = 1
+	for i := 0; i < 8; i++ {
+		w.Step()
+		if far.Action == "seeking food" || far.Action == "eating" {
+			t.Fatalf("dwarf pursued food from outside its beacon (step %d)", i)
+		}
+	}
+	if far.Fullness > 1 {
+		t.Fatalf("dwarf ate food it could not sense: fullness %.2f", far.Fullness)
+	}
+
+	w2 := mineWorld(30, 8)
+	w2.Cfg().Types["shroom"].SenseRadius = 3
+	w2.Spawn("shroom", Point{25, 4})
+	near := w2.Spawn("dwarf", Point{23, 4}) // Dist 2: inside the beacon
+	near.Fullness = 1
+	for i := 0; i < 10 && near.Fullness <= 1; i++ {
+		w2.Step()
+	}
+	if near.Fullness <= 1 {
+		t.Fatalf("dwarf inside the beacon never ate: action %q", near.Action)
+	}
+}
+
 // With no food sensed at all, digFoodStep must stay out of the way: the dwarf
 // falls through to searching rather than tunnelling at random.
 func TestNoSensedFoodNoDigging(t *testing.T) {

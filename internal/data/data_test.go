@@ -67,6 +67,7 @@ func TestMiningFieldsParse(t *testing.T) {
 name = "Shroom"
 kind = "flora"
 color = "#fff"
+sense_radius = 8
 produces = [{ resource = "shroom", amount = 6, max = 6, regrow_days = 0.034722222222222224 }]
 
 [type.dwarf]
@@ -168,6 +169,19 @@ func TestValidationRejectsBadFauna(t *testing.T) {
 	}
 }
 
+// Beacon model: eaters only sense food within the food's own radius, so an
+// edible type without one would silently never be eaten — the load must fail.
+func TestEdibleWithoutSenseRadiusRejected(t *testing.T) {
+	cfg, err := Load(dataDir(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Types["mushroom"].SenseRadius = 0
+	if err := Validate(cfg); err == nil {
+		t.Fatal("edible type without sense_radius must fail validation")
+	}
+}
+
 func TestUnitFieldsConvertToTicks(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name, body string) {
@@ -184,6 +198,7 @@ func TestUnitFieldsConvertToTicks(t *testing.T) {
 name = "Shroom"
 kind = "flora"
 color = "#fff"
+sense_radius = 8
 produces = [{ resource = "shroom", amount = 6, max = 6, regrow_days = 1.75 }]
 
 [type.digger]
