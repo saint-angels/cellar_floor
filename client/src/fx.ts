@@ -13,6 +13,8 @@ const DEBRIS_COLOR = "#8a8a8a";
 
 const SHAKE_MS = 200;
 const SHAKE_AMP = 1; // px, a very tiny rattle
+const FLASH_MS = 140;    // white pop at the moment of impact
+const FLASH_ALPHA = 0.7; // starting brightness of the flash
 
 const FLOAT_RISE_MS = 400;
 const FLOAT_FADE_MS = 600;
@@ -294,6 +296,13 @@ export function drawShakes(ctx: CanvasRenderingContext2D, now: number) {
     const y = Math.floor(cell / world.width) * TILE;
     ctx.fillStyle = color;
     ctx.fillRect(x + dx, y + dy, TILE, TILE);
+    if (age < FLASH_MS) {
+      // the struck face pops white on impact, fading over the first frames
+      ctx.globalAlpha = FLASH_ALPHA * (1 - age / FLASH_MS);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(x + dx, y + dy, TILE, TILE);
+      ctx.globalAlpha = 1;
+    }
   }
 }
 
