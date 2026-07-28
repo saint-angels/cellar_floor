@@ -64,7 +64,9 @@ Suggestions in this direction (backlog, not the current focus):
 Engine inventory finding: most wanted gameplay is ALREADY CODED and dormant
 — zeroed out in data, not missing from the engine. Ranked by leverage:
 
-1. DWARF REPRODUCTION — population as the real progression number.
+1. DWARF REPRODUCTION — SHIPPED 2026-07-28 (threshold 9/10, chance 0.001
+   per eligible tick, cost 5, mature 2 days, pop_cap 20 shared with player
+   spawns; born dwarves are unowned colony-folk).
    reproduceAndGuard is fully built (repro_threshold/chance/cost, mature,
    pop_cap, "born" events); every live fauna just sets repro_chance = 0.
    Flip it on for dwarves: well-fed dwarves breed -> gardens literally grow

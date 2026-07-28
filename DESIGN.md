@@ -57,6 +57,11 @@ is a deliberate decision, not a side effect.
   rock toward food buried beyond a wall — and mines only as the act of
   reaching it. Players plant food (spending gold) to steer; a dwarf with
   nothing to reach does not mine. Gold falls out of the rock broken on the way.
+- **Population is progress.** A well-fed colony grows: a feasted dwarf
+  (fullness near full) may bear a colony-born dwarf — unowned commons-folk,
+  like any other. Food surplus converts into mouths, mouths into diggers,
+  diggers into reach; starvation shrinks the colony back. The number that
+  matters is heads, not coins.
 - **The events feed is the narrator.** Anything notable that happens should
   emit a small human-readable event ("Dwarf struck gold").
 

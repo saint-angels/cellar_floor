@@ -24,12 +24,16 @@ cells_per_second = 1.0
 wander_chance = 0.6
 home_range = 0
 lifespan_days = 58
-mature_days = 6
+mature_days = 2      # a newborn digs alongside the grown-ups after two days
+# breeding: only a FEASTED dwarf rolls (threshold 9 of 10, so just after a
+# big meal), each birth costs 5 fullness (re-feast between children), and
+# the roll is per tick while eligible (~11% per feast at 0.001). Feed the
+# colony well and it grows: population is the number that matters.
 repro_threshold = 9.0
-repro_chance = 0.0
+repro_chance = 0.001
 repro_cost = 5.0
 pop_floor = 0
-pop_cap = 10
+pop_cap = 20         # shared by births AND new-player spawns; keep room for newcomers
 decay_hours = 24
 mine_damage = 1
 social_size = 10
