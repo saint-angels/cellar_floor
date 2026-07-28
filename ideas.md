@@ -59,6 +59,53 @@ Suggestions in this direction (backlog, not the current focus):
   per-player dwarf identity toward "the colony you shaped" (ties to the note
   above — maybe they aren't dwarves).
 
+# Beyond gardens: gameplay research (2026-07-28)
+
+Engine inventory finding: most wanted gameplay is ALREADY CODED and dormant
+— zeroed out in data, not missing from the engine. Ranked by leverage:
+
+1. DWARF REPRODUCTION — population as the real progression number.
+   reproduceAndGuard is fully built (repro_threshold/chance/cost, mature,
+   pop_cap, "born" events); every live fauna just sets repro_chance = 0.
+   Flip it on for dwarves: well-fed dwarves breed -> gardens literally grow
+   the colony -> more diggers -> more reach. Answers "I don't care about a
+   bazillion coins": you care about MOUTHS. Starvation becomes real loss.
+   Data-only. Pairs with gardens (they're the fuel). Decide: born dwarves
+   are unowned colony-folk (fits the commons; players adopt/name later?).
+2. BUYABLE LIGHT — the first permanent gold sink. Torches (burnout,
+   light_radius) exist only in tests; live players cannot buy light at all
+   (buyfood is flora-only, validation forbids costed non-flora). Small
+   code: allow costed structures. Then: cheap burning torch (recurring
+   sink) vs pricey eternal lantern. Feeds everything: lit faces to dig,
+   mold-frontier war, garden protection, gold -> visible permanent stuff.
+3. BURIED CACHES — discovery layer, data-only TODAY. Worldgen scatter can
+   place flora on rock terrain (flora may sit buried in mineable rock);
+   client draws beacon rings for all living food, so a buried cache shows
+   a ring through the fog = a mystery marker that is NOT money. Strange
+   mushrooms deep in the rock, big-radius, feast-sized.
+4. A PREDATOR IN THE DEEP — stakes. Flee/hunt is diet-driven
+   (Eats vs Produces); dwarves are unkillable only because they produce
+   nothing. Give dwarf produces=[meat], add a wolf that eats meat, dwarf
+   fear_radius > 0 -> dwarves flee, predators hunt. Only after population
+   exists to threaten (needs 1). Data-only. Frustration risk: keep them
+   deep/rare.
+5. PER-PLAYER CONTRIBUTION — collective texture. No per-player score
+   exists; per-dwarf GoldStrikes already tracks who caused what. Surface
+   "gold you caused / blocks your dwarf broke" in recap + a small board.
+6. SHELTER/HOME RHYTHM — shelterStep is fully coded, zero live users
+   (no type sets shelters, home_range = 0). Dwarves with
+   shelters=["mushroom"] would HOME at a garden: sortie-and-return rhythm
+   for free. Cheap data experiment alongside gardens.
+
+Smaller finds: structure lifespan/burnout live-unused (campfire eternal);
+darkStep never fires for dwarves (they carry light); social system is
+single-species (dwarf-only) but already makes them cluster at thresholds;
+water is a permanent unmineable barrier (good geography, no interactions);
+market is pure decor kept by migration; `desires`/`Aversion` fields are
+dead code — delete or wire as food-preference variety bonus someday.
+
+Suggested order: repro -> buyable light -> caches -> predator -> scoring.
+
 # Garden plot (researched 2026-07-28, not yet built)
 
 The engine already IS a garden engine — v1 is a pure data entry (flora with
