@@ -32,7 +32,6 @@ pop_floor = 0
 pop_cap = 10
 decay_hours = 24
 mine_damage = 1
-carry_capacity = 3
 social_size = 10
 social_threshold = 4
 social_radius = 3
@@ -47,7 +46,6 @@ thoughts = [
   { when = "lonely",        text = "feeling lonely" },
   { when = "struck_gold",   text = "struck {gold} gold today!" },
   { when = "seen_recently", text = "seen {name} recently!" },
-  { when = "hauling",       text = "off to market with my haul" },
   { when = "always",        text = "content" },
 ]
 

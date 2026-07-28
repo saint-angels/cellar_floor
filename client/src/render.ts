@@ -63,7 +63,6 @@ export function composeThought(e: import("./types").RenderEntity): string | null
       case "hungry": match = e.full < sp.hungerThreshold; break;
       case "lonely": match = sp.socialSize > 0 && (e.soc ?? 0) < sp.socialThreshold; break;
       case "struck_gold": match = (e.g24 ?? 0) > 0; break;
-      case "hauling": match = (e.ore ?? 0) > 0; break;
       case "seen_recently": match = !!e.seenTick && world.tick - e.seenTick <= dayTicks; break;
       case "always": match = true; break;
     }
@@ -188,10 +187,6 @@ export function startRender(canvas: HTMLCanvasElement) {
           ctx.scale(dir, 1);
           ctx.drawImage(atlas, frame * 16, DWARF_ROWS[e.id % 2], DWARF_W, DWARF_H, -w / 2, 0, w, h);
           ctx.restore();
-          if ((e.ore ?? 0) > 0) {
-            ctx.fillStyle = "#d9c14a"; // an ore nugget marks a loaded hauler
-            ctx.fillRect(x, y + TILE - 3, 3, 3);
-          }
         } else {
           ctx.beginPath();
           ctx.arc(x + TILE / 2, y + TILE / 2, TILE / 2 - 1, 0, Math.PI * 2);

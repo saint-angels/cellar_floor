@@ -202,9 +202,6 @@ function renderMyDwarf() {
       if ((sp?.socialSize ?? 0) > 0) {
         lines.push(`social ${(e.soc ?? 0).toFixed(1)} / ${sp!.socialSize}`);
       }
-      if ((sp?.carryCapacity ?? 0) > 0) {
-        lines.push(`carrying ${e.ore ?? 0}/${sp!.carryCapacity} ore`);
-      }
       box.textContent = lines.join("\n");
       return;
     }
@@ -468,9 +465,6 @@ function renderInspector() {
     lines.push(`fullness ${e.full.toFixed(1)} / ${sp.stomachSize}`);
     if (sp.socialSize > 0) {
       lines.push(`social ${(e.soc ?? 0).toFixed(1)} / ${sp.socialSize}`);
-    }
-    if ((sp.carryCapacity ?? 0) > 0) {
-      lines.push(`carrying ${e.ore ?? 0}/${sp.carryCapacity} ore`);
     }
     lines.push(`gold today: ${e.g24 ?? 0}`);
     lines.push(`doing: ${e.action || "idle"}`);

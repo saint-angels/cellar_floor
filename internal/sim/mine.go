@@ -82,32 +82,20 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			}
 			sc := w.cfg.Sim
 			if tt != nil && tt.GoldChance > 0 && w.RandFloat() < tt.GoldChance {
-				lo := sc.GoldMin + w.LuckBonus()
-				hi := sc.GoldMax + w.LuckBonus()
-				amt := lo
-				if hi > lo {
-					amt += w.RandN(hi - lo + 1)
+				// jackpots pay at the rock face, instantly, same as chips —
+				// no hauling, no deposit step
+				amt := sc.GoldMin + w.LuckBonus()
+				if hi := sc.GoldMax + w.LuckBonus(); hi > amt {
+					amt += w.RandN(hi - amt + 1)
 				}
-				if s.CarryCapacity > 0 {
-					// bagged miners carry ore home; the gold is paid at the
-					// market on deposit, not here at the rock face
-					e.Ore += amt
-					w.markDirty(e.ID)
-					evs = append(evs, Event{
-						Tick: w.Tick, Type: "ore", Actor: e.ID, ActorType: e.Type,
-						Amount: amt,
-						Msg:    fmt.Sprintf("%s struck ore", s.Name),
-					})
-				} else {
-					w.Gold += amt
-					w.GoldMined += amt
-					e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
-					w.GoldLast24h(e)
-					evs = append(evs, Event{
-						Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
-						Msg: fmt.Sprintf("%s struck gold", s.Name),
-					})
-				}
+				w.Gold += amt
+				w.GoldMined += amt
+				e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
+				w.GoldLast24h(e)
+				evs = append(evs, Event{
+					Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
+					Msg: fmt.Sprintf("%s struck gold", s.Name),
+				})
 			} else {
 				evs = append(evs, Event{
 					Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,

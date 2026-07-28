@@ -32,7 +32,7 @@ type Thought struct {
 
 var validThoughtConditions = map[string]bool{
 	"starving": true, "hungry": true, "lonely": true,
-	"struck_gold": true, "seen_recently": true, "hauling": true, "always": true,
+	"struck_gold": true, "seen_recently": true, "always": true,
 }
 
 type EntityType struct {
@@ -77,7 +77,6 @@ type EntityType struct {
 	SocialDrain       float64   `toml:"-" json:"-"`
 	SocialRefill      float64   `toml:"-" json:"-"`
 	LightRadius       int       `toml:"light_radius" json:"lightRadius"`
-	CarryCapacity     int       `toml:"carry_capacity" json:"carryCapacity"`
 	Cost              int       `toml:"cost" json:"cost"` // gold a player pays to place one; 0 = not buyable
 	Market            bool      `toml:"market" json:"market"`
 	Thoughts          []Thought `toml:"thoughts" json:"thoughts,omitempty"`
@@ -346,9 +345,6 @@ func Validate(cfg *Config) error {
 		}
 		if s.LightRadius < 0 {
 			return fmt.Errorf("type %s: light_radius must be non-negative", id)
-		}
-		if s.CarryCapacity < 0 {
-			return fmt.Errorf("type %s: carry_capacity must be non-negative", id)
 		}
 		if s.Cost < 0 {
 			return fmt.Errorf("type %s: cost must be non-negative", id)

@@ -350,11 +350,11 @@ func TestThoughtsParseAndValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 	d := cfg.Types["dwarf"]
-	if len(d.Thoughts) != 7 {
-		t.Fatalf("dwarf thoughts = %d, want 7", len(d.Thoughts))
+	if len(d.Thoughts) != 6 {
+		t.Fatalf("dwarf thoughts = %d, want 6", len(d.Thoughts))
 	}
-	if d.Thoughts[0].When != "starving" || d.Thoughts[6].When != "always" {
-		t.Fatalf("thought order wrong: first %q last %q", d.Thoughts[0].When, d.Thoughts[6].When)
+	if d.Thoughts[0].When != "starving" || d.Thoughts[5].When != "always" {
+		t.Fatalf("thought order wrong: first %q last %q", d.Thoughts[0].When, d.Thoughts[5].When)
 	}
 	if m := cfg.Types["mushroom"]; len(m.Thoughts) != 0 {
 		t.Fatal("mushroom should have no thoughts")
@@ -583,31 +583,20 @@ func TestUpgradePoolParses(t *testing.T) {
 	}
 }
 
-func TestCarryCapacityAndMarketParse(t *testing.T) {
+func TestMarketParse(t *testing.T) {
 	cfg, err := Load(dataDir(t))
 	if err != nil {
 		t.Fatal(err)
-	}
-	if cc := cfg.Types["dwarf"].CarryCapacity; cc != 3 {
-		t.Fatalf("dwarf carry_capacity = %d, want 3", cc)
 	}
 	m, ok := cfg.Types["market"]
 	if !ok {
 		t.Fatal("no market type")
 	}
-	if !m.Market || m.Kind != "structure" || m.CarryCapacity != 0 {
+	if !m.Market || m.Kind != "structure" {
 		t.Fatalf("market mis-parsed: %+v", m)
 	}
 	if cfg.Gen.Market != "market" {
 		t.Fatalf("gen market = %q, want \"market\"", cfg.Gen.Market)
-	}
-}
-
-func TestNegativeCarryCapacityRejected(t *testing.T) {
-	cfg := minimalConfig()
-	cfg.Types["shroom"].CarryCapacity = -1
-	if err := Validate(cfg); err == nil {
-		t.Fatal("negative carry_capacity must fail validation")
 	}
 }
 

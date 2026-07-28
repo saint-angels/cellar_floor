@@ -67,7 +67,6 @@ type Entity struct {
 	SeenID      int            `json:"seenId,omitempty"`
 	SeenTick    int64          `json:"seenTick,omitempty"`
 	GoldStrikes []GoldStrike   `json:"goldStrikes,omitempty"`
-	Ore         int            `json:"ore,omitempty"`
 
 	// spec caches cfg.Types[Type]. Unexported, so it never serializes and a
 	// loaded world re-resolves it on first use. The per-tick scans hash this

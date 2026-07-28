@@ -78,29 +78,19 @@ func (w *World) aiStep(e *Entity) []Event {
 		return nil
 	}
 
-	// 4. a full bag heads to the market before mining more
-	if evs, hauled := w.haulStep(e, true); hauled {
-		return evs
-	}
-
-	// 5. finish an assigned dig. mineStep never picks a face on its own now;
+	// 4. finish an assigned dig. mineStep never picks a face on its own now;
 	// it only breaks one already assigned by food-digging, so a fed dwarf
 	// with no buried food to reach never mines (food is the only driver).
 	if evs, mined := w.mineStep(e); mined {
 		return evs
 	}
 
-	// 6. nothing left to mine but ore in the bag: sell the rest
-	if evs, hauled := w.haulStep(e, false); hauled {
-		return evs
-	}
-
-	// 7. shelter
+	// 5. shelter
 	if w.shelterStep(e) {
 		return nil
 	}
 
-	// 8. wander
+	// 6. wander
 	w.setTarget(e, 0)
 	e.Action = "idle"
 	if w.RandFloat() < s.WanderChance {
@@ -706,55 +696,3 @@ func (w *World) shelterStep(e *Entity) bool {
 	return false
 }
 
-// haulStep carries mined ore to the nearest living market and sells it for
-// colony gold. With fullOnly the dwarf only sets out once the bag is full;
-// otherwise it dumps whatever it has left. Returns (events, true) when the
-// tick was spent hauling or depositing. A missing market returns false so
-// the dwarf keeps mining and its ore simply accumulates harmlessly.
-func (w *World) haulStep(e *Entity, fullOnly bool) ([]Event, bool) {
-	s := w.cfg.Types[e.Type]
-	if s.CarryCapacity <= 0 || e.Ore <= 0 {
-		return nil, false
-	}
-	if fullOnly && e.Ore < s.CarryCapacity {
-		return nil, false
-	}
-	var market *Entity
-	bestD := 1 << 30
-	for _, id := range w.SortedIDs() {
-		c := w.Entities[id]
-		if c.Dead {
-			continue
-		}
-		cs, ok := w.cfg.Types[c.Type]
-		if !ok || !cs.Market {
-			continue
-		}
-		if d := Dist(e.Pos, c.Pos); d < bestD {
-			market, bestD = c, d
-		}
-	}
-	if market == nil {
-		return nil, false
-	}
-	if adjacent(e.Pos, market.Pos) {
-		n := e.Ore
-		w.Gold += n
-		w.GoldMined += n // the level bar moves at the market, not the rock
-		e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: n})
-		w.GoldLast24h(e)
-		e.Ore = 0
-		e.Action = "selling"
-		w.setTarget(e, 0)
-		w.markDirty(e.ID)
-		return []Event{{
-			Tick: w.Tick, Type: "sold", Actor: e.ID, ActorType: e.Type,
-			Amount: n,
-			Msg:    fmt.Sprintf("%s sold %d ore", s.Name, n),
-		}}, true
-	}
-	w.setTarget(e, market.ID) // the client ring shows where the haul is headed
-	e.Action = "hauling ore"
-	w.pathToward(e, market.Pos)
-	return nil, true
-}

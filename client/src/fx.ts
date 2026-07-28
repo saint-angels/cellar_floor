@@ -18,7 +18,6 @@ const FLOAT_RISE_MS = 400;
 const FLOAT_FADE_MS = 600;
 const FLOAT_RISE_PX = 8;
 const MAX_FLOATS = 40;
-const FLOAT_COLOR = "#e8e2d8";
 
 interface Particle {
   x: number; y: number;
@@ -36,9 +35,6 @@ interface FloatText {
 
 let particles: Particle[] = [];
 let floats: FloatText[] = [];
-// per cell index: damage already shown, plus the terrain hit points captured
-// at set time (terrain flips to floor on completion, losing the hp otherwise)
-const shownDamage = new Map<number, { shown: number; hp: number }>();
 let fxClock = 0;
 let lastNow = 0;
 const toolCell = new Map<number, number>();
@@ -50,25 +46,9 @@ const shakes = new Map<number, number>(); // cell index -> strike time
 
 const easeInQuad = (t: number) => t * t;
 
-// pop the damage accrued on a cell since its last pop. Only tracks cells
-// the sim is actually damaging; a swept face with no mining entry (unlit,
-// or damage not yet on the wire) would otherwise be baselined at 0 and
-// the completion sweep would pop its full hp.
-function popDamage(cell: number, tileX: number, tileY: number) {
-  const dealt = world.mining[cell];
-  if (dealt == null) return;
-  const rec = shownDamage.get(cell);
-  if (rec == null) {
-    // baseline silently on first sight (fresh page load mid-mine)
-    const hp = world.terrainTypes[world.terrain[cell]]?.hitPoints ?? 0;
-    shownDamage.set(cell, { shown: dealt, hp });
-  } else if (dealt > rec.shown) {
-    spawnFloat(tileX, tileY, String(dealt - rec.shown));
-    rec.shown = dealt;
-  }
-}
-
-function spawnFloat(cellX: number, cellY: number, text: string, color: string = FLOAT_COLOR) {
+// the ONE number stream: gold. Damage progress reads from the mining bar
+// and the break pace; the numbers that pop are always money.
+function spawnFloat(cellX: number, cellY: number, text: string, color: string = CHIP_COLOR) {
   if (floats.length >= MAX_FLOATS) floats.shift();
   floats.push({ x: cellX * TILE + TILE / 2, y: cellY * TILE - 2, text, age: 0, color });
 }
@@ -87,12 +67,6 @@ export function initFx() {
         const c = chips.get(key);
         if (c) c.sum += ev.amount;
         else chips.set(key, { x, y, sum: ev.amount });
-        continue;
-      }
-      if (ev.type === "sold" && ev.amount) {
-        // a gold "+N" pops over the seller at the market on deposit
-        const seller = world.entities.get(ev.actor);
-        if (seller) spawnFloat(seller.x, seller.y, `+${ev.amount}`, "#ffd75e");
         continue;
       }
       if (ev.type !== "gold") continue;
@@ -114,7 +88,6 @@ export function initFx() {
 export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: number) {
   if (world.snapshotVersion !== seenSnapshot) {
     seenSnapshot = world.snapshotVersion;
-    shownDamage.clear();
     floats = [];
     toolCell.clear();
     shakes.clear();
@@ -160,7 +133,6 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
     if (mineable && cell !== prev && running) {
       spawnDebris(tx, ty, cx, cy, DEBRIS_COLOR);
       shakes.set(cell, now);
-      popDamage(cell, cx2, cy2);
     }
     toolCell.set(e.id, cell);
 
@@ -195,9 +167,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         if (p >= 0.8 && running && beamCycle.get(key) !== cycle) {
           beamCycle.set(key, cycle);
           spawnDebris(tgx, tgy, cx, cy, DEBRIS_COLOR);
-          const tcell = e.mt.y * world.width + e.mt.x;
-          shakes.set(tcell, now);
-          popDamage(tcell, e.mt.x, e.mt.y);
+          shakes.set(e.mt.y * world.width + e.mt.x, now);
         }
         continue;
       }
@@ -240,9 +210,7 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
         } else if (running && beamCycle.get(key) !== cycle) {
           beamCycle.set(key, cycle);
           spawnDebris(tgx, tgy, cx, cy, DEBRIS_COLOR);
-          const tcell = e.mt.y * world.width + e.mt.x;
-          shakes.set(tcell, now);
-          popDamage(tcell, e.mt.x, e.mt.y);
+          shakes.set(e.mt.y * world.width + e.mt.x, now);
         }
         continue;
       }
@@ -264,16 +232,6 @@ export function drawEffects(ctx: CanvasRenderingContext2D, now: number, lerpMs: 
       }
       toolCell.set(e.id * 131 + u.radius, wcell);
     }
-  }
-
-  // completion sweep, once per frame: a tracked cell that left the mining map
-  // finished mining; pop the remainder using the hp captured before the flip
-  for (const [cell, rec] of shownDamage) {
-    if (world.mining[cell] != null) continue;
-    if (rec.hp > rec.shown) {
-      spawnFloat(cell % world.width, Math.floor(cell / world.width), String(rec.hp - rec.shown));
-    }
-    shownDamage.delete(cell);
   }
 
   if (running) {

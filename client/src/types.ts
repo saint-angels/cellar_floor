@@ -21,7 +21,6 @@ export interface EntityType {
   shelters: string[] | null;
   thoughts?: Thought[];
   market?: boolean;
-  carryCapacity?: number;
   cost?: number;
 }
 
@@ -50,7 +49,6 @@ export interface EntityView {
   g24?: number;
   seenId?: number;
   seenTick?: number;
-  ore?: number;
 }
 
 export interface Upgrade {
