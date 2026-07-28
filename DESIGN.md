@@ -11,6 +11,11 @@ is a deliberate decision, not a side effect.
   in minutes so the colony visibly moves while you watch.
 - **The canonical world runs at 1x wall-clock.** The 8x/64x buttons are dev
   and observation tools, not gameplay.
+- **Every swing pays.** The most frequent action in the game must be the most
+  frequently rewarded: each mining swing chips a small, deterministic amount
+  of gold (chip_gold per terrain) with a visible float, while the break-time
+  gold_chance roll stays as the jackpot on top. Steady trickle plus rare
+  jackpot — never jackpot alone.
 
 ## World
 

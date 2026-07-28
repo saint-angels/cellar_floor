@@ -73,9 +73,22 @@ function spawnFloat(cellX: number, cellY: number, text: string, color: string = 
   floats.push({ x: cellX * TILE + TILE / 2, y: cellY * TILE - 2, text, age: 0, color });
 }
 
+const CHIP_COLOR = "#ffd75e";
+
 export function initFx() {
   world.onEvents((evs) => {
+    // chip gold: every mining swing pays a little. Coalesce per struck face
+    // per batch so high time scales show one fat "+N" instead of a blizzard.
+    const chips = new Map<number, { x: number; y: number; sum: number }>();
     for (const ev of evs) {
+      if (ev.type === "chip" && ev.amount) {
+        const x = ev.x ?? 0, y = ev.y ?? 0;
+        const key = y * world.width + x;
+        const c = chips.get(key);
+        if (c) c.sum += ev.amount;
+        else chips.set(key, { x, y, sum: ev.amount });
+        continue;
+      }
       if (ev.type === "sold" && ev.amount) {
         // a gold "+N" pops over the seller at the market on deposit
         const seller = world.entities.get(ev.actor);
@@ -94,6 +107,7 @@ export function initFx() {
           life: 0, ttl: 500 + Math.random() * 400, color: "#e8c84a" });
       }
     }
+    for (const c of chips.values()) spawnFloat(c.x, c.y, `+${c.sum}`, CHIP_COLOR);
   });
 }
 

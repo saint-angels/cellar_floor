@@ -4,6 +4,9 @@ players.json
 client/node_modules/
 client/dist/
 
+# Go build cache for containerized builds
+.gocache/
+
 # Go binaries and test artifacts
 *.exe
 *.exe~

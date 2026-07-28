@@ -486,3 +486,36 @@ func TestRecapCountersTrack(t *testing.T) {
 		t.Fatalf("GoldMined = %d, want 2", w.GoldMined)
 	}
 }
+
+// Chip gold: EVERY swing at a face pays that terrain's chip_gold to the
+// colony immediately — digging itself is the income stream, with the
+// break-time gold_chance roll as a jackpot on top. Here chance is zero, so
+// after the 10 hp test rock breaks the pot holds exactly 10 chips, one per
+// swing, and each swing emitted a "chip" event carrying the face position.
+func TestEverySwingChipsGold(t *testing.T) {
+	w := goldDropWorld(t, 0, 1, 3) // rock at {3,2}, no jackpot noise
+	w.Cfg().Terrain[3].ChipGold = 1
+	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 3, 2)
+	chips := 0
+	for i := 0; i < 30; i++ {
+		for _, ev := range w.Step() {
+			if ev.Type != "chip" {
+				continue
+			}
+			chips++
+			if ev.Amount != 1 || ev.X != 3 || ev.Y != 2 {
+				t.Fatalf("chip = amount %d at {%d,%d}, want 1 at {3,2}", ev.Amount, ev.X, ev.Y)
+			}
+		}
+	}
+	if chips != 10 {
+		t.Fatalf("chip events = %d, want one per swing on a 10 hp face", chips)
+	}
+	if w.Gold != 10 {
+		t.Fatalf("gold = %d, want 10 (all chips, no jackpot)", w.Gold)
+	}
+	if w.GoldMined != 10 {
+		t.Fatalf("goldMined = %d, want chips to count toward leveling", w.GoldMined)
+	}
+}

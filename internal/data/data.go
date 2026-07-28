@@ -128,6 +128,7 @@ type TerrainType struct {
 	Mineable      bool    `toml:"mineable" json:"mineable"`
 	HitPoints     int     `toml:"hit_points" json:"hitPoints"`
 	GoldChance    float64 `toml:"gold_chance" json:"goldChance"`
+	ChipGold      int     `toml:"chip_gold" json:"chipGold"` // gold paid on EVERY swing at this face
 	SpreadMinutes float64 `toml:"spread_minutes" json:"-"`
 	SpreadChance  float64 `toml:"-" json:"-"`
 	SproutMinutes float64 `toml:"sprout_minutes" json:"-"`
@@ -282,6 +283,9 @@ func Validate(cfg *Config) error {
 		}
 		if tt.GoldChance < 0 || tt.GoldChance > 1 {
 			return fmt.Errorf("terrain %s: gold_chance must be between 0 and 1", tt.ID)
+		}
+		if tt.ChipGold < 0 {
+			return fmt.Errorf("terrain %s: chip_gold must be non-negative", tt.ID)
 		}
 		if tt.SpreadMinutes < 0 {
 			return fmt.Errorf("terrain %s: spread_minutes must be non-negative", tt.ID)

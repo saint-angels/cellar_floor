@@ -88,6 +88,8 @@ export interface SimEvent {
   targetType?: string;
   msg: string;
   amount?: number;
+  x?: number;
+  y?: number;
 }
 
 export interface TerrainDiff {

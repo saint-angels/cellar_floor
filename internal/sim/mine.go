@@ -43,6 +43,19 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		beam := w.BeamBonus()
 		ti := target.Y*w.Width + target.X
 		var evs []Event
+		// every swing chips gold dust off the chosen face: digging itself
+		// pays, constantly and visibly; the break-time roll below stays the
+		// jackpot on top. Dust is too fine to bag — it goes straight to the
+		// colony pile even for ore-carrying miners, and it stays out of
+		// GoldStrikes so dwarf chatter keeps talking about real strikes.
+		if tt := w.terrainAt(w.Terrain[ti]); tt != nil && tt.ChipGold > 0 {
+			w.Gold += tt.ChipGold
+			w.GoldMined += tt.ChipGold
+			evs = append(evs, Event{
+				Tick: w.Tick, Type: "chip", Actor: e.ID, ActorType: e.Type,
+				Amount: tt.ChipGold, X: target.X, Y: target.Y,
+			})
+		}
 		for _, i := range cells {
 			dmg := base
 			if i == ti {

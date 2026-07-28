@@ -379,6 +379,7 @@ function initEvents() {
   const box = document.getElementById("events")!;
   world.onEvents((evs: SimEvent[]) => {
     for (const ev of evs) {
+      if (ev.type === "chip") continue; // per-swing gold: canvas float, not news
       const d = document.createElement("div");
       d.textContent = `[${ev.tick}] ${ev.msg}`;
       box.prepend(d);

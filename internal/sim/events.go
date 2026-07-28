@@ -8,5 +8,7 @@ type Event struct {
 	Target     int    `json:"target,omitempty"`
 	TargetType string `json:"targetType,omitempty"`
 	Amount     int    `json:"amount,omitempty"`
+	X          int    `json:"x,omitempty"`
+	Y          int    `json:"y,omitempty"`
 	Msg        string `json:"msg"`
 }

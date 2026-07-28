@@ -509,6 +509,12 @@ func TestTerrainGoldAndSpreadValidation(t *testing.T) {
 		t.Fatal("negative spread_minutes must fail")
 	}
 	cfg = minimalConfig()
+	cfg.Terrain = CanonicalTerrain()
+	cfg.Terrain[3].ChipGold = -1
+	if err := Validate(cfg); err == nil {
+		t.Fatal("negative chip_gold must fail")
+	}
+	cfg = minimalConfig()
 	cfg.Gen.Crust = "unobtanium"
 	cfg.Gen.CrustChance = 1
 	if err := Validate(cfg); err == nil {
