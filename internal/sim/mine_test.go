@@ -487,11 +487,12 @@ func TestRecapCountersTrack(t *testing.T) {
 	}
 }
 
-// Chip gold: EVERY swing at a face pays that terrain's chip_gold to the
-// colony immediately — digging itself is the income stream, with the
-// break-time gold_chance roll as a jackpot on top. Here chance is zero, so
-// after the 10 hp test rock breaks the pot holds exactly 10 chips, one per
-// swing, and each swing emitted a "chip" event carrying the face position.
+// Chip gold: damage IS gold. Every point of damage a face absorbs pays that
+// terrain's chip_gold to the colony immediately, with the break-time
+// gold_chance roll as a jackpot on top. Here chance is zero and the miner
+// does 1 damage per swing, so after the 10 hp test rock breaks the pot holds
+// exactly 10, one per swing, each swing emitting a "chip" event carrying the
+// struck face.
 func TestEverySwingChipsGold(t *testing.T) {
 	w := goldDropWorld(t, 0, 1, 3) // rock at {3,2}, no jackpot noise
 	w.Cfg().Terrain[3].ChipGold = 1
@@ -517,5 +518,72 @@ func TestEverySwingChipsGold(t *testing.T) {
 	}
 	if w.GoldMined != 10 {
 		t.Fatalf("goldMined = %d, want chips to count toward leveling", w.GoldMined)
+	}
+}
+
+// Better tools pay better: chip gold equals damage dealt, so a claimed damage
+// upgrade raises income per swing directly. With +2 MineBonus the miner does
+// 3 damage per swing against a 10 hp face — chips of 3, 3, 3, then 1 (the
+// block absorbs only what it has left; overkill past the break pays nothing),
+// totalling exactly the face's hit points.
+func TestChipsScaleWithDamage(t *testing.T) {
+	w := goldDropWorld(t, 0, 1, 3) // rock at {3,2}, 10 hp, no jackpot noise
+	w.Cfg().Terrain[3].ChipGold = 1
+	w.Cfg().Upgrades = []data.Upgrade{{Name: "Sharper Picks", Kind: "damage", Amount: 2}}
+	w.Claims = map[string]int{"Sharper Picks": 1}
+	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 3, 2)
+	var amounts []int
+	for i := 0; i < 20; i++ {
+		for _, ev := range w.Step() {
+			if ev.Type == "chip" {
+				amounts = append(amounts, ev.Amount)
+			}
+		}
+	}
+	want := []int{3, 3, 3, 1}
+	if len(amounts) != len(want) {
+		t.Fatalf("chip amounts = %v, want %v", amounts, want)
+	}
+	for i := range want {
+		if amounts[i] != want[i] {
+			t.Fatalf("chip amounts = %v, want %v", amounts, want)
+		}
+	}
+	if w.Gold != 10 {
+		t.Fatalf("gold = %d, want the face's full 10 hp and not a point more", w.Gold)
+	}
+}
+
+// AOE mining pays per face: every cell splashed by a swing chips for the
+// damage it absorbed, so chewing into two faces at once earns from both.
+// The softish face (5 hp) is the target and breaks after 5 swings, ending
+// the dig with 5 damage also banked in the neighboring rock: 10 gold total.
+func TestSplashDamagePaysChipsPerFace(t *testing.T) {
+	w := goldDropWorld(t, 0, 1, 3)
+	w.Cfg().Terrain[3].ChipGold = 1              // rock
+	w.Cfg().Terrain[5].ChipGold = 1              // softish
+	w.Terrain[idx(w, Point{3, 2})] = Terrain(5)  // softish target, 5 hp
+	w.Terrain[idx(w, Point{3, 3})] = TerrainRock // splashed neighbor, 10 hp
+	e := w.Spawn("miner", Point{2, 2})
+	assignFace(e, 3, 2)
+	perSwing := map[int64]int{}
+	for i := 0; i < 20; i++ {
+		for _, ev := range w.Step() {
+			if ev.Type == "chip" {
+				perSwing[ev.Tick]++
+			}
+		}
+	}
+	for tick, n := range perSwing {
+		if n != 2 {
+			t.Fatalf("tick %d paid %d faces, want 2 (target + splash)", tick, n)
+		}
+	}
+	if len(perSwing) != 5 {
+		t.Fatalf("swings that paid = %d, want 5 (target breaks, dig ends)", len(perSwing))
+	}
+	if w.Gold != 10 {
+		t.Fatalf("gold = %d, want 10 (5 hp target + 5 banked in the rock)", w.Gold)
 	}
 }

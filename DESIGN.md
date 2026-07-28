@@ -11,11 +11,14 @@ is a deliberate decision, not a side effect.
   in minutes so the colony visibly moves while you watch.
 - **The canonical world runs at 1x wall-clock.** The 8x/64x buttons are dev
   and observation tools, not gameplay.
-- **Every swing pays.** The most frequent action in the game must be the most
-  frequently rewarded: each mining swing chips a small, deterministic amount
-  of gold (chip_gold per terrain) with a visible float, while the break-time
-  gold_chance roll stays as the jackpot on top. Steady trickle plus rare
-  jackpot — never jackpot alone.
+- **Damage is gold.** The most frequent action in the game must be the most
+  frequently rewarded: every point of damage a face absorbs pays that
+  terrain's chip_gold immediately, shown as a gold float at the face — so
+  better tools and AOE weapons raise income directly, a block is worth
+  exactly its hit points (overkill pays nothing), and the damage number and
+  the money number are the same number. The break-time gold_chance roll
+  stays as the jackpot on top. Steady trickle plus rare jackpot — never
+  jackpot alone.
 
 ## World
 

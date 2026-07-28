@@ -695,4 +695,3 @@ func (w *World) shelterStep(e *Entity) bool {
 	}
 	return false
 }
-

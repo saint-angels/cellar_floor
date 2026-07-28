@@ -127,7 +127,7 @@ type TerrainType struct {
 	Mineable      bool    `toml:"mineable" json:"mineable"`
 	HitPoints     int     `toml:"hit_points" json:"hitPoints"`
 	GoldChance    float64 `toml:"gold_chance" json:"goldChance"`
-	ChipGold      int     `toml:"chip_gold" json:"chipGold"` // gold paid on EVERY swing at this face
+	ChipGold      int     `toml:"chip_gold" json:"chipGold"` // gold per point of damage this terrain absorbs
 	SpreadMinutes float64 `toml:"spread_minutes" json:"-"`
 	SpreadChance  float64 `toml:"-" json:"-"`
 	SproutMinutes float64 `toml:"sprout_minutes" json:"-"`

@@ -22,7 +22,7 @@ color = "#3a3a3a"
 mineable = true
 hit_points = 172800  # 24h at 1 damage per tick, 2 ticks per second
 gold_chance = 0.9
-chip_gold = 1        # every swing pays: digging is the income stream
+chip_gold = 1        # damage == gold: every damage point absorbed pays this much
 
 [[terrain]]
 id = "floor"
