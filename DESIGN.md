@@ -6,9 +6,11 @@ is a deliberate decision, not a side effect.
 ## Pace
 
 - **Work takes awhile; needs are lively.** Mining and the economy run on
-  hours to real days: a rock cell takes about a day to mine, and the payoff
-  of the game is checking back later. Bodily needs (hunger, company) cycle
-  in minutes so the colony visibly moves while you watch.
+  hours to real days — but the day-scale unit is a PROJECT (a tunnel to a
+  vein, chain and all), not a single block. A rock cell takes hours (~4h),
+  a vein ~2h, and the payoff of the game is checking back later. Bodily
+  needs (hunger, company) cycle in minutes so the colony visibly moves
+  while you watch.
 - **The canonical world runs at 1x wall-clock.** The 8x/64x buttons are dev
   and observation tools, not gameplay.
 - **Damage is gold.** The most frequent action in the game must be the most

@@ -1,8 +1,10 @@
 # colony upgrades: a level curve plus a random draw pool.
 # level_base is the gold cost of the first level; each level costs
-# level_growth times the last, rounded up.
-level_base = 2.0
-level_growth = 1.6
+# level_growth times the last, rounded up. Tuned against chip income
+# (~2 gold/sec per digging dwarf): level 1 in ~30s, level 5 in ~10min,
+# level 10 in ~5h, level 15 in days — shower early, savor later.
+level_base = 50.0
+level_growth = 1.9
 
 [[upgrade]]
 name = "Sharper Picks"

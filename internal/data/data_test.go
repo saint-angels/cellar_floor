@@ -392,7 +392,7 @@ func TestTerrainTableParses(t *testing.T) {
 		}
 	}
 	soft := cfg.Terrain[5]
-	if !soft.Mineable || soft.Passable || soft.HitPoints != 43200 || soft.Color != "#575049" {
+	if !soft.Mineable || soft.Passable || soft.HitPoints != 7200 || soft.Color != "#575049" {
 		t.Fatalf("soft_rock wrong: %+v", soft)
 	}
 	if i, ok := cfg.TerrainIndex("soft_rock"); !ok || i != 5 {
@@ -410,11 +410,11 @@ func TestHitPointsAndDamageParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if hp := cfg.Terrain[3].HitPoints; hp != 172800 {
-		t.Fatalf("rock hp = %d, want 172800", hp)
+	if hp := cfg.Terrain[3].HitPoints; hp != 28800 {
+		t.Fatalf("rock hp = %d, want 28800", hp)
 	}
-	if hp := cfg.Terrain[5].HitPoints; hp != 43200 {
-		t.Fatalf("soft rock hp = %d, want 43200", hp)
+	if hp := cfg.Terrain[5].HitPoints; hp != 7200 {
+		t.Fatalf("soft rock hp = %d, want 7200", hp)
 	}
 	if d := cfg.Types["dwarf"].MineDamage; d != 1 {
 		t.Fatalf("dwarf mine_damage = %d, want 1", d)
@@ -482,7 +482,7 @@ func TestMoldTerrainParses(t *testing.T) {
 	if len(cfg.Terrain) != 8 || cfg.Terrain[6].ID != "mold" {
 		t.Fatalf("terrain[6] should be mold in a table of 8, got %+v", cfg.Terrain)
 	}
-	if v := cfg.Terrain[7]; v.ID != "gold_vein" || !v.Glints || v.ChipGold != 10 || !v.Mineable {
+	if v := cfg.Terrain[7]; v.ID != "gold_vein" || !v.Glints || v.ChipGold != 15 || !v.Mineable {
 		t.Fatalf("gold_vein mis-parsed: %+v", v)
 	}
 	m := cfg.Terrain[6]
@@ -561,8 +561,8 @@ func TestUpgradePoolParses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.LevelBase != 2.0 || cfg.LevelGrowth != 1.6 {
-		t.Fatalf("curve = %v %v, want 2.0 1.6", cfg.LevelBase, cfg.LevelGrowth)
+	if cfg.LevelBase != 50.0 || cfg.LevelGrowth != 1.9 {
+		t.Fatalf("curve = %v %v, want 50.0 1.9", cfg.LevelBase, cfg.LevelGrowth)
 	}
 	if len(cfg.Upgrades) != 7 {
 		t.Fatalf("pool = %d entries, want 7", len(cfg.Upgrades))
