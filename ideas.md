@@ -59,6 +59,44 @@ Suggestions in this direction (backlog, not the current focus):
   per-player dwarf identity toward "the colony you shaped" (ties to the note
   above — maybe they aren't dwarves).
 
+# Garden plot (researched 2026-07-28, not yet built)
+
+The engine already IS a garden engine — v1 is a pure data entry (flora with
+cost > 0, regrow_days > 0), zero engine code. Verified by sim probe:
+
+- A regrowing flora SURVIVES greedy eating: biteWorthy leaves the sub-bite
+  stub, spent() never kills a regrower. Dwarf ate 42 meals in 800 ticks;
+  plant lived.
+- Dwarves GRAZE-CAMP: inside the radius they orbit and eat each unit as it
+  regrows. A garden is an ANCHOR (home base / never-starve zone), not a
+  pantry — effective feed rate = regrow rate, amount only matters after
+  absences. Chains still pull dwarves out (nearest beacon wins, sticky digs
+  hold); the garden recaptures them on return: base camp -> sortie rhythm.
+- The shop sidebar auto-lists any flora with a cost: UI is free.
+- Mold overgrows UNLIT garden tiles (spread ignores flora): a dark garden
+  gets buried; the beacon still senses through, so lit-face dwarves dig it
+  free. "Gardens need light" and "the cave takes back dark gardens" emerge
+  with zero code.
+- buyfood allows planting in mineable rock: a garden seeded INSIDE stone
+  makes dwarves excavate a room around it ("seed a room").
+- Rabbits eat the mushroom resource: if the garden produces "mushroom",
+  rabbit raids on gardens come free whenever rabbits return.
+
+Knobs (all TOML): sense_radius = anchor size (recommend small, 4-5, or one
+garden pacifies a region); regrow_days = carrying capacity; amount/max =
+feast size after an absence; cost = milestone price (~300-500 at 2/s chip
+income — but couples to the unresolved mushroom-price/steering question).
+
+Open decisions: resource identity (produce "mushroom" for future rabbit
+interference vs a private "greens" — lean "mushroom"); level-gating the
+shop entry (needs small code: unlock_level on the type + shop filter +
+server check) — the first "level = new toy" unlock; no spawn cap exists,
+cost is the only limiter (fine for the commons, revisit).
+
+Risk to watch: graze-camping "retires" garden-adjacent dwarves; several
+gardens could pacify the whole colony. The counterweight is steering cost
+and chain design — same open question as mushroom pricing.
+
 # The drive loop (why keep a tab open)
 
 Diagnosis from the genre lessons (idle games, Noita, B&W, Vampire Survivors):
