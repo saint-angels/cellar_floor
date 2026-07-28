@@ -16,9 +16,15 @@ is a deliberate decision, not a side effect.
   terrain's chip_gold immediately, shown as a gold float at the face — so
   better tools and AOE weapons raise income directly, a block is worth
   exactly its hit points (overkill pays nothing), and the damage number and
-  the money number are the same number. The break-time gold_chance roll
-  stays as the jackpot on top. Steady trickle plus rare jackpot — never
-  jackpot alone.
+  the money number are the same number. The jackpot layer rides the swing
+  too: golden strikes (crit_chance, raised by luck upgrades) multiply a
+  swing's chips by crit_mult. Steady trickle plus rare spike — never
+  jackpot alone, and never a jackpot anchored to an event (block break)
+  the trickle made irrelevant.
+- **Prizes are visible before they are reachable.** Glinting terrain
+  (gold_vein) sparkles through the fog from any distance; getting there
+  means gardening a mushroom chain across the cave. Mid-term goals are
+  spatial: see the glint, plan the dig.
 
 ## World
 

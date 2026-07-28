@@ -65,11 +65,13 @@ Diagnosis from the genre lessons (idle games, Noita, B&W, Vampire Survivors):
 verbs without rewards. Three gaps, in leverage order:
 
 1. Reward stream — income must be frequent, visible, causally legible.
-   SHIPPED: chip gold, every swing pays +1 with a float (see DESIGN.md Pace).
+   SHIPPED: chip gold (damage == gold, every damaged face floats its pay),
+   golden-strike crits as the luck-scaled jackpot layer (see DESIGN.md Pace).
 2. Goal ladder — always a visible "next purchase I can almost afford."
-   Next: glinting gold veins faintly visible at the fog edge, richer deeper,
-   so the ladder is spatial: see glint -> chain mushrooms -> dig -> coins ->
-   afford a longer chain -> deeper glint. Cave itself becomes the shop window.
+   SHIPPED (first rung): gold_vein blocks glint through the fog, chip 10x.
+   Later rungs: richer/rarer glints deeper out, so the ladder is spatial:
+   see glint -> chain mushrooms -> dig -> coins -> afford a longer chain ->
+   deeper glint. Cave itself becomes the shop window.
 3. Pushable systems — one verb (place food) needs multiple RESPONDERS, not
    more verbs: let rabbits eat bait chains (contested placement: fences,
    decoys, luring prey toward hungry wolves). Beacon+greedy rules are already

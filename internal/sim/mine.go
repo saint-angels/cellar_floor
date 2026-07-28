@@ -43,6 +43,13 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 		beam := w.BeamBonus()
 		ti := target.Y*w.Width + target.X
 		var evs []Event
+		// golden strike: some swings crit and multiply every chip they pay.
+		// The jackpot layer rides the swing itself (where the game lives),
+		// not the block break; luck upgrades raise the odds.
+		critMult, critTotal := 1, 0
+		if cc := w.CritChance(); cc > 0 && w.RandFloat() < cc {
+			critMult = w.cfg.Sim.CritMult
+		}
 		for _, i := range cells {
 			dmg := base
 			if i == ti {
@@ -61,17 +68,19 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			// damage IS gold: every point of damage a face absorbs pays that
 			// terrain's chip_gold, immediately — better tools and AOE weapons
 			// raise income directly, and a block is worth exactly its hit
-			// points (overkill past the break pays nothing). The break-time
-			// roll below stays the jackpot on top. Chips skip GoldStrikes so
-			// dwarf chatter keeps talking about real strikes.
+			// points (overkill past the break pays nothing). Ordinary chips
+			// skip GoldStrikes so dwarf chatter talks about golden strikes.
 			absorbed := dmg
 			if hp > 0 && prior+dmg > hp {
 				absorbed = hp - prior
 			}
 			if tt != nil && tt.ChipGold > 0 && absorbed > 0 {
-				n := absorbed * tt.ChipGold
+				n := absorbed * tt.ChipGold * critMult
 				w.Gold += n
 				w.GoldMined += n
+				if critMult > 1 {
+					critTotal += n
+				}
 				evs = append(evs, Event{
 					Tick: w.Tick, Type: "chip", Actor: e.ID, ActorType: e.Type,
 					Amount: n, X: i % w.Width, Y: i / w.Width,
@@ -87,28 +96,20 @@ func (w *World) mineStep(e *Entity) ([]Event, bool) {
 			if p == target {
 				e.MineTarget = nil
 			}
-			sc := w.cfg.Sim
-			if tt != nil && tt.GoldChance > 0 && w.RandFloat() < tt.GoldChance {
-				// jackpots pay at the rock face, instantly, same as chips —
-				// no hauling, no deposit step
-				amt := sc.GoldMin + w.LuckBonus()
-				if hi := sc.GoldMax + w.LuckBonus(); hi > amt {
-					amt += w.RandN(hi - amt + 1)
-				}
-				w.Gold += amt
-				w.GoldMined += amt
-				e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: amt})
-				w.GoldLast24h(e)
-				evs = append(evs, Event{
-					Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
-					Msg: fmt.Sprintf("%s struck gold", s.Name),
-				})
-			} else {
-				evs = append(evs, Event{
-					Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
-					Msg: fmt.Sprintf("%s mined out a rock", s.Name),
-				})
-			}
+			evs = append(evs, Event{
+				Tick: w.Tick, Type: "mined", Actor: e.ID, ActorType: e.Type,
+				Msg: fmt.Sprintf("%s mined out a rock", s.Name),
+			})
+		}
+		if critTotal > 0 {
+			// the celebration layer rides the crit: chatter, g24, gold burst
+			e.GoldStrikes = append(e.GoldStrikes, GoldStrike{Tick: w.Tick, Amount: critTotal})
+			w.GoldLast24h(e)
+			evs = append(evs, Event{
+				Tick: w.Tick, Type: "gold", Actor: e.ID, ActorType: e.Type,
+				Amount: critTotal,
+				Msg:    fmt.Sprintf("%s struck gold", s.Name),
+			})
 		}
 		return evs, true
 	}

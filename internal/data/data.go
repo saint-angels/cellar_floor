@@ -86,8 +86,8 @@ type SimConfig struct {
 	TickRate        float64 `toml:"tick_rate"`
 	AutosaveMinutes int     `toml:"autosave_minutes"`
 	SavePath        string  `toml:"save_path"`
-	GoldMin         int     `toml:"gold_min"`
-	GoldMax         int     `toml:"gold_max"`
+	CritChance      float64 `toml:"crit_chance"` // base odds any mining swing is a golden strike
+	CritMult        int     `toml:"crit_mult"`   // chip multiplier on a golden strike
 }
 
 type ScatterRule struct {
@@ -126,8 +126,8 @@ type TerrainType struct {
 	Passable      bool    `toml:"passable" json:"passable"`
 	Mineable      bool    `toml:"mineable" json:"mineable"`
 	HitPoints     int     `toml:"hit_points" json:"hitPoints"`
-	GoldChance    float64 `toml:"gold_chance" json:"goldChance"`
 	ChipGold      int     `toml:"chip_gold" json:"chipGold"` // gold per point of damage this terrain absorbs
+	Glints        bool    `toml:"glints" json:"glints"`      // sparkles through the fog: a visible prize
 	SpreadMinutes float64 `toml:"spread_minutes" json:"-"`
 	SpreadChance  float64 `toml:"-" json:"-"`
 	SproutMinutes float64 `toml:"sprout_minutes" json:"-"`
@@ -280,9 +280,6 @@ func Validate(cfg *Config) error {
 		if tt.Mineable && tt.Passable {
 			return fmt.Errorf("terrain %s: cannot be both passable and mineable", tt.ID)
 		}
-		if tt.GoldChance < 0 || tt.GoldChance > 1 {
-			return fmt.Errorf("terrain %s: gold_chance must be between 0 and 1", tt.ID)
-		}
 		if tt.ChipGold < 0 {
 			return fmt.Errorf("terrain %s: chip_gold must be non-negative", tt.ID)
 		}
@@ -421,14 +418,17 @@ func Validate(cfg *Config) error {
 	if cfg.Sim.TickRate <= 0 {
 		return fmt.Errorf("sim: tick_rate must be positive")
 	}
-	anyGold := false
-	for _, tt := range cfg.Terrain {
-		if tt.GoldChance > 0 {
-			anyGold = true
+	if cfg.Sim.CritChance < 0 || cfg.Sim.CritChance > 1 {
+		return fmt.Errorf("sim: crit_chance must be between 0 and 1")
+	}
+	critPossible := cfg.Sim.CritChance > 0
+	for _, u := range cfg.Upgrades {
+		if u.Kind == "luck" {
+			critPossible = true
 		}
 	}
-	if anyGold && (cfg.Sim.GoldMin < 1 || cfg.Sim.GoldMax < cfg.Sim.GoldMin) {
-		return fmt.Errorf("sim: gold drop needs 1 <= gold_min <= gold_max")
+	if critPossible && cfg.Sim.CritMult < 2 {
+		return fmt.Errorf("sim: crit_mult must be at least 2 when golden strikes can fire")
 	}
 	if cfg.Gen.Width <= 0 || cfg.Gen.Height <= 0 {
 		return fmt.Errorf("gen: width and height must be positive")

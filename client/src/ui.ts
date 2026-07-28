@@ -58,7 +58,7 @@ function upgradeDesc(name: string): string {
   if (!u) return "";
   switch (u.kind) {
     case "damage": return `+${u.amount} mining damage for every dwarf`;
-    case "luck": return `+${u.amount} gold from every drop`;
+    case "luck": return `+${u.amount}% golden strike odds`;
     case "weapon": return `an orbiting weapon, +${u.amount} damage`;
     case "beam": return `a lance shot at the target, +${u.amount} damage`;
     case "missile": return `a homing missile, +${u.amount} damage on the target`;

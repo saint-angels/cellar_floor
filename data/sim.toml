@@ -1,5 +1,7 @@
 tick_rate = 2.0
 autosave_minutes = 5
 save_path = "world.json"
-gold_min = 1
-gold_max = 3
+# golden strikes: some swings crit and pay crit_mult x chips. Luck upgrades
+# add percentage points to the chance.
+crit_chance = 0.02
+crit_mult = 10

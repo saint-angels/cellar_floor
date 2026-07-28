@@ -146,17 +146,21 @@ func TestCappedEntriesLeaveTheDrawPool(t *testing.T) {
 	}
 }
 
-func TestLuckRaisesDropBounds(t *testing.T) {
-	w := newMineWorld(t) // chance 1, min=max=2
-	w.Cfg().Upgrades = []data.Upgrade{{Name: "Lucky", Kind: "luck", Amount: 1, Max: 2}}
-	w.Claims = map[string]int{"Lucky": 2}
+func TestLuckRaisesCritChance(t *testing.T) {
+	w := newMineWorldNoGold(t) // base crit chance 0
+	w.Cfg().Sim.CritMult = 3
+	w.Cfg().Upgrades = []data.Upgrade{{Name: "Lucky", Kind: "luck", Amount: 50, Max: 2}}
+	w.Claims = map[string]int{"Lucky": 2} // +100 percentage points: every swing crits
+	if cc := w.CritChance(); cc != 1.0 {
+		t.Fatalf("CritChance = %v, want 1.0 with +100pp of luck", cc)
+	}
 	e := w.Spawn("miner", Point{2, 2})
 	assignFace(e, 3, 2)
 	for i := 0; i < 30; i++ {
 		w.Step()
 	}
-	if w.Gold != 4 { // 2 + luck 2, min == max keeps it exact
-		t.Fatalf("gold = %d, want 4 with +2 luck", w.Gold)
+	if w.Gold != 30 { // 10 hp face, every point paid x3
+		t.Fatalf("gold = %d, want 30 with guaranteed x3 crits", w.Gold)
 	}
 }
 

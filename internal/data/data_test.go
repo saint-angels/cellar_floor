@@ -382,10 +382,10 @@ func TestTerrainTableParses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Terrain) != 7 {
-		t.Fatalf("terrain types = %d, want 7", len(cfg.Terrain))
+	if len(cfg.Terrain) != 8 {
+		t.Fatalf("terrain types = %d, want 8", len(cfg.Terrain))
 	}
-	want := []string{"grass", "dirt", "water", "rock", "floor", "soft_rock"}
+	want := []string{"grass", "dirt", "water", "rock", "floor", "soft_rock", "mold", "gold_vein"}
 	for i, id := range want {
 		if cfg.Terrain[i].ID != id {
 			t.Fatalf("terrain[%d] = %q, want %q", i, cfg.Terrain[i].ID, id)
@@ -398,8 +398,9 @@ func TestTerrainTableParses(t *testing.T) {
 	if i, ok := cfg.TerrainIndex("soft_rock"); !ok || i != 5 {
 		t.Fatalf("TerrainIndex soft_rock = %d %v", i, ok)
 	}
-	if len(cfg.Gen.Veins) != 1 || cfg.Gen.Veins[0].Terrain != "soft_rock" ||
-		cfg.Gen.Veins[0].Seeds != 10 || cfg.Gen.Veins[0].Size != 14 {
+	if len(cfg.Gen.Veins) != 2 || cfg.Gen.Veins[0].Terrain != "soft_rock" ||
+		cfg.Gen.Veins[0].Seeds != 10 || cfg.Gen.Veins[0].Size != 14 ||
+		cfg.Gen.Veins[1].Terrain != "gold_vein" {
 		t.Fatalf("veins wrong: %+v", cfg.Gen.Veins)
 	}
 }
@@ -478,18 +479,22 @@ func TestMoldTerrainParses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Terrain) != 7 || cfg.Terrain[6].ID != "mold" {
-		t.Fatalf("terrain[6] should be mold, got %+v", cfg.Terrain)
+	if len(cfg.Terrain) != 8 || cfg.Terrain[6].ID != "mold" {
+		t.Fatalf("terrain[6] should be mold in a table of 8, got %+v", cfg.Terrain)
+	}
+	if v := cfg.Terrain[7]; v.ID != "gold_vein" || !v.Glints || v.ChipGold != 10 || !v.Mineable {
+		t.Fatalf("gold_vein mis-parsed: %+v", v)
 	}
 	m := cfg.Terrain[6]
-	if !m.Mineable || m.HitPoints != 6 || m.GoldChance != 0.1 || m.SpreadMinutes != 20 {
+	if !m.Mineable || m.HitPoints != 6 || m.SpreadMinutes != 20 {
 		t.Fatalf("mold wrong: %+v", m)
 	}
 	if want := 1.0 / (20 * 60 * 2); m.SpreadChance != want {
 		t.Fatalf("spread chance = %v, want %v", m.SpreadChance, want)
 	}
-	if cfg.Terrain[3].GoldChance != 0.9 || cfg.Terrain[5].GoldChance != 0.9 {
-		t.Fatalf("rock/soft gold_chance: %v %v", cfg.Terrain[3].GoldChance, cfg.Terrain[5].GoldChance)
+	if cfg.Terrain[3].ChipGold != 1 || cfg.Terrain[5].ChipGold != 1 || m.ChipGold != 1 {
+		t.Fatalf("chip_gold: rock %d soft %d mold %d, want 1 each",
+			cfg.Terrain[3].ChipGold, cfg.Terrain[5].ChipGold, m.ChipGold)
 	}
 	if cfg.Gen.Crust != "mold" || cfg.Gen.CrustChance != 1.0 {
 		t.Fatalf("crust: %q %v", cfg.Gen.Crust, cfg.Gen.CrustChance)
@@ -498,10 +503,14 @@ func TestMoldTerrainParses(t *testing.T) {
 
 func TestTerrainGoldAndSpreadValidation(t *testing.T) {
 	cfg := minimalConfig()
-	cfg.Terrain = CanonicalTerrain()
-	cfg.Terrain[3].GoldChance = 1.5
+	cfg.Sim.CritChance = 1.5
 	if err := Validate(cfg); err == nil {
-		t.Fatal("gold_chance above 1 must fail")
+		t.Fatal("crit_chance above 1 must fail")
+	}
+	cfg = minimalConfig()
+	cfg.Sim.CritChance = 0.5 // crits possible but no multiplier declared
+	if err := Validate(cfg); err == nil {
+		t.Fatal("crit_chance without a crit_mult of at least 2 must fail")
 	}
 	cfg = minimalConfig()
 	cfg.Terrain = append(CanonicalTerrain(), TerrainType{ID: "goo", Color: "#111", Mineable: true, HitPoints: 6, SpreadMinutes: -1})

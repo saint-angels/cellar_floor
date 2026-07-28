@@ -12,4 +12,9 @@ scatter = [
   { type = "mushroom", terrain = "dirt", chance = 1.0, max = 3 },
 ]
 
-veins = [{ terrain = "soft_rock", seeds = 10, size = 14 }]
+veins = [
+  { terrain = "soft_rock", seeds = 10, size = 14 },
+  # small glinting prizes scattered through the deep rock: visible through
+  # the fog from anywhere, reachable only by leading a dwarf to dig
+  { terrain = "gold_vein", seeds = 14, size = 2 },
+]

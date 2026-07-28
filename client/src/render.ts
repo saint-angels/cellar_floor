@@ -99,6 +99,17 @@ export function startRender(canvas: HTMLCanvasElement) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(terrainCanvas, 0, 0);
       if (veilCanvas) ctx.drawImage(veilCanvas, 0, 0);
+      // glinting terrain (gold veins) sparkles THROUGH the fog: a mid-term
+      // prize you can spot from anywhere and plan a mushroom chain toward
+      for (let i = 0; i < world.terrain.length; i++) {
+        if (!world.terrainTypes[world.terrain[i]]?.glints) continue;
+        const gx = (i % world.width) * TILE + TILE / 2;
+        const gy = Math.floor(i / world.width) * TILE + TILE / 2;
+        ctx.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(now / 700 + i * 2.1));
+        ctx.fillStyle = "#ffd75e";
+        ctx.fillRect(gx - 1, gy - 1, 2, 2);
+      }
+      ctx.globalAlpha = 1;
       drawShakes(ctx, now);
       const lerpMs = world.tickIntervalMs / Math.max(world.timeScale, 1);
       // draw order: live fauna (dwarves, rabbits) render above the flora,

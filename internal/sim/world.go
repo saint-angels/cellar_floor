@@ -410,7 +410,8 @@ func (w *World) BeamBonus() int {
 	return bonus
 }
 
-// LuckBonus widens gold drops from claimed luck upgrades.
+// LuckBonus sums claimed luck upgrade amounts: percentage points added to
+// the golden-strike chance.
 func (w *World) LuckBonus() int {
 	bonus := 0
 	for _, u := range w.cfg.Upgrades {
@@ -419,6 +420,12 @@ func (w *World) LuckBonus() int {
 		}
 	}
 	return bonus
+}
+
+// CritChance is the probability that any single mining swing is a golden
+// strike, multiplying every chip it pays by the sim's crit_mult.
+func (w *World) CritChance() float64 {
+	return w.cfg.Sim.CritChance + float64(w.LuckBonus())/100
 }
 
 // SpeedFactor is the movement multiplier from claimed speed upgrades:

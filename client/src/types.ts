@@ -30,6 +30,7 @@ export interface TerrainType {
   passable: boolean;
   mineable: boolean;
   hitPoints: number;
+  glints?: boolean;
 }
 
 export interface EntityView {

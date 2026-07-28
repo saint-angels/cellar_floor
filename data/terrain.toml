@@ -21,7 +21,6 @@ id = "rock"
 color = "#3a3a3a"
 mineable = true
 hit_points = 172800  # 24h at 1 damage per tick, 2 ticks per second
-gold_chance = 0.9
 chip_gold = 1        # damage == gold: every damage point absorbed pays this much
 
 [[terrain]]
@@ -34,7 +33,6 @@ id = "soft_rock"
 color = "#575049"
 mineable = true
 hit_points = 43200   # 6h
-gold_chance = 0.9
 chip_gold = 1
 
 [[terrain]]
@@ -42,7 +40,14 @@ id = "mold"
 color = "#7a8a4d"
 mineable = true
 hit_points = 6       # 3 seconds at 1 damage per tick
-gold_chance = 0.1
 chip_gold = 1
 spread_minutes = 20  # each block converts one dark neighbor per ~20 min
 sprout_minutes = 240 # a dark passable cell molds over by itself in ~4h
+
+[[terrain]]
+id = "gold_vein"
+color = "#6e5a2e"    # dark gold; reads as rock until lit
+mineable = true
+hit_points = 43200   # 6h like soft rock: a committed but reachable prize
+chip_gold = 10       # damage == gold, x10: chewing a vein showers coins
+glints = true        # sparkles through the fog — a mid-term goal you dig toward

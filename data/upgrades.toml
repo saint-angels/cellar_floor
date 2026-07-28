@@ -13,7 +13,7 @@ max = 0
 [[upgrade]]
 name = "Lucky Veins"
 kind = "luck"
-amount = 1
+amount = 2 # +2 percentage points of golden-strike chance per claim
 max = 2
 
 [[upgrade]]

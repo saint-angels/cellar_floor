@@ -93,94 +93,78 @@ func assignFace(e *Entity, x, y int) {
 	e.MineTarget = &p
 }
 
-// goldDropWorld builds a lit 5x5 world with one rock face beside the spawn
-// point {2,2} and a miner that mines a face out within the test's step budget.
-func goldDropWorld(t *testing.T, chance float64, lo, hi int) *World {
+// goldDropWorld builds a lit 5x5 world with one chip-paying rock face (10 hp,
+// chip_gold 1) beside the spawn point {2,2}. critChance/critMult configure
+// golden strikes: crit swings multiply every chip they pay.
+func goldDropWorld(t *testing.T, critChance float64, critMult int) *World {
 	t.Helper()
 	cfg := mineCfg()
-	cfg.Terrain[3].GoldChance = chance
-	cfg.Sim.GoldMin = lo
-	cfg.Sim.GoldMax = hi
+	cfg.Terrain[3].ChipGold = 1
+	cfg.Sim.CritChance = critChance
+	cfg.Sim.CritMult = critMult
 	w := NewWorld(5, 5, 1, cfg)
 	w.Spawn("sunstone", Point{0, 0})             // flood the world with light
 	w.Terrain[idx(w, Point{3, 2})] = TerrainRock // the sole face, beside {2,2}
 	return w
 }
 
-// newMineWorld guarantees a drop of exactly 2 gold per mined rock.
-func newMineWorld(t *testing.T) *World { return goldDropWorld(t, 1.0, 2, 2) }
+// newMineWorld crits every swing at x2 chips: the 10 hp face pays exactly 20.
+func newMineWorld(t *testing.T) *World { return goldDropWorld(t, 1, 2) }
 
-// newMineWorldNoGold is newMineWorld with the drop chance set to zero.
-func newMineWorldNoGold(t *testing.T) *World { return goldDropWorld(t, 0, 1, 3) }
+// newMineWorldNoGold never crits: the face pays its 10 hp in plain chips.
+func newMineWorldNoGold(t *testing.T) *World { return goldDropWorld(t, 0, 0) }
 
-func TestGoldOddsArePerTerrain(t *testing.T) {
-	// rock at chance 1 drops, softish at chance 0 never does
-	cfg := mineCfg()
-	cfg.Terrain[3].GoldChance = 1
-	cfg.Sim.GoldMin, cfg.Sim.GoldMax = 2, 2
-	w := NewWorld(7, 7, 1, cfg)
-	w.Spawn("sunstone", Point{0, 0})
-	w.Terrain[idx(w, Point{3, 2})] = TerrainRock // chance 1
-	w.Terrain[idx(w, Point{1, 2})] = Terrain(5)  // softish, chance 0
-	d := w.Spawn("dwarf", Point{2, 2})
-	d.Fullness = 10
-	assignFace(d, 3, 2)
-	var gold, mined int
-	for i := 0; i < 40; i++ {
-		for _, ev := range w.Step() {
-			if ev.Type == "gold" {
-				gold++
-			}
-			if ev.Type == "mined" {
-				mined++
-			}
-		}
-	}
-	if gold != 1 || mined != 1 {
-		t.Fatalf("gold=%d mined=%d, want exactly one of each", gold, mined)
-	}
-	if w.Gold != 2 {
-		t.Fatalf("gold pot = %d, want 2", w.Gold)
-	}
-}
-
-func TestMinedRockRollsGoldDrop(t *testing.T) {
-	w := newMineWorld(t) // gold_chance 1.0, gold_min 2, gold_max 2 in this test's cfg
+// A guaranteed golden strike multiplies every chip and fires the celebration
+// event carrying the crit's total gold.
+func TestGoldenStrikeMultipliesChips(t *testing.T) {
+	w := goldDropWorld(t, 1, 10) // every swing crits at x10
 	e := w.Spawn("miner", Point{2, 2})
 	assignFace(e, 3, 2)
-	var goldEv bool
-	for i := 0; i < 30; i++ { // mine_ticks 10 in test cfg plus walking
+	var goldEvs, chip10 int
+	for i := 0; i < 30; i++ {
 		for _, ev := range w.Step() {
 			if ev.Type == "gold" && ev.Actor == e.ID {
-				goldEv = true
+				goldEvs++
+				if ev.Amount != 10 {
+					t.Fatalf("golden strike amount = %d, want 10 (1 dmg x chip 1 x mult 10)", ev.Amount)
+				}
+			}
+			if ev.Type == "chip" && ev.Amount == 10 {
+				chip10++
 			}
 		}
 	}
-	if w.Gold != 2 {
-		t.Fatalf("gold = %d, want 2", w.Gold)
+	if goldEvs != 10 || chip10 != 10 {
+		t.Fatalf("gold events = %d, x10 chips = %d, want 10 of each (one per swing)", goldEvs, chip10)
 	}
-	if !goldEv {
-		t.Fatal("expected a struck gold event")
+	if w.Gold != 100 {
+		t.Fatalf("gold = %d, want 100 (10 hp, every point paid x10)", w.Gold)
 	}
 }
 
-func TestNoDropFiresMinedEvent(t *testing.T) {
-	w := newMineWorldNoGold(t) // same but gold_chance 0
+func TestNoCritBreakFiresMinedEvent(t *testing.T) {
+	w := newMineWorldNoGold(t) // crit chance 0
 	e := w.Spawn("miner", Point{2, 2})
 	assignFace(e, 3, 2)
-	var mined bool
+	var mined, goldEvs bool
 	for i := 0; i < 30; i++ {
 		for _, ev := range w.Step() {
 			if ev.Type == "mined" && ev.Actor == e.ID {
 				mined = true
 			}
+			if ev.Type == "gold" {
+				goldEvs = true
+			}
 		}
 	}
-	if w.Gold != 0 {
-		t.Fatalf("gold = %d, want 0", w.Gold)
+	if w.Gold != 10 {
+		t.Fatalf("gold = %d, want the face's 10 hp in plain chips", w.Gold)
 	}
 	if !mined {
 		t.Fatal("expected a mined out a rock event")
+	}
+	if goldEvs {
+		t.Fatal("no crits configured, yet a golden strike event fired")
 	}
 }
 
@@ -329,17 +313,17 @@ func TestMineStateSurvivesSaveLoad(t *testing.T) {
 }
 
 func TestGoldWindowTracksLast24h(t *testing.T) {
-	w := newMineWorld(t) // chance 1.0, drop exactly 2
+	w := newMineWorld(t) // every swing crits at x2: strikes of 2, ten of them
 	e := w.Spawn("miner", Point{2, 2})
 	assignFace(e, 3, 2)
 	for i := 0; i < 30; i++ {
 		w.Step()
 	}
-	if got := w.GoldLast24h(e); got != 2 {
-		t.Fatalf("gold last 24h = %d, want 2", got)
+	if got := w.GoldLast24h(e); got != 20 {
+		t.Fatalf("gold last 24h = %d, want 20", got)
 	}
-	if len(e.GoldStrikes) != 1 {
-		t.Fatalf("strikes = %d, want 1", len(e.GoldStrikes))
+	if len(e.GoldStrikes) != 10 {
+		t.Fatalf("strikes = %d, want 10 (one per crit swing)", len(e.GoldStrikes))
 	}
 	// push the strike out of the window: 24h at tick_rate 2 is 172800 ticks
 	w.Tick += 172801
@@ -473,7 +457,7 @@ func TestMineBonusSpeedsMining(t *testing.T) {
 }
 
 func TestRecapCountersTrack(t *testing.T) {
-	w := newMineWorld(t) // chance 1.0, drop exactly 2
+	w := newMineWorld(t) // every swing crits at x2: the 10 hp face pays 20
 	e := w.Spawn("miner", Point{2, 2})
 	assignFace(e, 3, 2)
 	for i := 0; i < 30; i++ {
@@ -482,20 +466,18 @@ func TestRecapCountersTrack(t *testing.T) {
 	if w.BlocksMined != 1 {
 		t.Fatalf("BlocksMined = %d, want 1", w.BlocksMined)
 	}
-	if w.GoldMined != 2 {
-		t.Fatalf("GoldMined = %d, want 2", w.GoldMined)
+	if w.GoldMined != 20 {
+		t.Fatalf("GoldMined = %d, want 20", w.GoldMined)
 	}
 }
 
 // Chip gold: damage IS gold. Every point of damage a face absorbs pays that
-// terrain's chip_gold to the colony immediately, with the break-time
-// gold_chance roll as a jackpot on top. Here chance is zero and the miner
-// does 1 damage per swing, so after the 10 hp test rock breaks the pot holds
-// exactly 10, one per swing, each swing emitting a "chip" event carrying the
-// struck face.
+// terrain's chip_gold to the colony immediately. Here crits are off and the
+// miner does 1 damage per swing, so after the 10 hp test rock breaks the pot
+// holds exactly 10, one per swing, each swing emitting a "chip" event
+// carrying the struck face.
 func TestEverySwingChipsGold(t *testing.T) {
-	w := goldDropWorld(t, 0, 1, 3) // rock at {3,2}, no jackpot noise
-	w.Cfg().Terrain[3].ChipGold = 1
+	w := goldDropWorld(t, 0, 0) // rock at {3,2}, no crits
 	e := w.Spawn("miner", Point{2, 2})
 	assignFace(e, 3, 2)
 	chips := 0
@@ -527,8 +509,7 @@ func TestEverySwingChipsGold(t *testing.T) {
 // block absorbs only what it has left; overkill past the break pays nothing),
 // totalling exactly the face's hit points.
 func TestChipsScaleWithDamage(t *testing.T) {
-	w := goldDropWorld(t, 0, 1, 3) // rock at {3,2}, 10 hp, no jackpot noise
-	w.Cfg().Terrain[3].ChipGold = 1
+	w := goldDropWorld(t, 0, 0) // rock at {3,2}, 10 hp, no crits
 	w.Cfg().Upgrades = []data.Upgrade{{Name: "Sharper Picks", Kind: "damage", Amount: 2}}
 	w.Claims = map[string]int{"Sharper Picks": 1}
 	e := w.Spawn("miner", Point{2, 2})
@@ -560,9 +541,8 @@ func TestChipsScaleWithDamage(t *testing.T) {
 // The softish face (5 hp) is the target and breaks after 5 swings, ending
 // the dig with 5 damage also banked in the neighboring rock: 10 gold total.
 func TestSplashDamagePaysChipsPerFace(t *testing.T) {
-	w := goldDropWorld(t, 0, 1, 3)
-	w.Cfg().Terrain[3].ChipGold = 1              // rock
-	w.Cfg().Terrain[5].ChipGold = 1              // softish
+	w := goldDropWorld(t, 0, 0)
+	w.Cfg().Terrain[5].ChipGold = 1              // softish (rock already pays here)
 	w.Terrain[idx(w, Point{3, 2})] = Terrain(5)  // softish target, 5 hp
 	w.Terrain[idx(w, Point{3, 3})] = TerrainRock // splashed neighbor, 10 hp
 	e := w.Spawn("miner", Point{2, 2})
