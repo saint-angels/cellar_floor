@@ -410,6 +410,25 @@ func (w *World) BeamBonus() int {
 	return bonus
 }
 
+// ClearType kills every living entity of the given type — debug tooling for
+// sweeping a world clean (e.g. removing stale planted food). Returns how
+// many were removed; the husks decay away like any other corpse.
+func (w *World) ClearType(typeID string) int {
+	// kill tracks same-tick deaths in a map Step owns; this runs between
+	// steps (a server intent), so make sure the map exists
+	if w.diedThisTick == nil {
+		w.diedThisTick = map[int]bool{}
+	}
+	n := 0
+	for _, e := range w.entities() {
+		if !e.Dead && e.Type == typeID {
+			w.kill(e, "removed", "")
+			n++
+		}
+	}
+	return n
+}
+
 // LuckBonus sums claimed luck upgrade amounts: percentage points added to
 // the golden-strike chance.
 func (w *World) LuckBonus() int {

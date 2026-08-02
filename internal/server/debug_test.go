@@ -1,6 +1,10 @@
 package server
 
-import "testing"
+import (
+	"testing"
+
+	"cellarfloor/internal/sim"
+)
 
 func TestDebugActions(t *testing.T) {
 	s := newPlayerServer(t)
@@ -40,5 +44,31 @@ func TestDebugActions(t *testing.T) {
 	}
 	if s.world.PendingLevels == 0 || len(s.world.Offer) == 0 {
 		t.Fatal("completing a level must queue a choice and roll an offer")
+	}
+}
+
+func TestDebugClearType(t *testing.T) {
+	s := newPlayerServer(t)
+	a := s.world.Spawn("mushroom", sim.Point{X: 2, Y: 2})
+	b := s.world.Spawn("mushroom", sim.Point{X: 3, Y: 3})
+	if a == nil || b == nil {
+		t.Fatal("fixture mushrooms did not spawn")
+	}
+	s.debugAction(ClientMsg{Action: "clear", Name: "mushroom"})
+	if !a.Dead || !b.Dead {
+		t.Fatalf("clear left mushrooms alive: %v %v", a.Dead, b.Dead)
+	}
+	if got := s.world.CountAlive("mushroom"); got != 0 {
+		t.Fatalf("alive mushrooms = %d, want 0", got)
+	}
+	// events surface as one summary line
+	found := false
+	for _, ev := range s.pending {
+		if ev.Type == "removed" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("no removed summary event pended")
 	}
 }
